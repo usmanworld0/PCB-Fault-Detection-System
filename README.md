@@ -227,21 +227,6 @@ python app.py
 
 ---
 
-## 📡 API Reference
-
-| Method | Endpoint | Description |
-|:------:|:---------|:------------|
-| `POST` | `/auth/login` | Authenticate and receive JWT |
-| `POST` | `/auth/register` | Register new user (admin only) |
-| `POST` | `/inspections/ingest` | Upload inspection with images |
-| `GET` | `/inspections` | List inspections (filter by status, model) |
-| `GET` | `/inspections/{id}` | Get inspection details + defect data |
-| `POST` | `/models/ingest` | Submit model metrics |
-| `GET` | `/models` | List all registered models |
-| `GET` | `/stats` | Dashboard statistics & 30-day trends |
-
----
-
 ## 🧪 Training Pipeline
 
 End-to-end scripts for dataset preparation, training, and evaluation are in the [`ml/`](ml/) directory.
@@ -274,54 +259,6 @@ python ml/train_tv.py --arch fasterrcnn --data pcb_yolo/ --epochs 12
 ```bash
 # Benchmark all models side-by-side
 python ml/evaluate_all.py
-```
-
----
-
-## 📁 Project Structure
-
-```
-PCB-Fault-Detection-System/
-├── app.py                     # Desktop app entry point
-├── requirements.txt           # Desktop dependencies
-├── core/                      # Detection engine & business logic
-│   ├── detector.py            #   ONNX YOLO + Torchvision detectors, tiling, NMS
-│   ├── compare.py             #   Multi-model comparison engine
-│   ├── severity.py            #   Rule-based severity classification
-│   ├── draw.py                #   Bounding box annotation renderer
-│   ├── sources.py             #   Image / folder / webcam input sources
-│   ├── store.py               #   SQLite offline inspection storage
-│   ├── sync.py                #   Cloud sync (upload pending inspections)
-│   └── models_sync.py         #   Model metrics sync to backend
-├── ui/                        # PySide6 desktop GUI
-│   └── main_window.py         #   Main inspection station window
-├── backend/                   # FastAPI cloud service
-│   ├── app/
-│   │   ├── main.py            #     App factory, lifespan, CORS
-│   │   ├── auth.py            #     JWT authentication & password hashing
-│   │   ├── models.py          #     SQLAlchemy ORM models
-│   │   ├── schemas.py         #     Pydantic request/response schemas
-│   │   ├── config.py          #     Environment-based settings
-│   │   ├── db.py              #     Database session management
-│   │   ├── storage.py         #     Supabase Storage client
-│   │   └── routers/           #     API route handlers
-│   ├── requirements.txt
-│   └── .env.example
-├── models/                    # Pre-trained model weights (Git LFS)
-│   ├── yolov8n/               #   YOLOv8-Nano (ONNX)
-│   ├── yolov8s/               #   YOLOv8-Small (ONNX)
-│   ├── fasterrcnn/            #   Faster R-CNN ResNet-50 FPN v2 (PyTorch)
-│   ├── retinanet/             #   RetinaNet ResNet-50 FPN v2 (PyTorch)
-│   └── models_deeppcb/        #   Additional DeepPCB-trained variants
-├── ml/                        # Training & evaluation scripts
-│   ├── train.py               #   YOLOv8 training + ONNX export
-│   ├── train_tv.py            #   Faster R-CNN / RetinaNet training
-│   ├── evaluate_all.py        #   Unified model evaluation
-│   ├── prepare_data.py        #   DeepPCB → YOLO conversion
-│   ├── prepare_pku.py         #   PKU-Market-PCB conversion & tiling
-│   ├── merge_datasets.py      #   Dataset merging utility
-│   └── detmetrics.py          #   Detection metrics computation
-└── data/                      # Local inspection history (SQLite + images)
 ```
 
 ---
