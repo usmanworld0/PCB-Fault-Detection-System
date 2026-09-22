@@ -92,22 +92,22 @@ The system processes PCB images through multiple detection architectures (YOLOv8
 │                        PCB-VISION PLATFORM                         │
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│   ┌─────────────────┐         ┌─────────────────┐                    │
-│   │  PySide6 Desktop │────────▶│  FastAPI Backend │                   │
-│   │   Application    │  REST   │   (uvicorn)      │                   │
-│   │                  │  + JWT  │                   │                   │
-│   │  • Camera feed   │         │  /auth/login      │                  │
-│   │  • Image input   │         │  /auth/register   │                  │
-│   │  • Batch folders │         │  /inspections/*   │                   │
-│   │  • Model compare │         │  /models/*        │                   │
-│   │  • Offline store │         │  /stats           │                   │
-│   └────────┬─────────┘         └────────┬──────────┘                  │
-│            │                            │                              │
-│   ┌────────▼─────────┐         ┌────────▼──────────┐                  │
-│   │   SQLite (local)  │         │ Supabase Postgres  │                │
-│   │   Offline-first   │         │ + Supabase Storage  │               │
-│   │   inspection log  │         │ (images & metadata) │               │
-│   └──────────────────┘         └─────────────────────┘                │
+│   ┌─────────────────┐         ┌──────────────────┐  ┌─────────────┐  │
+│   │  PySide6 Desktop │────────▶│  FastAPI Backend │◀─│ Flutter App │  │
+│   │   Application    │  REST   │   (uvicorn)      │  │  (Mobile)   │  │
+│   │                  │  + JWT  │                  │  │             │  │
+│   │  • Camera feed   │         │  /auth/login     │  │ • Dashboard │  │
+│   │  • Image input   │         │  /auth/register  │  │ • Charts    │  │
+│   │  • Batch folders │         │  /inspections/*  │  │ • Details   │  │
+│   │  • Model compare │         │  /models/*       │  │ • Models    │  │
+│   │  • Offline store │         │  /stats          │  │ • Settings  │  │
+│   └────────┬─────────┘         └────────┬─────────┘  └─────────────┘  │
+│            │                            │                            │
+│   ┌────────▼─────────┐         ┌────────▼──────────┐                 │
+│   │   SQLite (local)  │         │ Supabase Postgres │                 │
+│   │   Offline-first   │         │ + Supabase Storage│                 │
+│   │   inspection log  │         │ (images/metadata) │                 │
+│   └──────────────────┘         └───────────────────┘                 │
 │                                                                      │
 │   ┌──────────────────────────────────────────────────┐               │
 │   │              Detection Engine (core/)             │               │
@@ -223,7 +223,15 @@ $env:PCB_API_TOKEN = "<JWT from /auth/login>"
 python app.py
 ```
 
-📖 See [`backend/README.md`](backend/README.md) for the complete API reference with curl examples.
+### 4. Run Mobile Companion App (Flutter)
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+📖 See [`backend/README.md`](backend/README.md) for API docs and [`mobile/README.md`](mobile/README.md) for mobile app setup.
 
 ---
 
@@ -268,6 +276,7 @@ python ml/evaluate_all.py
 | Layer | Technologies |
 |:------|:-------------|
 | **Desktop App** | PySide6 (Qt6), OpenCV, ONNX Runtime |
+| **Mobile App** | Flutter 3, Dart 3, Material 3 Dark, fl_chart, Provider |
 | **Detection Models** | YOLOv8 (Ultralytics), Faster R-CNN, RetinaNet (Torchvision) |
 | **Backend API** | FastAPI, SQLAlchemy, Pydantic, PyJWT |
 | **Database** | Supabase Postgres (cloud), SQLite (local offline) |
