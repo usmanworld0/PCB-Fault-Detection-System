@@ -11,10 +11,20 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isDemo => _serverUrl == 'demo';
   String get token => _token;
   String get role => _role;
   String get email => _email;
   String get serverUrl => _serverUrl;
+
+  Future<void> enterDemoMode() async {
+    _serverUrl = 'demo';
+    _email = 'lead.engineer@pcb-vision.ai';
+    _token = 'demo-jwt-token';
+    _role = 'Senior QA / ML Engineer';
+    _isAuthenticated = true;
+    notifyListeners();
+  }
 
   AuthProvider() {
     _loadFromStorage();

@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _serverCtrl = TextEditingController(text: 'http://');
+  final _serverCtrl = TextEditingController(text: 'http://localhost:8000');
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _loading = false;
@@ -179,6 +179,35 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: _loading
                           ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
                           : const Text('Sign In'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Demo mode button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: _loading
+                          ? null
+                          : () {
+                              context.read<AuthProvider>().enterDemoMode();
+                            },
+                      icon: const Icon(Icons.auto_awesome, size: 18, color: Color(0xFF818CF8)),
+                      label: Text(
+                        'Explore in Demo Mode',
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFFC7D2FE),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: const Color(0xFF6366F1).withValues(alpha: 0.4)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                      ),
                     ),
                   ),
                 ],
