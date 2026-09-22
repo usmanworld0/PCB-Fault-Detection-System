@@ -1,0 +1,12 @@
+{
+  "arch": "retinanet",
+  "classes": [
+    "open",
+    "short",
+    "mousebite",
+    "spur",
+    "copper",
+    "missing_hole"
+  ],
+  "imgsz": 640
+}
