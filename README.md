@@ -338,12 +338,4 @@ PCB-Fault-Detection-System/
 | **ML Training** | Ultralytics, PyTorch, Torchvision |
 | **Datasets** | DeepPCB, PKU-Market-PCB |
 
----
 
-<div align="center">
-
-**Built with ❤️ as a Final Year Project**
-
-If you found this project useful, consider giving it a ⭐
-
-</div>
