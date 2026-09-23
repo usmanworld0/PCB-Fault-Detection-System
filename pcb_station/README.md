@@ -1,287 +1,145 @@
-<div align="center">
+# PCB-Vision Inspection Station
 
-# 🔬 PCB-Vision — Intelligent PCB Fault Detection System
+This folder contains the PCB inspection desktop application and its FastAPI backend. It is one component of the repository: the companion `mobile/` folder is a separate client application.
 
-**An end-to-end deep learning platform for automated printed circuit board defect inspection**
+## Architecture
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![PySide6](https://img.shields.io/badge/PySide6-Qt6-41CD52?style=for-the-badge&logo=qt&logoColor=white)](https://doc.qt.io/qtforpython/)
-[![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-FF6F00?style=for-the-badge&logo=yolo&logoColor=white)](https://docs.ultralytics.com)
-[![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
-
-*Detect **open circuits, shorts, mouse bites, spurs, copper defects, and missing holes** with up to **92.8% mAP@50** — in real-time, from a desktop GUI or live camera feed.*
-
----
-
-[Key Features](#-key-features) · [System Architecture](#-system-architecture) · [Model Performance](#-model-performance) · [Quick Start](#-quick-start) · [API Reference](#-api-reference) · [Training Pipeline](#-training-pipeline)
-
-</div>
-
----
-
-## 📌 Overview
-
-**PCB-Vision** is a complete inspection platform that combines custom-trained deep learning models with a production-grade desktop application and cloud-synced backend. It was built to solve a real-world manufacturing problem: identifying microscopic defects on printed circuit boards that are invisible to the naked eye.
-
-The system processes PCB images through multiple detection architectures (YOLOv8, Faster R-CNN, RetinaNet), classifies defects into **6 categories** with severity grading, and stores full inspection histories — all from a single desktop workstation that works **offline-first** and syncs results when connected.
-
----
-
-## ✨ Key Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🖥️ Desktop Inspection Station
-- **Real-time camera feed** with live inference
-- **Image & batch folder** inspection modes
-- Side-by-side original vs. annotated view
-- Adjustable confidence threshold slider
-- **One-click model comparison** across all loaded architectures
-- Defect table with class, confidence, severity, and bounding box
-- Auto-save frames that contain defects
-
-</td>
-<td width="50%">
-
-### ☁️ Cloud-Synced Backend
-- **JWT-authenticated** REST API (FastAPI)
-- Role-based access control (Admin / Engineer)
-- Inspection ingestion with image upload to **Supabase Storage**
-- Model metrics registry & dashboard statistics
-- 30-day defect trend analytics
-- CORS-ready for web frontend integration
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🧠 Multi-Model AI Engine
-- **YOLOv8** (Nano & Small) via ONNX Runtime
-- **Faster R-CNN** (ResNet-50 FPN v2) via PyTorch
-- **RetinaNet** (ResNet-50 FPN v2) via PyTorch
-- Automatic **image tiling** for high-resolution boards
-- Class-aware NMS for precise localization
-- Severity classification (Critical / Moderate / Minor)
-
-</td>
-<td>
-
-### 🛠️ Full ML Pipeline
-- Dataset preparation scripts (DeepPCB → YOLO format)
-- PKU-Market-PCB conversion & tiling pipeline
-- Multi-dataset merging utility
-- YOLOv8 training + ONNX export script
-- Faster R-CNN / RetinaNet training script
-- Unified model evaluation & benchmarking
-
-</td>
-</tr>
-</table>
-
----
-
-## 🏗️ System Architecture
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        PCB-VISION PLATFORM                         │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   ┌─────────────────┐         ┌──────────────────┐  ┌─────────────┐  │
-│   │  PySide6 Desktop │────────▶│  FastAPI Backend │◀─│ Flutter App │  │
-│   │   Application    │  REST   │   (uvicorn)      │  │  (Mobile)   │  │
-│   │                  │  + JWT  │                  │  │             │  │
-│   │  • Camera feed   │         │  /auth/login     │  │ • Dashboard │  │
-│   │  • Image input   │         │  /auth/register  │  │ • Charts    │  │
-│   │  • Batch folders │         │  /inspections/*  │  │ • Details   │  │
-│   │  • Model compare │         │  /models/*       │  │ • Models    │  │
-│   │  • Offline store │         │  /stats          │  │ • Settings  │  │
-│   └────────┬─────────┘         └────────┬─────────┘  └─────────────┘  │
-│            │                            │                            │
-│   ┌────────▼─────────┐         ┌────────▼──────────┐                 │
-│   │   SQLite (local)  │         │ Supabase Postgres │                 │
-│   │   Offline-first   │         │ + Supabase Storage│                 │
-│   │   inspection log  │         │ (images/metadata) │                 │
-│   └──────────────────┘         └───────────────────┘                 │
-│                                                                      │
-│   ┌──────────────────────────────────────────────────┐               │
-│   │              Detection Engine (core/)             │               │
-│   │                                                    │              │
-│   │   OnnxYoloDetector ─── YOLOv8n / YOLOv8s (ONNX)  │              │
-│   │   TorchvisionDetector ─ Faster R-CNN / RetinaNet  │              │
-│   │   BaseDetector ──── Tiling · NMS · Severity       │               │
-│   └──────────────────────────────────────────────────┘               │
-└──────────────────────────────────────────────────────────────────────┘
+```text
+PySide6 desktop station  ──REST + JWT──┐
+                                       │
+Flutter mobile app       ──REST + JWT──┼──> FastAPI backend ──> Supabase Postgres
+                                       │                         Supabase Storage
+Future web app           ──REST + JWT──┘
 ```
 
----
+The desktop station runs detection locally. It saves inspections to local SQLite first, so it can work offline, then synchronizes pending records to the API when a connection is available.
 
-## 📊 Model Performance
+## Data ownership — important
 
-All models were trained on the **DeepPCB** and **PKU-Market-PCB** datasets and evaluated on held-out test splits.
+| Data | System | Who accesses it |
+|---|---|---|
+| Desktop offline queue and cached images | Local SQLite (`data/station.db`) | Desktop app only |
+| Users, inspections, defects, and model metrics | Supabase Postgres | FastAPI backend only |
+| Original and annotated inspection images | Supabase Storage bucket `pcb-vision` | FastAPI backend only |
 
-| Model | Architecture | mAP@50 | Precision | Recall | F1 Score | Inference (GPU) |
-|:------|:-------------|:------:|:---------:|:------:|:--------:|:---------------:|
-| **Faster R-CNN** | ResNet-50 FPN v2 | **92.77%** | 83.40% | **94.70%** | 88.69% | 114.2 ms |
-| **RetinaNet** | ResNet-50 FPN v2 | 92.41% | 79.74% | 94.30% | 86.41% | 55.1 ms |
-| **YOLOv8s** | YOLOv8-Small | 87.60% | **90.54%** | 89.56% | **90.05%** | 10.1 ms |
-| **YOLOv8n** | YOLOv8-Nano | 86.68% | 86.38% | 89.98% | 88.14% | **3.7 ms** |
+Mobile and web clients **must never connect directly** to Supabase Postgres or Storage. They call the FastAPI API over HTTPS. Supabase service keys must stay only in `backend/.env` and must never be placed in Flutter, JavaScript, or desktop source code.
 
-### Defect Classes Detected
+## Folder layout
 
-| Defect Type | Description | Severity |
-|:------------|:------------|:--------:|
-| 🔴 **Open** | Broken trace / open circuit | Critical |
-| 🔴 **Short** | Unintended copper bridge | Critical |
-| 🟡 **Mouse Bite** | Irregular edge nibbling | Moderate |
-| 🟡 **Spur** | Unwanted copper protrusion | Moderate |
-| 🟢 **Copper** | Excess copper residue | Minor |
-| 🟢 **Missing Hole** | Absent via / mounting hole | Minor |
+```text
+pcb_station/
+├── app.py                 Desktop app entry point
+├── core/                  Detection, local storage, sync, comparison logic
+├── ui/                    PySide6 desktop interface
+├── models/                Detection model files and their metrics
+├── data/                  Local SQLite inspection queue and saved images
+├── ml/                    Dataset preparation, training, and evaluation scripts
+└── backend/               FastAPI API service
+```
 
-> **Severity grading** is rule-based: `open` and `short` defects are classified as **Critical** (conf ≥ 0.6) or Moderate; all others are Moderate (conf ≥ 0.6) or Minor.
+## Run the desktop station
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python **3.10+**
-- Git LFS (for downloading model weights)
-
-### 1. Clone & Install
+Prerequisite: Python 3.10 or later. Run these commands from the repository root:
 
 ```powershell
-git clone https://github.com/usmanworld0/PCB-Fault-Detection-System.git
-cd PCB-Fault-Detection-System
+cd pcb_station
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+python app.py
 ```
 
-> **Optional** — To enable Faster R-CNN and RetinaNet models:
-> ```powershell
-> pip install torch torchvision
-> ```
+For Faster R-CNN and RetinaNet support as well:
 
-### 2. Pull Model Weights
+```powershell
+pip install torch torchvision
+```
 
-Model weights are tracked with **Git LFS**. If they weren't downloaded during clone:
+Model weights are stored with Git LFS. If they were not downloaded when cloning:
 
 ```powershell
 git lfs pull
 ```
 
-### 3. Launch the Desktop App
+The desktop app can run with images, folders, or a compatible USB camera. **Save result** writes an inspection locally. **Sync to server** sends pending inspections once backend access is configured. **Sync models** uploads each immediate model folder’s metrics. **Compare all models** runs every available non-demo detector against the current image.
+
+## Run the backend
+
+The backend requires a Supabase project before it can persist/sync data.
+
+1. Create a Supabase project.
+2. Create a **public** Storage bucket named `pcb-vision`.
+3. Copy the Postgres connection string, project URL, and service-role key from Supabase project settings.
+4. Run:
 
 ```powershell
-python app.py
-```
-
-The app opens the **PCB-Vision Inspection Station** — select a model from the dropdown, load an image or start the live camera feed, and inspect.
-
-> Without any installed model, the app falls back to a built-in demo detector for UI exploration.
-
----
-
-## ⚙️ Backend Setup
-
-The FastAPI backend provides cloud persistence, user management, and dashboard analytics.
-
-### 1. Configure Supabase
-
-1. Create a [Supabase](https://supabase.com) project
-2. Create a **public** Storage bucket named `pcb-vision`
-3. Copy the Postgres connection URI, project URL, and service-role key
-
-### 2. Install & Run
-
-```powershell
-cd backend
+cd pcb_station\backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
-# Fill DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_KEY, JWT_SECRET in .env
+```
+
+Edit `backend/.env` with real values:
+
+```env
+DATABASE_URL=postgresql://...
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-server-only-service-role-key
+SUPABASE_BUCKET=pcb-vision
+JWT_SECRET=use-a-long-random-secret
+JWT_EXPIRE_HOURS=24
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=replace-this-before-use
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+```
+
+Start the API:
+
+```powershell
 uvicorn app.main:app --reload
 ```
 
-On first startup, the backend automatically:
-- Creates all database tables
-- Seeds an admin account from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env`
+On the first start, the backend creates its tables and seeds one admin account from `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Detailed endpoint documentation and curl examples are in [backend/README.md](backend/README.md).
 
-### 3. Connect Desktop App to Backend
+## Connect the desktop app
+
+First log in through `POST /auth/login` to receive a JWT. Then, in the terminal used to launch the desktop app:
 
 ```powershell
 $env:PCB_API_URL = "http://localhost:8000"
-$env:PCB_API_TOKEN = "<JWT from /auth/login>"
+$env:PCB_API_TOKEN = "<JWT returned by /auth/login>"
+cd pcb_station
 python app.py
 ```
 
-### 4. Run Mobile Companion App (Flutter)
+For deployment, replace `http://localhost:8000` with the HTTPS API URL.
 
-```bash
-cd mobile
-flutter pub get
-flutter run
-```
+## Build future mobile or web clients
 
-📖 See [`backend/README.md`](backend/README.md) for API docs and [`mobile/README.md`](mobile/README.md) for mobile app setup.
+Mobile and web apps are **read-only consumers for now**. They should:
 
----
+1. Log in with `POST /auth/login` and retain the JWT in secure storage.
+2. Send `Authorization: Bearer <token>` on every API request after login.
+3. Use these routes:
+   - `GET /stats` — dashboard counts, defect breakdowns, 30-day trend
+   - `GET /inspections` — paginated inspection list with filters
+   - `GET /inspections/{id}` — inspection details, image URLs, and defects
+   - `GET /models` — model metrics and full metrics JSON
+4. Display `image_url` and `annotated_url` returned by the API; do not build Supabase Storage URLs yourself.
+5. Use a configurable API base URL. Local development uses `http://localhost:8000`; deployed clients use the API’s HTTPS URL.
 
-## 🧪 Training Pipeline
+When a browser frontend is deployed, add its origin to `CORS_ORIGINS` in the backend environment. Do not add client secrets to this repository.
 
-End-to-end scripts for dataset preparation, training, and evaluation are in the [`ml/`](ml/) directory.
+## Authentication and roles
 
-### Dataset Preparation
+The backend uses JWT bearer tokens. Login is public; every other API endpoint requires a valid token. Roles are `admin`, `engineer`, and `viewer`. Registration is admin-only. The current mobile/web reading endpoints can be used by every authenticated role.
 
-```bash
-# Convert DeepPCB dataset to YOLO format
-python ml/prepare_data.py
+## Model folders
 
-# Convert PKU-Market-PCB with tiling
-python ml/prepare_pku.py
+Each immediate `models/<name>/` folder represents one available model:
 
-# Merge multiple datasets
-python ml/merge_datasets.py
-```
+- YOLO: `model.onnx`, `classes.txt`, `metrics.json`
+- Faster R-CNN / RetinaNet: `model.pt`, `config.json`, `classes.txt`, `metrics.json`
 
-### Model Training
-
-```bash
-# Train YOLOv8 + export to ONNX
-python ml/train.py --model yolov8s.pt --name yolov8s --data pcb.yaml --epochs 50
-
-# Train Faster R-CNN or RetinaNet
-python ml/train_tv.py --arch fasterrcnn --data pcb_yolo/ --epochs 12
-```
-
-### Evaluation
-
-```bash
-# Benchmark all models side-by-side
-python ml/evaluate_all.py
-```
-
----
-
-## 🔧 Tech Stack
-
-| Layer | Technologies |
-|:------|:-------------|
-| **Desktop App** | PySide6 (Qt6), OpenCV, ONNX Runtime |
-| **Mobile App** | Flutter 3, Dart 3, Material 3 Dark, fl_chart, Provider |
-| **Detection Models** | YOLOv8 (Ultralytics), Faster R-CNN, RetinaNet (Torchvision) |
-| **Backend API** | FastAPI, SQLAlchemy, Pydantic, PyJWT |
-| **Database** | Supabase Postgres (cloud), SQLite (local offline) |
-| **Storage** | Supabase Storage (cloud image bucket) |
-| **ML Training** | Ultralytics, PyTorch, Torchvision |
-| **Datasets** | DeepPCB, PKU-Market-PCB |
-
-
+Training and evaluation utilities live in `ml/`. They are separate from normal desktop/backend startup.
