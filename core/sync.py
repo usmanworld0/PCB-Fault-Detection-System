@@ -16,12 +16,14 @@ def sync_pending():
     token = os.environ.get("PCB_API_TOKEN")
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     sent = failed = 0
+    station_id = os.environ.get("PCB_STATION_ID", "STATION-01")
     for row_id, ts, source, result_json, img_p, ann_p in store.pending():
         try:
             with open(img_p, "rb") as f, open(ann_p, "rb") as g:
                 r = requests.post(
                     f"{api}/inspections/ingest", headers=headers, timeout=10,
-                    data={"captured_at": ts, "source": source, "result": result_json},
+                    data={"captured_at": ts, "source": source, "result": result_json,
+                          "station_id": station_id, "local_id": str(row_id)},
                     files={"image": f, "annotated": g})
             if r.ok:
                 store.mark_synced(row_id)

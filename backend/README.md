@@ -75,5 +75,21 @@ curl http://localhost:8000/models -H "Authorization: Bearer <TOKEN>"
 # [{"name":"yolov8s","map50":0.876,"metrics_json":{"name":"yolov8s",...}}]
 
 curl http://localhost:8000/stats -H "Authorization: Bearer <TOKEN>"
-# {"total_inspections":1,"pass_count":0,"fail_count":1,"total_defects":1,"defects_by_class":{"short":1},"defects_by_severity":{"Critical":1},"trend_last_30_days":[{"date":"2026-09-22","inspections":1,"defects":1}]}
+# {"total_inspections":1,"pass_count":0,"fail_count":1,"yield_rate":0.0,"total_defects":1,"critical_defects":1,"pending_reviews":1,"active_alerts":1,"defects_by_class":{"short":1},"defects_by_severity":{"Critical":1},"trend_last_30_days":[{"date":"2026-09-22","inspections":1,"defects":1}]}
+
+# Review Workflow (Admin / Quality Engineer)
+curl -X POST http://localhost:8000/reviews -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" -d "{\"inspection_id\":\"<uuid>\",\"review_decision\":\"OVERRIDE_PASS\",\"justification\":\"Microscope verification: benign reflection\",\"notes\":\"Lead signoff\"}"
+
+# Report Generation
+curl -X POST http://localhost:8000/reports/generate -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" -d "{\"title\":\"Q3 Summary\",\"report_type\":\"Inspection Summary\",\"format\":\"CSV\"}"
+
+# Notifications
+curl http://localhost:8000/notifications -H "Authorization: Bearer <TOKEN>"
+
+# Audit Logs (Admin only)
+curl http://localhost:8000/audit-logs -H "Authorization: Bearer <TOKEN>"
+
+# Operational Settings (Admin only)
+curl http://localhost:8000/settings -H "Authorization: Bearer <TOKEN>"
 ```
+

@@ -1,6 +1,0 @@
-open
-short
-mousebite
-spur
-copper
-missing_hole
