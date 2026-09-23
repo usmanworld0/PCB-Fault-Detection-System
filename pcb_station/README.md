@@ -41,6 +41,23 @@ pcb_station/
 
 Prerequisite: Python 3.10 or later. Run these commands from the repository root:
 
+### 1. Clone the repository with Git LFS — do not use “Download ZIP”
+
+The trained `.onnx` and `.pt` model weights are large files stored with **Git LFS**. A normal GitHub ZIP download contains only small LFS pointer files, not the actual weights, so the application will open but cannot load its detection models.
+
+Install [Git LFS](https://git-lfs.com/) once, then clone the repository and retrieve the weights:
+
+```powershell
+git lfs install
+git clone https://github.com/usmanworld0/PCB-Fault-Detection-System.git
+cd PCB-Fault-Detection-System
+git lfs pull
+```
+
+After `git lfs pull` completes, the real model files are present under `pcb_station/models/`. If a file such as `models/yolov8s/model.onnx` begins with `version https://git-lfs.github.com/spec/v1`, it is only an LFS pointer and `git lfs pull` has not completed successfully.
+
+### 2. Create the Python environment and start the app
+
 ```powershell
 cd pcb_station
 python -m venv .venv
@@ -53,12 +70,6 @@ For Faster R-CNN and RetinaNet support as well:
 
 ```powershell
 pip install torch torchvision
-```
-
-Model weights are stored with Git LFS. If they were not downloaded when cloning:
-
-```powershell
-git lfs pull
 ```
 
 The desktop app can run with images, folders, or a compatible USB camera. **Save result** writes an inspection locally. **Sync to server** sends pending inspections once backend access is configured. **Sync models** uploads each immediate model folder’s metrics. **Compare all models** runs every available non-demo detector against the current image.
