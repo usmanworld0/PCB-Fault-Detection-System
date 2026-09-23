@@ -10,6 +10,7 @@ import {
   Clock,
   Bell,
   RefreshCw,
+  Activity,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -64,49 +65,61 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Top Header / Refresh Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border-line">
+      <div className="space-y-6">
+        {/* Operations Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
-            <h2 className="text-[1.5rem]/7 lg:text-[1.75rem]/8 font-medium tracking-[-0.72px] text-foreground-primary">
-              Industrial Inspection Dashboard
-              <span className="block text-xs lg:text-sm text-foreground-tertiary mt-1 font-normal tracking-normal">
-                Real-time quality metrics, AI anomaly detection, and station analytics
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+                Quality Assurance Control Center
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                AOI LINE-01 ACTIVE
               </span>
-            </h2>
+            </div>
+            <p className="text-xs text-surface-500 mt-1">
+              Real-time automated optical inspection (AOI) metrics, line yield analysis, and defect localization telemetry.
+            </p>
           </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-xs font-medium bg-background-secondary hover:bg-background-tertiary text-foreground-primary ring-1 ring-inset ring-border-secondary transition-colors duration-150 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span>Refresh Metrics</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${refreshing ? "animate-spin" : ""}`} />
+              <span>{refreshing ? "Synchronizing..." : "Refresh Telemetry"}</span>
+            </button>
+          </div>
         </div>
 
         {error ? (
           <ErrorState message={error} onRetry={loadDashboardData} />
         ) : loading || !stats ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-[6px]" />
+                <Skeleton key={i} className="h-24 w-full rounded-lg" />
               ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-72 lg:col-span-2 rounded-[6px]" />
-              <Skeleton className="h-72 rounded-[6px]" />
+              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
+              <Skeleton className="h-80 rounded-lg" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Skeleton className="h-72 rounded-[6px]" />
-              <Skeleton className="h-72 rounded-[6px]" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
+              <Skeleton className="h-80 rounded-lg" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
+              <Skeleton className="h-80 rounded-lg" />
             </div>
           </div>
         ) : (
           <>
             {/* Top KPI Cards (7 Metrics) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
               <StatCard
                 label="Total Inspections"
                 value={stats.total_inspections}
@@ -115,50 +128,50 @@ export default function DashboardPage() {
                 variant="brand"
               />
               <StatCard
-                label="Pass Rate"
+                label="Line Yield Rate"
                 value={`${stats.yield_rate.toFixed(1)}%`}
-                subtext={`${stats.pass_count} passed`}
+                subtext={`${stats.pass_count} passed boards`}
                 icon={Percent}
                 variant="pass"
               />
               <StatCard
-                label="Failed Boards"
+                label="Defective Boards"
                 value={stats.fail_count}
-                subtext="Detected defects"
+                subtext="Failed QA threshold"
                 icon={XCircle}
                 variant="fail"
               />
               <StatCard
                 label="Total Defects"
                 value={stats.total_defects}
-                subtext="Localized regions"
+                subtext="Localized anomalies"
                 icon={AlertTriangle}
                 variant="default"
               />
               <StatCard
-                label="Critical Defects"
+                label="Critical Flaws"
                 value={stats.critical_defects}
                 subtext="Open / short circuit"
                 icon={AlertTriangle}
                 variant="fail"
               />
               <StatCard
-                label="Pending Reviews"
+                label="Pending Review"
                 value={stats.pending_reviews}
-                subtext="Requires signoff"
+                subtext="Awaiting signoff"
                 icon={Clock}
                 variant="review"
               />
               <StatCard
                 label="Active Alerts"
                 value={stats.active_alerts}
-                subtext="Unread events"
+                subtext="System notifications"
                 icon={Bell}
                 variant={stats.active_alerts > 0 ? "fail" : "default"}
               />
             </div>
 
-            {/* Middle Charts: 30-Day Trend + Pass/Fail Donut */}
+            {/* Middle Charts: 30-Day Production Trend + Yield Donut */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <TrendChart data={stats.trend_last_30_days} />

@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 
 export const metadata: Metadata = {
-  title: "PCB-Vision — Intelligent Quality Control Platform",
-  description: "Automated PCB Defect Detection, Quality Control & Monitoring Platform",
+  title: "PCB-Vision — Quality Inspection & Manufacturing QA",
+  description: "Enterprise Automated PCB Fault Detection, Manufacturing QA & Defect Analytics Platform",
 };
 
 export default function RootLayout({
@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-background-primary text-foreground-primary antialiased min-h-screen font-sans">
+    <html lang="en">
+      <body className="bg-surface-50 text-surface-900 antialiased min-h-screen font-sans selection:bg-industrial-100 selection:text-industrial-900">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

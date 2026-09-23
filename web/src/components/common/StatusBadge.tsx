@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { Check, X, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
@@ -15,12 +15,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono font-medium rounded-[2px] bg-brand-8 text-brand-base ring-1 ring-inset ring-brand-20",
-          size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs tracking-wide",
+          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-emerald-300 bg-emerald-50 text-emerald-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <CheckCircle2 className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block" />
         PASS
       </span>
     );
@@ -30,12 +30,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono font-medium rounded-[2px] bg-error/10 text-error ring-1 ring-inset ring-error/20",
-          size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs tracking-wide",
+          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-rose-300 bg-rose-50 text-rose-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <XCircle className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block" />
         FAIL
       </span>
     );
@@ -45,12 +45,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono font-medium rounded-[2px] bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20",
-          size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs tracking-wide",
+          "inline-flex items-center gap-1 font-mono font-medium rounded border border-amber-300 bg-amber-50 text-amber-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <Clock className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <Clock className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         {norm === "PENDING" ? "REVIEW REQ" : "UNREVIEWED"}
       </span>
     );
@@ -60,12 +60,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono font-medium rounded-[2px] bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20",
-          size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs tracking-wide",
+          "inline-flex items-center gap-1 font-mono font-medium rounded border border-sky-300 bg-sky-50 text-sky-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <CheckCircle2 className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <ShieldCheck className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         CONFIRMED
       </span>
     );
@@ -75,12 +75,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono font-medium rounded-[2px] bg-purple-500/10 text-purple-400 ring-1 ring-inset ring-purple-500/20",
-          size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs tracking-wide",
+          "inline-flex items-center gap-1 font-mono font-medium rounded border border-indigo-300 bg-indigo-50 text-indigo-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <AlertTriangle className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />
+        <AlertTriangle className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         OVERRIDDEN
       </span>
     );
@@ -89,8 +89,8 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono font-medium rounded-[2px] bg-background-tertiary text-foreground-tertiary ring-1 ring-inset ring-border-secondary",
-        size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs",
+        "inline-flex items-center gap-1 font-mono font-medium rounded border border-surface-200 bg-surface-100 text-surface-600",
+        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
         className
       )}
     >

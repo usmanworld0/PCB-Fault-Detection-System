@@ -5,17 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  ClipboardList,
+  ScanLine,
   CheckSquare,
   BarChart3,
   Cpu,
-  FileText,
+  FileSpreadsheet,
   Bell,
   Users,
-  History,
+  ScrollText,
   Settings,
   LogOut,
   Layers,
+  Activity,
+  HardDrive,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { RoleBadge } from "@/components/common/RoleBadge";
@@ -29,123 +31,130 @@ export function Sidebar() {
   const isEngineer = role === "engineer";
   const canReview = isAdmin || isEngineer;
 
-  const mainNavItems = [
-    { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Inspections", href: "/inspections", icon: ClipboardList },
-    ...(canReview ? [{ label: "Review Queue", href: "/reviews", icon: CheckSquare }] : []),
-    { label: "Analytics", href: "/analytics", icon: BarChart3 },
-    { label: "Models", href: "/models", icon: Cpu },
-    { label: "Reports", href: "/reports", icon: FileText },
-    { label: "Notifications", href: "/notifications", icon: Bell },
-  ];
-
-  const adminNavItems = [
-    { label: "Users", href: "/users", icon: Users },
-    { label: "Audit Log", href: "/audit-logs", icon: History },
-    { label: "Settings", href: "/settings", icon: Settings },
+  const sections = [
+    {
+      title: "OPERATIONS",
+      items: [
+        { label: "QA Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { label: "PCB Inspections", href: "/inspections", icon: ScanLine },
+        ...(canReview ? [{ label: "Review Queue", href: "/reviews", icon: CheckSquare }] : []),
+      ],
+    },
+    {
+      title: "ANALYTICS & METRICS",
+      items: [
+        { label: "Defect Analysis", href: "/analytics", icon: BarChart3 },
+        { label: "Model Registry", href: "/models", icon: Cpu },
+        { label: "Quality Reports", href: "/reports", icon: FileSpreadsheet },
+        { label: "Station Alerts", href: "/notifications", icon: Bell },
+      ],
+    },
+    ...(isAdmin
+      ? [
+          {
+            title: "SYSTEM ADMINISTRATION",
+            items: [
+              { label: "Operator Directory", href: "/users", icon: Users },
+              { label: "Audit Trail", href: "/audit-logs", icon: ScrollText },
+              { label: "Station Config", href: "/settings", icon: Settings },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
-    <aside className="w-64 flex-shrink-0 flex flex-col border-r border-border-line bg-background-secondary text-foreground-secondary">
-      {/* Brand Header */}
-      <div className="h-16 flex items-center gap-3 px-5 border-b border-border-line">
-        <div className="w-8 h-8 rounded-[6px] bg-brand-10 text-brand-base ring-1 ring-inset ring-brand-20 flex items-center justify-center">
-          <Layers className="w-4 h-4" />
-        </div>
-        <div>
-          <div className="font-semibold text-foreground-primary text-sm tracking-tight flex items-center gap-1.5">
-            PCB-Vision
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-brand-10 text-brand-base ring-1 ring-inset ring-brand-20">
-              QC
-            </span>
+    <aside className="w-60 flex-shrink-0 flex flex-col border-r border-surface-200 bg-surface-0 text-surface-700 select-none">
+      {/* Brand & Station Header */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-surface-200 bg-surface-0">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-industrial-900 text-white flex items-center justify-center shadow-xs">
+            <Layers className="w-4 h-4 text-industrial-300" />
           </div>
-          <div className="text-[11px] text-foreground-tertiary">Inspection Platform</div>
-        </div>
+          <div>
+            <div className="font-bold text-xs tracking-tight text-surface-900 flex items-center gap-1.5">
+              <span>PCB-VISION</span>
+              <span className="text-2xs font-mono font-medium px-1 py-0.2 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                QA-v1
+              </span>
+            </div>
+            <div className="text-2xs text-surface-400 font-mono">INSPECTION STATION</div>
+          </div>
+        </Link>
       </div>
 
-      {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        <div>
-          <div className="px-3 mb-2 text-[10px] font-mono font-medium uppercase tracking-wider text-foreground-muted">
-            Operations
-          </div>
-          <nav className="space-y-1">
-            {mainNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-[4px] text-xs font-medium transition-colors duration-150",
-                    isActive
-                      ? "bg-brand-8 text-brand-base ring-1 ring-inset ring-brand-20 font-medium"
-                      : "text-foreground-secondary hover:text-foreground-primary hover:bg-background-tertiary/50"
-                  )}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {isAdmin && (
-          <div>
-            <div className="px-3 mb-2 text-[10px] font-mono font-medium uppercase tracking-wider text-foreground-muted">
-              Administration
+      {/* Navigation Sections */}
+      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <div className="px-2 mb-1.5 text-2xs font-semibold uppercase tracking-wider text-surface-400 font-mono">
+              {section.title}
             </div>
-            <nav className="space-y-1">
-              {adminNavItems.map((item) => {
+            <nav className="space-y-0.5">
+              {section.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href || pathname.startsWith(item.href);
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-[4px] text-xs font-medium transition-colors duration-150",
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors",
                       isActive
-                        ? "bg-brand-8 text-brand-base ring-1 ring-inset ring-brand-20 font-medium"
-                        : "text-foreground-secondary hover:text-foreground-primary hover:bg-background-tertiary/50"
+                        ? "bg-industrial-50 text-industrial-900 font-semibold border-l-2 border-industrial-600 rounded-l-none pl-2"
+                        : "text-surface-600 hover:text-surface-900 hover:bg-surface-100"
                     )}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span>{item.label}</span>
+                    <Icon
+                      className={cn(
+                        "w-4 h-4 flex-shrink-0",
+                        isActive ? "text-industrial-700" : "text-surface-400"
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
           </div>
-        )}
+        ))}
       </div>
 
-      {/* User Info & Logout */}
-      <div className="p-3 border-t border-border-line">
-        <div className="px-3 py-2.5 mb-2 rounded-[6px] bg-background-primary ring-1 ring-inset ring-border-secondary shadow-drop-sm flex items-center justify-between">
-          <div className="truncate pr-2">
-            <div className="text-xs font-medium text-foreground-primary truncate font-mono">{user?.email}</div>
-            <div className="mt-1">
-              <RoleBadge role={role || "viewer"} />
+      {/* Hardware Station Telemetry */}
+      <div className="px-3 py-2 border-t border-surface-200 bg-surface-50 text-2xs font-mono text-surface-500 flex items-center justify-between">
+        <span className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+          <span>STATION-01</span>
+        </span>
+        <span className="text-surface-400">SUPABASE LIVE</span>
+      </div>
+
+      {/* User Information & Session */}
+      <div className="p-2.5 border-t border-surface-200 bg-surface-0">
+        <div className="flex items-center justify-between p-1.5 rounded-md hover:bg-surface-50 transition-colors">
+          <Link href="/profile" className="flex items-center gap-2 min-w-0 pr-1">
+            <div className="w-7 h-7 rounded-md bg-surface-200 text-surface-700 font-mono text-xs font-semibold flex items-center justify-center flex-shrink-0">
+              {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
-          </div>
-          <Link
-            href="/profile"
-            className="text-xs text-foreground-tertiary hover:text-brand-base transition-colors duration-150 font-medium"
-            title="User Profile"
-          >
-            Edit
+            <div className="truncate">
+              <div className="text-xs font-medium text-surface-900 truncate font-mono">
+                {user?.email || "Operator"}
+              </div>
+              <div className="text-2xs">
+                <RoleBadge role={role || "viewer"} size="sm" />
+              </div>
+            </div>
           </Link>
+          <button
+            onClick={logout}
+            className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          onClick={logout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-[4px] text-xs font-medium text-foreground-secondary hover:text-error hover:bg-error/10 hover:ring-1 hover:ring-inset hover:ring-error/20 transition-all duration-150"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>Sign Out</span>
-        </button>
       </div>
     </aside>
   );

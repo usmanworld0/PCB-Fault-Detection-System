@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Clock, Filter, Eye, RefreshCw, AlertCircle } from "lucide-react";
+import { CheckSquare, Clock, Filter, Eye, RefreshCw, AlertCircle, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { TableSkeleton } from "@/components/common/LoadingSkeleton";
@@ -41,125 +41,142 @@ export default function ReviewQueuePage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Quality Review Queue</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Human-in-the-loop manual verification and disposition signoff for flagged board inspections
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+                QA Verification & Review Queue
+              </h1>
+              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                DISPOSITION QUEUE
+              </span>
+            </div>
+            <p className="text-xs text-surface-500 mt-1">
+              Manual verification workstation and engineering signoff for flagged board inspections.
             </p>
           </div>
           <button
             onClick={fetchQueue}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-slate-200 border border-slate-700 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
             <span>Refresh Queue</span>
           </button>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3">
+        <div className="flex items-center gap-1 border-b border-surface-200 pb-3">
           <button
             onClick={() => setFilterStatus("PENDING")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
               filterStatus === "PENDING"
-                ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                : "text-slate-400 hover:text-white"
+                ? "bg-amber-50 text-amber-800 border border-amber-300 shadow-xs"
+                : "text-surface-600 hover:text-surface-900 hover:bg-surface-100"
             }`}
           >
-            Pending Review ({filterStatus === "PENDING" ? total : "Queue"})
+            Pending Verification ({filterStatus === "PENDING" ? total : "Queue"})
           </button>
           <button
             onClick={() => setFilterStatus("COMPLETED")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
               filterStatus === "COMPLETED"
-                ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                : "text-slate-400 hover:text-white"
+                ? "bg-brand-50 text-brand-800 border border-brand-300 shadow-xs"
+                : "text-surface-600 hover:text-surface-900 hover:bg-surface-100"
             }`}
           >
             Completed Reviews
           </button>
           <button
             onClick={() => setFilterStatus("ALL")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
               filterStatus === "ALL"
-                ? "bg-slate-800 text-white border border-slate-700"
-                : "text-slate-400 hover:text-white"
+                ? "bg-surface-100 text-surface-900 border border-surface-300 shadow-xs"
+                : "text-surface-600 hover:text-surface-900 hover:bg-surface-100"
             }`}
           >
-            All Inspections
+            All Inspection Runs
           </button>
         </div>
 
-        {/* Review Table / Cards */}
-        <div className="rounded-xl border border-slate-800 bg-[#0E1422] p-5 shadow-sm">
+        {/* Review Table */}
+        <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
           {error ? (
-            <ErrorState message={error} onRetry={fetchQueue} />
+            <div className="p-6">
+              <ErrorState message={error} onRetry={fetchQueue} />
+            </div>
           ) : loading ? (
-            <TableSkeleton rows={6} cols={6} />
+            <div className="p-4">
+              <TableSkeleton rows={6} cols={6} />
+            </div>
           ) : items.length === 0 ? (
-            <EmptyState
-              icon={CheckSquare}
-              title="No inspections require review."
-              description="All synchronized inspection records have been processed and confirmed by automated and engineering workflows."
-            />
+            <div className="p-8">
+              <EmptyState
+                icon={CheckSquare}
+                title="No inspections require review."
+                description="All synchronized inspection records have been processed and confirmed by automated and engineering workflows."
+              />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
-                    <th className="py-3 px-3">Inspection ID</th>
-                    <th className="py-3 px-3">Date / Time</th>
-                    <th className="py-3 px-3">Station</th>
-                    <th className="py-3 px-3">Model</th>
-                    <th className="py-3 px-3">AI Disposition</th>
-                    <th className="py-3 px-3">Defects</th>
-                    <th className="py-3 px-3">Review Status</th>
-                    <th className="py-3 px-3 text-right">Review Action</th>
+                  <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
+                    <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
+                    <th className="py-2.5 px-3 font-semibold">Captured At</th>
+                    <th className="py-2.5 px-3 font-semibold">Station</th>
+                    <th className="py-2.5 px-3 font-semibold">AI Model</th>
+                    <th className="py-2.5 px-3 font-semibold">Model Finding</th>
+                    <th className="py-2.5 px-3 font-semibold">Defect Count</th>
+                    <th className="py-2.5 px-3 font-semibold">Review State</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y divide-surface-100">
                   {items.map((i) => (
                     <tr
                       key={i.id}
                       onClick={() => router.push(`/reviews/${i.id}`)}
-                      className="hover:bg-slate-800/40 cursor-pointer transition"
+                      className="hover:bg-surface-50/80 cursor-pointer transition-colors"
                     >
-                      <td className="py-3 px-3 font-mono text-[11px] text-slate-300">
-                        {i.id.slice(0, 8)}...
+                      <td className="py-2.5 px-3 font-mono text-[11px] font-medium text-surface-900">
+                        <span className="text-brand-600 hover:underline">{i.id.slice(0, 8)}...</span>
                       </td>
-                      <td className="py-3 px-3 text-slate-300">
-                        <div>{formatDate(i.captured_at)}</div>
-                        <div className="text-[10px] text-slate-400">{formatTimeAgo(i.captured_at)}</div>
+                      <td className="py-2.5 px-3 text-surface-700">
+                        <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
+                        <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(i.captured_at)}</div>
                       </td>
-                      <td className="py-3 px-3 text-slate-400">{i.station_id || "STATION-01"}</td>
-                      <td className="py-3 px-3 font-mono text-slate-300">{i.model}</td>
-                      <td className="py-3 px-3">
+                      <td className="py-2.5 px-3">
+                        <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                          {i.station_id || "STATION-01"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">{i.model}</td>
+                      <td className="py-2.5 px-3">
                         <StatusBadge status={i.status} size="sm" />
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-2.5 px-3 font-mono text-[11px]">
                         <span
                           className={`font-semibold ${
-                            i.defect_count > 0 ? "text-rose-400" : "text-emerald-400"
+                            i.defect_count > 0 ? "text-red-600" : "text-emerald-600"
                           }`}
                         >
                           {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
                         </span>
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <td className="py-2.5 px-3">
+                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 uppercase">
                           {i.review_status}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-2.5 px-3 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/reviews/${i.id}`);
                           }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
                         >
                           <CheckSquare className="w-3.5 h-3.5" />
                           <span>Review</span>

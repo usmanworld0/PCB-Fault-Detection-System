@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
-import { hasPermission } from "@/lib/constants/permissions";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -42,10 +41,12 @@ export function AppShell({ children }: AppShellProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background-primary">
+      <div className="flex h-screen w-full items-center justify-center bg-surface-50 text-surface-700">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 border-2 border-brand-base border-t-transparent rounded-full animate-spin" />
-          <div className="text-xs text-foreground-tertiary font-mono tracking-wider uppercase">Loading PCB-Vision...</div>
+          <div className="w-8 h-8 border-2 border-industrial-600 border-t-transparent rounded-full animate-spin" />
+          <div className="text-xs text-surface-500 font-mono tracking-wider uppercase">
+            Initializing PCB-Vision Station...
+          </div>
         </div>
       </div>
     );
@@ -56,11 +57,13 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background-primary text-foreground-primary">
+    <div className="flex h-screen overflow-hidden bg-surface-50 text-surface-900 font-sans">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-background-primary">{children}</main>
+        <main className="flex-1 overflow-y-auto p-5 lg:p-6 bg-surface-50">
+          <div className="max-w-7xl mx-auto space-y-5">{children}</div>
+        </main>
       </div>
     </div>
   );

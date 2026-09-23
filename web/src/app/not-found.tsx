@@ -3,17 +3,17 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-[#090D16] p-6 text-center">
-      <div className="p-4 mb-4 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-        <AlertCircle className="w-10 h-10" />
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-surface-50 p-6 text-center">
+      <div className="p-3.5 mb-4 rounded-full bg-surface-100 text-surface-600 border border-surface-200">
+        <AlertCircle className="w-8 h-8" />
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">404 — Page Not Found</h2>
-      <p className="text-sm text-slate-400 max-w-md mb-6">
-        The requested inspection page, report, or resource does not exist or has been moved.
+      <h2 className="text-xl font-bold text-surface-900 mb-1.5 tracking-tight">404 — Resource Not Found</h2>
+      <p className="text-xs text-surface-500 max-w-sm mb-6 leading-relaxed">
+        The requested inspection page, report, or resource does not exist or has been relocated.
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Return to Dashboard

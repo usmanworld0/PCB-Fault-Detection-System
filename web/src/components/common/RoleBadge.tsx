@@ -2,26 +2,28 @@ import React from "react";
 import { UserRole } from "@/types/models";
 import { ROLE_LABELS } from "@/lib/constants/permissions";
 import { cn } from "@/lib/utils";
-import { ShieldAlert, ShieldCheck, Eye } from "lucide-react";
+import { Shield, Wrench, Eye } from "lucide-react";
 
 interface RoleBadgeProps {
   role: UserRole | string;
   className?: string;
+  size?: "sm" | "md";
 }
 
-export function RoleBadge({ role, className }: RoleBadgeProps) {
+export function RoleBadge({ role, className, size = "md" }: RoleBadgeProps) {
   const norm = role?.toLowerCase() as UserRole;
-  const label = ROLE_LABELS[norm] || role.toUpperCase();
+  const label = ROLE_LABELS[norm] || (role ? role.toUpperCase() : "VIEWER");
 
   if (norm === "admin") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-brand-10 text-brand-base ring-1 ring-inset ring-brand-20",
+          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-industrial-300 bg-industrial-50 text-industrial-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <ShieldAlert className="w-3 h-3" />
+        <Shield className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         {label}
       </span>
     );
@@ -31,11 +33,12 @@ export function RoleBadge({ role, className }: RoleBadgeProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20",
+          "inline-flex items-center gap-1 font-mono font-medium rounded border border-indigo-300 bg-indigo-50 text-indigo-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <ShieldCheck className="w-3 h-3" />
+        <Wrench className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         {label}
       </span>
     );
@@ -44,11 +47,12 @@ export function RoleBadge({ role, className }: RoleBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-background-tertiary text-foreground-secondary ring-1 ring-inset ring-border-secondary",
+        "inline-flex items-center gap-1 font-mono font-medium rounded border border-surface-200 bg-surface-100 text-surface-700",
+        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
         className
       )}
     >
-      <Eye className="w-3 h-3" />
+      <Eye className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
       {label}
     </span>
   );

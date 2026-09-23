@@ -10,12 +10,15 @@ import {
   Download,
   Eye,
   RefreshCw,
-  HardDrive,
+  SlidersHorizontal,
+  Filter,
+  FileSpreadsheet,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { TableSkeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
+import { EmptyState } from "@/components/common/EmptyState";
 import { getInspections } from "@/lib/api/inspections";
 import { InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
@@ -108,63 +111,63 @@ export default function InspectionsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border-line">
+      <div className="space-y-5">
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
-            <h2 className="text-[1.5rem]/7 lg:text-[1.75rem]/8 font-medium tracking-[-0.72px] text-foreground-primary">
-              Inspection History
-              <span className="block text-xs lg:text-sm text-foreground-tertiary mt-1 font-normal tracking-normal">
-                Search and filter synchronized automated inspection records from all stations
-              </span>
-            </h2>
+            <h1 className="text-xl font-bold tracking-tight text-surface-900">
+              Inspection History Archive
+            </h1>
+            <p className="text-xs text-surface-500 mt-1">
+              Synchronized automated optical inspection records from factory lines and stations.
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={exportCurrentCsv}
               disabled={items.length === 0}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-xs font-medium bg-background-secondary hover:bg-background-tertiary text-foreground-primary ring-1 ring-inset ring-border-secondary transition-colors duration-150 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-surface-500" />
               <span>Export CSV</span>
             </button>
             <button
               onClick={fetchInspections}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-[4px] text-xs font-medium bg-background-secondary hover:bg-background-tertiary text-foreground-primary ring-1 ring-inset ring-border-secondary transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
             </button>
           </div>
         </div>
 
-        {/* Filter Bar */}
-        <div className="rounded-[6px] ring-1 ring-inset ring-border-secondary bg-background-secondary p-5 shadow-drop-sm space-y-4">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3">
-            {/* Search Input */}
+        {/* Filter Toolbar */}
+        <div className="bg-white border border-surface-200 rounded-lg p-4 shadow-sm space-y-3">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-2.5">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-foreground-muted" />
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-surface-400" />
               <input
                 type="text"
-                placeholder="Search by source image name, station, or model..."
+                placeholder="Search by source image name, station identifier, or model..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-background-primary ring-1 ring-inset ring-border-secondary rounded-[4px] text-xs text-foreground-primary placeholder:text-foreground-muted focus:outline-none focus:ring-2 focus:ring-brand-base font-mono transition-shadow duration-150"
+                className="w-full pl-9 pr-3 py-2 bg-surface-50 border border-surface-200 rounded text-xs text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white font-mono"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-brand-base hover:bg-brand-vivid text-base-black rounded-[4px] text-xs font-semibold shadow-button-sm transition-colors duration-150"
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-semibold shadow-xs transition-colors"
             >
               Search
             </button>
           </form>
 
-          {/* Dropdown Filters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border-line">
+          {/* Secondary Filter Dropdowns */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-surface-100">
             <div>
-              <label className="block text-[10px] font-mono font-medium text-foreground-tertiary uppercase tracking-wider mb-1">
-                Status
+              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+                Disposition
               </label>
               <select
                 value={status}
@@ -172,7 +175,7 @@ export default function InspectionsPage() {
                   setStatus(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-background-primary ring-1 ring-inset ring-border-secondary rounded-[4px] text-xs text-foreground-primary focus:outline-none focus:ring-2 focus:ring-brand-base font-mono"
+                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
               >
                 <option value="">All Dispositions</option>
                 <option value="PASS">PASS</option>
@@ -181,8 +184,8 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-medium text-foreground-tertiary uppercase tracking-wider mb-1">
-                Defect Class
+              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+                Defect Category
               </label>
               <select
                 value={defectClass}
@@ -190,9 +193,9 @@ export default function InspectionsPage() {
                   setDefectClass(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-background-primary ring-1 ring-inset ring-border-secondary rounded-[4px] text-xs text-foreground-primary focus:outline-none focus:ring-2 focus:ring-brand-base font-mono"
+                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
               >
-                <option value="">All Defect Classes</option>
+                <option value="">All Categories</option>
                 {Object.entries(DEFECT_LABELS).map(([k, label]) => (
                   <option key={k} value={k}>
                     {label}
@@ -202,7 +205,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-medium text-foreground-tertiary uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
                 Model Architecture
               </label>
               <select
@@ -211,7 +214,7 @@ export default function InspectionsPage() {
                   setModel(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-background-primary ring-1 ring-inset ring-border-secondary rounded-[4px] text-xs text-foreground-primary focus:outline-none focus:ring-2 focus:ring-brand-base font-mono"
+                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
               >
                 <option value="">All Models</option>
                 <option value="yolov8s">YOLOv8s</option>
@@ -224,7 +227,7 @@ export default function InspectionsPage() {
             <div className="flex items-end">
               <button
                 onClick={handleResetFilters}
-                className="w-full py-1.5 px-3 rounded-[4px] text-xs font-medium text-foreground-secondary hover:text-foreground-primary bg-background-tertiary hover:bg-background-tertiary-invert hover:text-foreground-invert ring-1 ring-inset ring-border-secondary transition-colors duration-150"
+                className="w-full py-1.5 px-3 rounded text-xs font-semibold text-surface-600 hover:text-surface-900 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
               >
                 Reset Filters
               </button>
@@ -232,79 +235,88 @@ export default function InspectionsPage() {
           </div>
         </div>
 
-        {/* Results Table */}
-        <div className="rounded-[6px] ring-1 ring-inset ring-border-secondary bg-background-secondary p-5 shadow-drop-sm">
+        {/* Data Table */}
+        <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
           {error ? (
-            <ErrorState message={error} onRetry={fetchInspections} />
+            <div className="p-6">
+              <ErrorState message={error} onRetry={fetchInspections} />
+            </div>
           ) : loading ? (
-            <TableSkeleton rows={8} cols={7} />
+            <div className="p-4">
+              <TableSkeleton rows={8} cols={7} />
+            </div>
           ) : items.length === 0 ? (
-            <div className="py-16 text-center rounded-[4px] ring-1 ring-inset ring-border-secondary bg-background-primary/40">
-              <HardDrive className="w-10 h-10 text-foreground-muted mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-foreground-primary">No inspection records found.</h3>
-              <p className="text-xs text-foreground-tertiary mt-1 max-w-md mx-auto leading-relaxed">
-                Saved inspection results from the PCB inspection station will appear here.
-              </p>
+            <div className="p-8">
+              <EmptyState
+                title="No inspection records found"
+                description="No inspections matched your filter criteria. Try adjusting the search term or resetting the filters."
+              />
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="border-b border-border-line text-[10px] font-mono uppercase tracking-wider text-foreground-tertiary">
-                      <th className="py-3 px-3">Inspection ID</th>
-                      <th className="py-3 px-3">Captured At</th>
-                      <th className="py-3 px-3">Station</th>
-                      <th className="py-3 px-3">Model</th>
-                      <th className="py-3 px-3">Disposition</th>
-                      <th className="py-3 px-3">Defects</th>
-                      <th className="py-3 px-3">Review Status</th>
-                      <th className="py-3 px-3 text-right">Action</th>
+                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
+                      <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
+                      <th className="py-2.5 px-3 font-semibold">Captured At</th>
+                      <th className="py-2.5 px-3 font-semibold">Station</th>
+                      <th className="py-2.5 px-3 font-semibold">AI Model</th>
+                      <th className="py-2.5 px-3 font-semibold">Disposition</th>
+                      <th className="py-2.5 px-3 font-semibold">Defects</th>
+                      <th className="py-2.5 px-3 font-semibold">Review Status</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border-line">
+                  <tbody className="divide-y divide-surface-100">
                     {items.map((i) => (
                       <tr
                         key={i.id}
                         onClick={() => router.push(`/inspections/${i.id}`)}
-                        className="hover:bg-background-tertiary/40 cursor-pointer transition-colors duration-150"
+                        className="hover:bg-surface-50/80 cursor-pointer transition-colors"
                       >
-                        <td className="py-3 px-3 font-mono text-[11px] text-foreground-secondary">
-                          {i.id.slice(0, 8)}...
+                        <td className="py-2.5 px-3 font-mono text-[11px] font-medium text-surface-900">
+                          <span className="text-brand-600 hover:underline">{i.id.slice(0, 8)}</span>
                         </td>
-                        <td className="py-3 px-3 text-foreground-secondary">
-                          <div>{formatDate(i.captured_at)}</div>
-                          <div className="text-[10px] text-foreground-tertiary font-mono">{formatTimeAgo(i.captured_at)}</div>
+                        <td className="py-2.5 px-3 text-surface-700">
+                          <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
+                          <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(i.captured_at)}</div>
                         </td>
-                        <td className="py-3 px-3 text-foreground-tertiary font-mono">{i.station_id || "STATION-01"}</td>
-                        <td className="py-3 px-3 font-mono text-foreground-secondary">{i.model}</td>
-                        <td className="py-3 px-3">
-                          <StatusBadge status={i.final_status || i.status} size="sm" />
-                        </td>
-                        <td className="py-3 px-3 font-mono">
-                          <span
-                            className={`font-semibold ${
-                              i.defect_count > 0 ? "text-error" : "text-brand-base"
-                            }`}
-                          >
-                            {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
+                        <td className="py-2.5 px-3">
+                          <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                            {i.station_id || "STATION-01"}
                           </span>
                         </td>
-                        <td className="py-3 px-3">
-                          <span className="text-[10px] text-foreground-tertiary font-mono">
+                        <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">
+                          {i.model}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <StatusBadge status={i.final_status || i.status} size="sm" />
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                          {i.defect_count > 0 ? (
+                            <span className="font-semibold text-red-600">
+                              {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
+                            </span>
+                          ) : (
+                            <span className="font-medium text-emerald-600">0 defects</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-mono text-[10px] uppercase text-surface-500">
                             {i.review_status}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/inspections/${i.id}`);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[2px] bg-background-tertiary hover:bg-background-tertiary-invert hover:text-foreground-invert ring-1 ring-inset ring-border-secondary text-foreground-primary text-xs transition-colors duration-150"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-surface-600 hover:text-surface-900 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Details</span>
+                            <Eye className="w-3.5 h-3.5 text-surface-500" />
+                            <span>Workstation</span>
                           </button>
                         </td>
                       </tr>
@@ -314,25 +326,27 @@ export default function InspectionsPage() {
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex items-center justify-between mt-5 pt-4 border-t border-border-line text-xs text-foreground-tertiary">
-                <div className="font-mono">
-                  Showing {offset + 1}–{Math.min(offset + limit, total)} of {total} inspections
+              <div className="flex items-center justify-between px-4 py-3 border-t border-surface-200 bg-surface-50 text-xs text-surface-600">
+                <div className="font-mono text-[11px]">
+                  Showing <span className="font-semibold text-surface-900">{total === 0 ? 0 : offset + 1}</span>–
+                  <span className="font-semibold text-surface-900">{Math.min(offset + limit, total)}</span> of{" "}
+                  <span className="font-semibold text-surface-900">{total}</span> records
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setOffset(Math.max(0, offset - limit))}
                     disabled={offset === 0}
-                    className="p-1.5 rounded-[4px] ring-1 ring-inset ring-border-secondary bg-background-primary text-foreground-secondary hover:text-foreground-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1 rounded border border-surface-200 bg-white text-surface-600 hover:text-surface-900 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="px-2 font-mono">
+                  <span className="px-2 font-mono text-[11px]">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button
                     onClick={() => setOffset(offset + limit)}
                     disabled={offset + limit >= total}
-                    className="p-1.5 rounded-[4px] ring-1 ring-inset ring-border-secondary bg-background-primary text-foreground-secondary hover:text-foreground-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="p-1 rounded border border-surface-200 bg-white text-surface-600 hover:text-surface-900 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

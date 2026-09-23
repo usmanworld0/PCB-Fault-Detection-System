@@ -73,38 +73,40 @@ export default function NotificationsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="space-y-5 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-white tracking-tight">Notification Center</h2>
+              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+                Quality Alerts & Notifications
+              </h1>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500 text-white">
-                  {unreadCount} unread
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white font-mono">
+                  {unreadCount} UNREAD
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Quality threshold anomalies, critical defect flags, and engineering review triggers
+            <p className="text-xs text-surface-500 mt-1">
+              Quality threshold anomalies, critical defect flags, and engineering review triggers.
             </p>
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-100 hover:bg-surface-50 text-slate-200 border border-slate-700 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
               >
-                <CheckCheck className="w-3.5 h-3.5" />
+                <CheckCheck className="w-3.5 h-3.5 text-surface-500" />
                 <span>Mark All as Read</span>
               </button>
             )}
             <button
               onClick={fetchNotifs}
-              className="p-1.5 rounded-lg border border-slate-800 bg-surface-100 hover:bg-surface-50 text-slate-300 transition"
+              className="p-1.5 rounded bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -113,78 +115,78 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFilterUnread(false)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-              !filterUnread ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+              !filterUnread ? "bg-white text-surface-900 border border-surface-300 shadow-xs" : "text-surface-600 hover:text-surface-900"
             }`}
           >
-            All Events
+            All Notifications
           </button>
           <button
             onClick={() => setFilterUnread(true)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
               filterUnread
-                ? "bg-indigo-600 text-white"
-                : "text-slate-400 hover:text-white"
+                ? "bg-white text-surface-900 border border-surface-300 shadow-xs"
+                : "text-surface-600 hover:text-surface-900"
             }`}
           >
-            Unread Only
+            Unread Alarms ({unreadCount})
           </button>
         </div>
 
         {/* Notifications List */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {error ? (
             <ErrorState message={error} onRetry={fetchNotifs} />
           ) : loading ? (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full" />
+                <Skeleton key={i} className="h-20 w-full rounded-lg" />
               ))}
             </div>
           ) : notifications.length === 0 ? (
             <EmptyState
               icon={CheckCircle}
-              title="You're all caught up."
-              description="No unread defect alarms or pending system notifications at this time."
+              title="You're all caught up"
+              description="No active defect alarms or pending quality alerts at this time."
             />
           ) : (
             notifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`p-4 rounded-xl border transition ${
+                className={`p-4 rounded-lg border transition-colors ${
                   notif.is_read
-                    ? "bg-[#0E1422]/60 border-slate-800/60 opacity-80"
-                    : "bg-[#0E1422] border-slate-700 shadow-md shadow-black/40"
+                    ? "bg-white border-surface-200"
+                    : "bg-brand-50/20 border-brand-200 shadow-xs"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-2 rounded-lg mt-0.5 ${
+                      className={`p-2 rounded mt-0.5 shrink-0 ${
                         notif.severity === "Critical"
-                          ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                          : "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                          ? "bg-red-50 text-red-600 border border-red-200"
+                          : "bg-brand-50 text-brand-600 border border-brand-200"
                       }`}
                     >
                       <Bell className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-white">{notif.title}</span>
+                        <span className="text-xs font-bold text-surface-900">{notif.title}</span>
                         <SeverityBadge severity={notif.severity} />
-                        <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                        <span className="text-[10px] uppercase font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
                           {notif.category}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">{notif.message}</p>
+                      <p className="text-xs text-surface-600 mt-1 leading-relaxed">{notif.message}</p>
                       <div className="flex items-center gap-4 mt-2">
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-surface-400 font-mono">
                           {formatDate(notif.created_at)} ({formatTimeAgo(notif.created_at)})
                         </span>
                         {notif.inspection_id && (
                           <Link
                             href={`/inspections/${notif.inspection_id}`}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
                           >
                             <span>Inspect Board</span>
                             <ArrowRight className="w-3 h-3" />
@@ -197,7 +199,7 @@ export default function NotificationsPage() {
                   {!notif.is_read && (
                     <button
                       onClick={() => handleMarkRead(notif.id)}
-                      className="text-xs font-medium text-slate-400 hover:text-indigo-400 transition flex-shrink-0"
+                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors shrink-0"
                     >
                       Mark read
                     </button>

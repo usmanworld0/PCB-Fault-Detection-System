@@ -5,20 +5,22 @@ import { cn } from "@/lib/utils";
 interface SeverityBadgeProps {
   severity: string | undefined | null;
   className?: string;
+  size?: "sm" | "md";
 }
 
-export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
+export function SeverityBadge({ severity, className, size = "md" }: SeverityBadgeProps) {
   const norm = (severity || "").toLowerCase();
 
   if (norm === "critical") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium px-1.5 py-0.5 rounded-[2px] text-[11px] bg-error/10 text-error ring-1 ring-inset ring-error/20",
+          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-rose-300 bg-rose-50 text-rose-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <AlertCircle className="w-3 h-3" />
+        <AlertCircle className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         Critical
       </span>
     );
@@ -28,11 +30,12 @@ export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium px-1.5 py-0.5 rounded-[2px] text-[11px] bg-amber-500/10 text-amber-400 ring-1 ring-inset ring-amber-500/20",
+          "inline-flex items-center gap-1 font-mono font-medium rounded border border-amber-300 bg-amber-50 text-amber-800",
+          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
           className
         )}
       >
-        <AlertTriangle className="w-3 h-3" />
+        <AlertTriangle className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
         Moderate
       </span>
     );
@@ -41,11 +44,12 @@ export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono font-medium px-1.5 py-0.5 rounded-[2px] text-[11px] bg-sky-500/10 text-sky-400 ring-1 ring-inset ring-sky-500/20",
+        "inline-flex items-center gap-1 font-mono font-medium rounded border border-sky-300 bg-sky-50 text-sky-800",
+        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
         className
       )}
     >
-      <Info className="w-3 h-3" />
+      <Info className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
       Minor
     </span>
   );

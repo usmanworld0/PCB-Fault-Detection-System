@@ -9,6 +9,7 @@ import {
   XCircle,
   RefreshCw,
   MoreVertical,
+  X,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { RoleBadge } from "@/components/common/RoleBadge";
@@ -89,65 +90,75 @@ export default function UsersPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="space-y-5 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">User & Role Management</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Administer system accounts and assign RBAC permissions (Admin, Quality Engineer, Viewer)
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+                User & Operator Directory
+              </h1>
+              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                RBAC ACCESS
+              </span>
+            </div>
+            <p className="text-xs text-surface-500 mt-1">
+              Administer system accounts and assign RBAC permissions (Admin, Quality Engineer, Viewer).
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-900/40 transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>Create User</span>
             </button>
             <button
               onClick={fetchUsersList}
-              className="p-1.5 rounded-lg border border-slate-800 bg-surface-100 hover:bg-surface-50 text-slate-300 transition"
+              className="p-1.5 rounded bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
 
         {/* Create User Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-[#0E1422] p-6 shadow-2xl">
-              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
-                <h3 className="text-base font-semibold text-white">Create New User Account</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white">
-                  ✕
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/40 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-lg border border-surface-200 bg-white p-6 shadow-xl">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-surface-200">
+                <h3 className="text-sm font-bold text-surface-900">Create New User Account</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-1 rounded text-surface-400 hover:text-surface-700 hover:bg-surface-100 transition-colors"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {formError && (
-                <div className="mb-4 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                <div className="mb-4 p-2.5 rounded bg-red-50 border border-red-200 text-red-700 text-xs">
                   {formError}
                 </div>
               )}
 
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                  <label className="block text-xs font-semibold text-surface-800 mb-1">Email Address</label>
                   <input
                     type="email"
                     required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="engineer@quality.org"
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                    placeholder="engineer@manufacturing.org"
+                    className="w-full p-2 bg-white border border-surface-200 rounded text-xs text-surface-900 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Temporary Password</label>
+                  <label className="block text-xs font-semibold text-surface-800 mb-1">Temporary Password</label>
                   <input
                     type="password"
                     required
@@ -155,16 +166,16 @@ export default function UsersPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full p-2 bg-white border border-surface-200 rounded text-xs text-surface-900 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Assign System Role</label>
+                  <label className="block text-xs font-semibold text-surface-800 mb-1">Assign System Role</label>
                   <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value as UserRole)}
-                    className="w-full p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full p-2 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
                   >
                     <option value="admin">ADMIN (Full Access)</option>
                     <option value="engineer">QUALITY ENGINEER (Review & Inspect)</option>
@@ -172,18 +183,18 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-surface-200">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition"
+                    className="px-3 py-1.5 rounded text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-900/50 transition disabled:opacity-50"
+                    className="px-4 py-1.5 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors disabled:opacity-50"
                   >
                     {submitting ? "Creating..." : "Create Account"}
                   </button>
@@ -194,63 +205,65 @@ export default function UsersPage() {
         )}
 
         {/* Users Table */}
-        <div className="rounded-xl border border-slate-800 bg-[#0E1422] p-5 shadow-sm">
+        <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
           {error ? (
-            <ErrorState message={error} onRetry={fetchUsersList} />
+            <div className="p-6">
+              <ErrorState message={error} onRetry={fetchUsersList} />
+            </div>
           ) : loading ? (
-            <div className="space-y-3">
+            <div className="p-4 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full" />
+                <Skeleton key={i} className="h-12 w-full rounded" />
               ))}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
-                    <th className="py-3 px-3">User Email</th>
-                    <th className="py-3 px-3">Assigned Role</th>
-                    <th className="py-3 px-3">Account Status</th>
-                    <th className="py-3 px-3">Created Date</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
+                  <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
+                    <th className="py-2.5 px-3 font-semibold">User Email</th>
+                    <th className="py-2.5 px-3 font-semibold">Assigned Role</th>
+                    <th className="py-2.5 px-3 font-semibold">Account Status</th>
+                    <th className="py-2.5 px-3 font-semibold">Registration Date</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y divide-surface-100">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 px-3 font-medium text-white">{u.email}</td>
-                      <td className="py-3 px-3">
+                    <tr key={u.id} className="hover:bg-surface-50/80 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-medium text-surface-900">{u.email}</td>
+                      <td className="py-2.5 px-3">
                         <select
                           value={u.role}
                           onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                          className="px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                          className="px-2 py-1 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
                         >
                           <option value="admin">ADMIN</option>
                           <option value="engineer">QUALITY ENGINEER</option>
                           <option value="viewer">VIEWER</option>
                         </select>
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-2.5 px-3">
                         {u.is_active ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 font-semibold text-rose-400">
-                            <XCircle className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center gap-1 font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200 text-[11px]">
+                            <XCircle className="w-3.5 h-3.5 text-red-600" />
                             Deactivated
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-400">{formatDate(u.created_at)}</td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-2.5 px-3 text-surface-500 font-mono text-[11px]">{formatDate(u.created_at)}</td>
+                      <td className="py-2.5 px-3 text-right">
                         <button
                           onClick={() => handleToggleStatus(u)}
-                          className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                          className={`px-2.5 py-1 rounded text-xs font-semibold border transition-colors ${
                             u.is_active
-                              ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20"
-                              : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                              ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                           }`}
                         >
                           {u.is_active ? "Deactivate" : "Activate"}
