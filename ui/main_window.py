@@ -86,6 +86,12 @@ class MainWindow(QMainWindow):
         # left panel
         self.model_box = QComboBox()
         self.model_box.addItems(list(self.models))
+        real_models = [m for m in self.models.keys() if m != "Demo (no model)"]
+        if real_models:
+            best_choice = next((m for m in real_models if "yolov8s" in m), real_models[0])
+            idx = self.model_box.findText(best_choice)
+            if idx >= 0:
+                self.model_box.setCurrentIndex(idx)
         self.btn_live = QPushButton("Start live feed")
         self.btn_image = QPushButton("Select image")
         self.btn_folder = QPushButton("Select folder")

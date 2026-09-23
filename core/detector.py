@@ -127,16 +127,15 @@ class OnnxYoloDetector(BaseDetector):
     """Runs a YOLOv8 model exported with ultralytics (format=onnx)."""
 
     def __init__(self, model_dir):
-        import onnxruntime as ort
         model_dir = Path(model_dir)
         self.name = model_dir.name
-        self.session = ort.InferenceSession(
-            str(model_dir / "model.onnx"), providers=["CPUExecutionProvider"])
-        inp = self.session.get_inputs()[0]
-        self.input_name = inp.name
-        h, w = inp.shape[2], inp.shape[3]
-        self.size = int(w) if isinstance(w, int) and isinstance(h, int) else 640
-        self.classes = _load_classes(model_dir, self.session)
+        self.use_cv2 = True
+        onnx_path = str(model_dir / "model.onnx")
+
+        # OpenCV DNN is fast, built-in, and reliable across all Windows environments
+        self.net = cv2.dnn.readNetFromONNX(onnx_path)
+        self.size = 640
+        self.classes = _load_classes(model_dir)
 
     @staticmethod
     def _letterbox(img, size):
@@ -153,7 +152,11 @@ class OnnxYoloDetector(BaseDetector):
         h0, w0 = img.shape[:2]
         canvas, r, dx, dy = self._letterbox(img, self.size)
         blob = cv2.dnn.blobFromImage(canvas, 1 / 255.0, (self.size, self.size), swapRB=True)
-        out = self.session.run(None, {self.input_name: blob})[0]
+        if self.use_cv2:
+            self.net.setInput(blob)
+            out = self.net.forward()
+        else:
+            out = self.session.run(None, {self.input_name: blob})[0]
         pred = out[0].T                                   # (N, 4 + num_classes)
         nc = len(self.classes)
         scores = pred[:, 4:4 + nc]
@@ -199,7 +202,7 @@ class TorchvisionDetector(BaseDetector):
         self.torch = torch
         self.device = device
         self.model = build_torchvision(cfg["arch"], len(self.classes), self.size)
-        res = self.model.load_state_dict(torch.load(model_dir / "model.pt", map_location="cpu"), strict=False)
+        res = self.model.load_state_dict(torch.load(model_dir / "model.pt", map_location="cpu", weights_only=False), strict=False)
         bad = [k for k in res.missing_keys if not k.endswith("num_batches_tracked")] + list(res.unexpected_keys)
         if bad:
             raise RuntimeError(f"weights do not match the architecture: {bad[:5]}")
@@ -272,11 +275,12 @@ class ModelLoader:
 
 def list_models(models_dir):
     """Returns {label: loader_function}. Each subfolder of models/ with a model is one model.
+    Only models physically present in the models folder are returned.
     Torch models only show up if torch and torchvision are installed."""
-    found = {DummyDetector.name: lambda: DummyDetector()}
+    found = {}
     models_dir = Path(models_dir)
     if not models_dir.exists():
-        return found
+        return {DummyDetector.name: lambda: DummyDetector()}
     try:
         import torch, torchvision  # noqa: F401
         have_torch = True
@@ -295,4 +299,6 @@ def list_models(models_dir):
             except (TypeError, ValueError):
                 pass
         found[label] = loader
+    if not found:
+        found[DummyDetector.name] = lambda: DummyDetector()
     return found
