@@ -1,0 +1,56 @@
+"""Local inspection history in SQLite. Works offline. sync.py uploads pending rows later."""
+import json
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+
+import cv2
+
+BASE = Path(__file__).resolve().parent.parent / "data"
+DB_PATH = BASE / "station.db"
+IMG_DIR = BASE / "images"
+
+
+def _conn():
+    BASE.mkdir(exist_ok=True)
+    IMG_DIR.mkdir(exist_ok=True)
+    c = sqlite3.connect(DB_PATH)
+    c.execute("""CREATE TABLE IF NOT EXISTS inspections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT, source TEXT, model TEXT, status TEXT, defect_count INTEGER,
+        image_path TEXT, annotated_path TEXT, result_json TEXT, synced INTEGER DEFAULT 0)""")
+    return c
+
+
+def save(frame, annotated, result, source_name):
+    IMG_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now()
+    stem = ts.strftime("%Y%m%d_%H%M%S_%f")
+    img_p, ann_p = IMG_DIR / f"{stem}.jpg", IMG_DIR / f"{stem}_annotated.jpg"
+    if not (cv2.imwrite(str(img_p), frame) and cv2.imwrite(str(ann_p), annotated)):
+        raise IOError(f"Could not write images to {IMG_DIR}")
+    with _conn() as c:
+        cur = c.execute(
+            "INSERT INTO inspections (ts, source, model, status, defect_count, image_path,"
+            " annotated_path, result_json) VALUES (?,?,?,?,?,?,?,?)",
+            (ts.isoformat(), source_name, result.model, result.status, len(result.detections),
+             str(img_p), str(ann_p), json.dumps(result.to_dict())))
+        return cur.lastrowid
+
+
+def pending():
+    with _conn() as c:
+        return c.execute("SELECT id, ts, source, result_json, image_path, annotated_path"
+                         " FROM inspections WHERE synced = 0").fetchall()
+
+
+def mark_synced(row_id):
+    with _conn() as c:
+        c.execute("UPDATE inspections SET synced = 1 WHERE id = ?", (row_id,))
+
+
+def count():
+    with _conn() as c:
+        total = c.execute("SELECT COUNT(*) FROM inspections").fetchone()[0]
+        unsynced = c.execute("SELECT COUNT(*) FROM inspections WHERE synced = 0").fetchone()[0]
+    return total, unsynced

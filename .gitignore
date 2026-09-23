@@ -1,6 +1,8 @@
-# This workspace contains support files. The GitHub repository intentionally
-# publishes only the standalone pcb_station project folder.
-*
-!.gitignore
-!pcb_station/
-!pcb_station/**
+node_modules/
+.next/
+.env
+.env.local
+__pycache__/
+*.pyc
+venv/
+.venv/
