@@ -1,5 +1,6 @@
-.venv/
-__pycache__/
-*.py[cod]
-.env
-backend/.env
+# This workspace contains support files. The GitHub repository intentionally
+# publishes only the standalone pcb_station project folder.
+*
+!.gitignore
+!pcb_station/
+!pcb_station/**
