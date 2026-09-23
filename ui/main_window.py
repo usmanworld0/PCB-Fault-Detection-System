@@ -96,8 +96,8 @@ class MainWindow(QMainWindow):
         self.conf.setRange(5, 95)
         self.conf.setValue(25)
         self.chk_auto = QCheckBox("Auto-save frames with defects")
-        self.btn_save = QPushButton("Save result")
-        self.btn_sync = QPushButton("Sync to server")
+        self.btn_save = QPushButton("Save to DB")
+        self.btn_sync = QPushButton("Sync to DB")
         self.btn_models_sync = QPushButton("Sync models")
         self.btn_compare = QPushButton("Compare all models")
         self.btn_compare.setEnabled(False)
@@ -260,8 +260,14 @@ class MainWindow(QMainWindow):
             return
         frame, annotated, result, name = self.last
         rid = store.save(frame, annotated, result, name)
+        sent, failed, msg = sync_pending()
         total, unsynced = store.count()
-        self.statusBar().showMessage(f"Saved #{rid}  ({total} total, {unsynced} not synced)")
+        if sent > 0:
+            self.statusBar().showMessage(f"Saved #{rid} & synced to DB ({total} total)")
+        elif unsynced > 0:
+            self.statusBar().showMessage(f"Saved #{rid} locally ({total} total, {unsynced} queued for sync)")
+        else:
+            self.statusBar().showMessage(f"Saved #{rid} ({total} total)")
 
     def sync(self):
         sent, failed, msg = sync_pending()
