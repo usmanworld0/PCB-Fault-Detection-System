@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../services/api_service.dart';
 import '../services/auth_provider.dart';
+import '../models/models.dart';
+import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,206 +11,211 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _serverCtrl = TextEditingController(text: 'http://localhost:8000');
-  final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  bool _loading = false;
-  bool _obscure = true;
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController(text: 'lead.engineer@pcb-vision.ai');
+  final _passwordController = TextEditingController(text: 'changeme');
+  bool _isLoading = false;
   String? _error;
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fadeAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
-  }
 
   @override
   void dispose() {
-    _fadeCtrl.dispose();
-    _serverCtrl.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    final server = _serverCtrl.text.trim();
-    final email = _emailCtrl.text.trim();
-    final pass = _passCtrl.text;
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
-    if (server.isEmpty || email.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'All fields are required');
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Please enter both email and password.');
       return;
     }
 
     setState(() {
-      _loading = true;
+      _isLoading = true;
       _error = null;
     });
 
     try {
-      final api = context.read<ApiService>();
-      final data = await api.login(server, email, pass);
-      if (!mounted) return;
-      await context.read<AuthProvider>().login(
-            serverUrl: server,
-            email: email,
-            token: data['access_token'],
-            role: data['role'],
-          );
-    } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      final auth = context.read<AuthProvider>();
+      await auth.login(email: email, password: password);
     } catch (e) {
-      setState(() => _error = 'Connection failed. Check server URL.');
+      setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Logo / brand
-                  Container(
-                    width: 72,
-                    height: 72,
+      backgroundColor: AppColors.bgApp,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Logo & Header
+                Center(
+                  child: Container(
+                    width: 52,
+                    height: 52,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.industrial900,
+                      borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                          color: AppColors.industrial900.withValues(alpha: 0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.memory, color: Colors.white, size: 36),
-                  ),
-                  const SizedBox(height: 24),
-                  Text('PCB-Vision', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Intelligent Fault Detection',
-                    style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF94A3B8), letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Server URL
-                  _buildField(
-                    controller: _serverCtrl,
-                    hint: 'Server URL',
-                    icon: Icons.dns_outlined,
-                    keyboardType: TextInputType.url,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Email
-                  _buildField(
-                    controller: _emailCtrl,
-                    hint: 'Email',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Password
-                  _buildField(
-                    controller: _passCtrl,
-                    hint: 'Password',
-                    icon: Icons.lock_outline,
-                    obscure: _obscure,
-                    suffix: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                          color: const Color(0xFF94A3B8), size: 20),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+                    child: const Center(
+                      child: Icon(Icons.memory, color: AppColors.industrial200, size: 28),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'PCB-Vision Enterprise',
+                    style: AppTypography.heading1.copyWith(
+                      fontSize: 22,
+                      color: AppColors.industrial900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    'Industrial Automated Optical Inspection & QA System',
+                    style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 28),
 
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                // Login Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.borderSubtle),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(_error!, style: GoogleFonts.inter(color: const Color(0xFFFCA5A5), fontSize: 13)),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'SIGN IN WITH WORKSPACE CREDENTIALS',
+                        style: AppTypography.label.copyWith(fontSize: 10),
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (_error != null)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          margin: const EdgeInsets.only(bottom: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.qaFailBg,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.qaFailBorder),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                          child: Text(
+                            _error!,
+                            style: AppTypography.bodySmall.copyWith(color: AppColors.qaFail),
+                          ),
+                        ),
 
-                  const SizedBox(height: 24),
-
-                  // Login button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _login,
-                      child: _loading
-                          ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                          : const Text('Sign In'),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Demo mode button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: _loading
-                          ? null
-                          : () {
-                              context.read<AuthProvider>().enterDemoMode();
-                            },
-                      icon: const Icon(Icons.auto_awesome, size: 18, color: Color(0xFF818CF8)),
-                      label: Text(
-                        'Explore in Demo Mode',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFFC7D2FE),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                      Text('Email Address', style: AppTypography.label),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _emailController,
+                        style: AppTypography.mono.copyWith(fontSize: 13),
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'user@pcb-vision.ai',
+                          prefixIcon: Icon(Icons.email_outlined, size: 18),
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: const Color(0xFF6366F1).withValues(alpha: 0.4)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        backgroundColor: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                      const SizedBox(height: 14),
+
+                      Text('Password', style: AppTypography.label),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: AppTypography.mono.copyWith(fontSize: 13),
+                        decoration: const InputDecoration(
+                          hintText: '••••••••',
+                          prefixIcon: Icon(Icons.lock_outline, size: 18),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 18),
+
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Sign In to Industrial Console'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+
+                // Quick Demo Roles
+                Text(
+                  'ONE-TAP ROLE TESTING (RBAC)',
+                  style: AppTypography.label.copyWith(fontSize: 10),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _demoRoleButton(
+                      label: 'Quality Eng',
+                      role: UserRole.engineer,
+                      auth: auth,
+                      color: AppColors.industrial600,
+                    ),
+                    const SizedBox(width: 8),
+                    _demoRoleButton(
+                      label: 'Sys Admin',
+                      role: UserRole.admin,
+                      auth: auth,
+                      color: const Color(0xFFB45309),
+                    ),
+                    const SizedBox(width: 8),
+                    _demoRoleButton(
+                      label: 'Auditor',
+                      role: UserRole.viewer,
+                      auth: auth,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -219,23 +223,29 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    bool obscure = false,
-    Widget? suffix,
+  Widget _demoRoleButton({
+    required String label,
+    required UserRole role,
+    required AuthProvider auth,
+    required Color color,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscure,
-      keyboardType: keyboardType,
-      style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
-        suffixIcon: suffix,
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: () async {
+          await auth.demoLogin(role);
+        },
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          side: BorderSide(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.mono.copyWith(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
       ),
     );
   }

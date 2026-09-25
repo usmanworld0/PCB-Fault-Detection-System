@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import '../widgets/enterprise_header.dart';
+import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'inspections_screen.dart';
 import 'models_screen.dart';
@@ -15,6 +16,13 @@ class ShellScreen extends StatefulWidget {
 class _ShellScreenState extends State<ShellScreen> {
   int _index = 0;
 
+  final List<String> _titles = [
+    'Enterprise Analytics Dashboard',
+    'Real-time Inspection Stream',
+    'YOLOv8 AI Inference Registry',
+    'Workstation & RBAC Settings',
+  ];
+
   final _screens = const [
     DashboardScreen(),
     InspectionsScreen(),
@@ -25,17 +33,51 @@ class _ShellScreenState extends State<ShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgApp,
+      appBar: EnterpriseHeader(
+        title: _titles[_index],
+      ),
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        height: 68,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.search_outlined), selectedIcon: Icon(Icons.search), label: 'Inspections'),
-          NavigationDestination(icon: Icon(Icons.model_training_outlined), selectedIcon: Icon(Icons.model_training), label: 'Models'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.bgSurface,
+          border: Border(
+            top: BorderSide(color: AppColors.borderSubtle, width: 1),
+          ),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _index,
+          onTap: (i) => setState(() => _index = i),
+          backgroundColor: AppColors.bgSurface,
+          selectedItemColor: AppColors.industrial600,
+          unselectedItemColor: AppColors.textMuted,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          selectedLabelStyle: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w700),
+          unselectedLabelStyle: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined, size: 20),
+              activeIcon: Icon(Icons.analytics, size: 20),
+              label: 'Analytics',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.biotech_outlined, size: 20),
+              activeIcon: Icon(Icons.biotech, size: 20),
+              label: 'Inspections',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.memory_outlined, size: 20),
+              activeIcon: Icon(Icons.memory, size: 20),
+              label: 'Models',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.tune_outlined, size: 20),
+              activeIcon: Icon(Icons.tune, size: 20),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }

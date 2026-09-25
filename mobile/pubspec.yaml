@@ -1,7 +1,7 @@
 name: pcb_vision
-description: PCB-Vision — Mobile inspection dashboard for PCB fault detection.
+description: PCB-Vision — Enterprise mobile inspection dashboard for PCB fault detection & manufacturing QA.
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: ^3.8.0
@@ -10,14 +10,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.4.0
-  flutter_secure_storage: ^9.2.4
+  supabase_flutter: ^2.10.0
   provider: ^6.1.5
   fl_chart: ^1.0.0
   cached_network_image: ^3.4.1
   intl: ^0.20.2
   google_fonts: ^6.2.1
   shimmer: ^3.0.0
+  flutter_secure_storage: ^9.2.4
+  timeago: ^3.7.0
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
