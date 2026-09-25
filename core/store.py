@@ -1,8 +1,8 @@
 """Local inspection history in SQLite. Works offline. sync.py uploads pending rows later."""
-import json
-import sqlite3
 from datetime import datetime
+import json
 from pathlib import Path
+import sqlite3
 
 import cv2
 
@@ -18,11 +18,22 @@ def _conn():
     c.execute("""CREATE TABLE IF NOT EXISTS inspections (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ts TEXT, source TEXT, model TEXT, status TEXT, defect_count INTEGER,
-        image_path TEXT, annotated_path TEXT, result_json TEXT, synced INTEGER DEFAULT 0)""")
+        image_path TEXT, annotated_path TEXT, result_json TEXT, synced INTEGER DEFAULT 0,
+        operator_email TEXT, operator_role TEXT)""")
+
+    # Ensure operator columns exist in existing SQLite databases
+    cursor = c.cursor()
+    cursor.execute("PRAGMA table_info(inspections)")
+    existing_cols = {col[1] for col in cursor.fetchall()}
+    if "operator_email" not in existing_cols:
+        c.execute("ALTER TABLE inspections ADD COLUMN operator_email TEXT")
+    if "operator_role" not in existing_cols:
+        c.execute("ALTER TABLE inspections ADD COLUMN operator_role TEXT")
+
     return c
 
 
-def save(frame, annotated, result, source_name):
+def save(frame, annotated, result, source_name, operator_email: str | None = None, operator_role: str | None = None):
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now()
     stem = ts.strftime("%Y%m%d_%H%M%S_%f")
@@ -32,15 +43,15 @@ def save(frame, annotated, result, source_name):
     with _conn() as c:
         cur = c.execute(
             "INSERT INTO inspections (ts, source, model, status, defect_count, image_path,"
-            " annotated_path, result_json) VALUES (?,?,?,?,?,?,?,?)",
+            " annotated_path, result_json, operator_email, operator_role) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (ts.isoformat(), source_name, result.model, result.status, len(result.detections),
-             str(img_p), str(ann_p), json.dumps(result.to_dict())))
+             str(img_p), str(ann_p), json.dumps(result.to_dict()), operator_email, operator_role))
         return cur.lastrowid
 
 
 def pending():
     with _conn() as c:
-        return c.execute("SELECT id, ts, source, result_json, image_path, annotated_path"
+        return c.execute("SELECT id, ts, source, result_json, image_path, annotated_path, operator_email, operator_role"
                          " FROM inspections WHERE synced = 0").fetchall()
 
 

@@ -12,7 +12,7 @@ import requests
 
 from . import store
 
-# Try to load credentials from backend/.env if available
+
 def _load_env_credentials():
     env_paths = [
         Path(__file__).resolve().parent.parent / "backend" / ".env",
@@ -26,6 +26,7 @@ def _load_env_credentials():
                     k, v = line.split("=", 1)
                     os.environ.setdefault(k.strip(), v.strip())
             break
+
 
 _load_env_credentials()
 
@@ -67,7 +68,7 @@ def _upload_to_supabase_storage(supabase_url: str, key: str, bucket: str, file_p
 
 def sync_pending():
     """Syncs unsynced inspections directly to Supabase, with REST fallback.
-    Returns (sent, failed, message).
+    Returns (sent, failed, message, details).
     """
     supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
@@ -83,8 +84,17 @@ def sync_pending():
             "Prefer": "return=representation",
         }
         sent = failed = 0
+        details = []
 
-        for row_id, ts, source, result_json, img_p, ann_p in store.pending():
+        pending_items = store.pending()
+        for item in pending_items:
+            # Handle tuple unpacking with backward compatibility
+            if len(item) == 8:
+                row_id, ts, source, result_json, img_p, ann_p, operator_email, operator_role = item
+            else:
+                row_id, ts, source, result_json, img_p, ann_p = item[:6]
+                operator_email = operator_role = None
+
             try:
                 # 1. Upload Images to Supabase Storage
                 safe_name = Path(img_p).stem
@@ -121,6 +131,8 @@ def sync_pending():
                     "review_status": "UNREVIEWED",
                     "final_status": status,
                     "created_at": now_str,
+                    "operator_email": operator_email,
+                    "operator_role": operator_role,
                 }
 
                 r_insp = requests.post(
@@ -140,6 +152,13 @@ def sync_pending():
                     if r_get.ok and r_get.json():
                         store.mark_synced(row_id)
                         sent += 1
+                        details.append({
+                            "id": r_get.json()[0].get("id", insp_id),
+                            "local_id": row_id,
+                            "status": status,
+                            "defects": defect_count,
+                            "operator": operator_email,
+                        })
                         continue
                     else:
                         print(f"[Sync Error] Supabase rejected inspection insert: {r_insp.status_code} {r_insp.text}")
@@ -156,7 +175,6 @@ def sync_pending():
                         cls_name = d.get("class", "defect")
                         conf = float(d.get("confidence", 0.9))
                         box = d.get("box", [0, 0, 0, 0])
-                        # Classify severity
                         sev = "Critical" if cls_name in ("open", "short") else ("Moderate" if cls_name in ("mousebite", "spur") else "Minor")
                         defect_rows.append({
                             "id": str(uuid.uuid4()),
@@ -178,8 +196,9 @@ def sync_pending():
                             timeout=15,
                         )
 
-                # 5. Insert Notification on Anomaly
+                # 5. Insert Notification on Anomaly with Operator attribution
                 if cloud_insp_id and (status == "FAIL" or defect_count > 0):
+                    op_tag = f" (Operator: {operator_email})" if operator_email else ""
                     requests.post(
                         f"{supabase_url}/rest/v1/notifications",
                         headers=headers,
@@ -187,7 +206,7 @@ def sync_pending():
                             "id": str(uuid.uuid4()),
                             "category": "Defect Alert",
                             "title": f"PCB Defect Detected ({station_id})",
-                            "message": f"Found {defect_count} defect(s) on board image {source}",
+                            "message": f"Found {defect_count} defect(s) on board image {source}{op_tag}",
                             "severity": "Critical" if any(d.get("class") in ("open", "short") for d in detections) else "Moderate",
                             "inspection_id": cloud_insp_id,
                             "is_read": False,
@@ -199,22 +218,36 @@ def sync_pending():
                 # 6. Mark Local SQLite Row as Synced
                 store.mark_synced(row_id)
                 sent += 1
+                details.append({
+                    "id": cloud_insp_id,
+                    "local_id": row_id,
+                    "status": status,
+                    "defects": defect_count,
+                    "operator": operator_email,
+                    "model": model_name,
+                    "source": source,
+                })
 
-            except Exception:
+            except Exception as e:
+                print(f"[Sync Exception] {e}")
                 failed += 1
                 break  # network is down, pause and retry later
 
-        return sent, failed, "Supabase direct sync completed"
+        return sent, failed, "Supabase direct sync completed", details
 
     # Fallback to local REST API if PCB_API_URL is configured
     api = os.environ.get("PCB_API_URL", "").rstrip("/")
     if not api:
-        return 0, 0, "Neither Supabase credentials nor PCB_API_URL configured."
+        return 0, 0, "Neither Supabase credentials nor PCB_API_URL configured.", []
 
     token = os.environ.get("PCB_API_TOKEN")
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     sent = failed = 0
-    for row_id, ts, source, result_json, img_p, ann_p in store.pending():
+    details = []
+    for item in store.pending():
+        row_id, ts, source, result_json, img_p, ann_p = item[:6]
+        operator_email = item[6] if len(item) > 6 else None
+        operator_role = item[7] if len(item) > 7 else None
         try:
             with open(img_p, "rb") as f, open(ann_p, "rb") as g:
                 r = requests.post(
@@ -222,15 +255,17 @@ def sync_pending():
                     headers=headers,
                     timeout=15,
                     data={"captured_at": ts, "source": source, "result": result_json,
-                          "station_id": station_id, "local_id": str(row_id)},
+                          "station_id": station_id, "local_id": str(row_id),
+                          "operator_email": operator_email, "operator_role": operator_role},
                     files={"image": f, "annotated": g},
                 )
             if r.ok:
                 store.mark_synced(row_id)
                 sent += 1
+                details.append({"local_id": row_id, "operator": operator_email})
             else:
                 failed += 1
         except requests.RequestException:
             failed += 1
             break
-    return sent, failed, "done"
+    return sent, failed, "done", details

@@ -97,6 +97,8 @@ class InspectionListItem(BaseModel):
     station_id: str | None = None
     review_status: str = "UNREVIEWED"
     final_status: InspectionStatus | None = None
+    operator_email: str | None = None
+    operator_role: str | None = None
 
 
 class InspectionListResponse(BaseModel):
@@ -119,6 +121,8 @@ class InspectionDetailResponse(BaseModel):
     final_status: InspectionStatus | None = None
     reviewed_by: str | None = None
     reviewed_at: datetime | None = None
+    operator_email: str | None = None
+    operator_role: str | None = None
     created_at: datetime
     defects: list[DefectResponse]
     reviews: list[ReviewResponse] = []

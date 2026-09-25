@@ -47,6 +47,7 @@ export function RecentInspectionsTable({ inspections }: RecentInspectionsTablePr
                 <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
                 <th className="py-2.5 px-3 font-semibold">Timestamp</th>
                 <th className="py-2.5 px-3 font-semibold">Station</th>
+                <th className="py-2.5 px-3 font-semibold">Operator</th>
                 <th className="py-2.5 px-3 font-semibold">AI Model</th>
                 <th className="py-2.5 px-3 font-semibold">Disposition</th>
                 <th className="py-2.5 px-3 font-semibold">Defects</th>
@@ -72,6 +73,20 @@ export function RecentInspectionsTable({ inspections }: RecentInspectionsTablePr
                     <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
                       {item.station_id || "STATION-01"}
                     </span>
+                  </td>
+                  <td className="py-2.5 px-3">
+                    {item.operator_email ? (
+                      <div className="flex flex-col">
+                        <span className="font-mono text-[11px] text-surface-900 font-medium truncate max-w-[130px]" title={item.operator_email}>
+                          {item.operator_email}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase text-brand-700 font-semibold">
+                          {item.operator_role || "ENGINEER"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-mono text-[11px] text-surface-400">Station-01</span>
+                    )}
                   </td>
                   <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">
                     {item.model}

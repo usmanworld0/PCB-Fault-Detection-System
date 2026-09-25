@@ -143,10 +143,19 @@ export default function InspectionDetailPage() {
             )}
 
             {/* Industrial Metadata Telemetry Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
                 <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">Station ID</div>
                 <div className="mt-1 text-xs font-semibold text-surface-900">{inspection.station_id || "STATION-01"}</div>
+              </div>
+              <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
+                <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">Operator</div>
+                <div className="mt-1 text-xs font-semibold text-surface-900 truncate" title={inspection.operator_email || "System"}>
+                  {inspection.operator_email ? inspection.operator_email.split("@")[0] : "Station Auto"}
+                </div>
+                <div className="text-[9px] font-mono uppercase text-brand-700 font-bold">
+                  {inspection.operator_role || "ENGINEER"}
+                </div>
               </div>
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
                 <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">Source Image</div>
@@ -155,7 +164,7 @@ export default function InspectionDetailPage() {
                 </div>
               </div>
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
-                <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">Model Model</div>
+                <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">AI Model</div>
                 <div className="mt-1 text-xs font-mono font-semibold text-brand-700">{inspection.model}</div>
               </div>
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
@@ -253,6 +262,9 @@ export default function InspectionDetailPage() {
                 <div className="p-3 rounded border border-surface-200 bg-surface-50">
                   <div className="text-[10px] font-mono text-surface-500 uppercase font-semibold">1. Station Capture</div>
                   <div className="text-xs text-surface-900 font-semibold mt-1">{inspection.station_id || "STATION-01"}</div>
+                  <div className="text-[10px] text-brand-700 font-mono font-medium truncate mt-0.5">
+                    {inspection.operator_email || "System"} ({inspection.operator_role || "ENGINEER"})
+                  </div>
                   <div className="text-[10px] text-surface-400 font-mono mt-0.5">{formatDate(inspection.captured_at)}</div>
                 </div>
                 <div className="p-3 rounded border border-surface-200 bg-surface-50">

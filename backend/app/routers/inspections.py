@@ -36,6 +36,8 @@ def ingest(
     annotated: UploadFile = File(...),
     station_id: str | None = Form(None),
     local_id: int | None = Form(None),
+    operator_email: str | None = Form(None),
+    operator_role: str | None = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -107,6 +109,8 @@ def ingest(
             station_id=station_id or "STATION-01",
             local_id=local_id,
             review_status=review_status,
+            operator_email=operator_email or (current_user.email if current_user else None),
+            operator_role=operator_role or (current_user.role.value if current_user else None),
         )
         db.add(inspection)
         for d in defects_to_add:

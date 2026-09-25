@@ -74,6 +74,8 @@ class Inspection(Base):
     final_status: Mapped[InspectionStatus | None] = mapped_column(SAEnum(InspectionStatus), nullable=True)
     reviewed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    operator_email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    operator_role: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     defects: Mapped[list["Defect"]] = relationship(back_populates="inspection", cascade="all, delete-orphan")

@@ -84,11 +84,13 @@ export default function InspectionsPage() {
 
   const exportCurrentCsv = () => {
     if (items.length === 0) return;
-    const headers = ["ID", "Captured At", "Station", "Model", "Status", "Defects", "Review Status"];
+    const headers = ["ID", "Captured At", "Station", "Operator", "Role", "Model", "Status", "Defects", "Review Status"];
     const rows = items.map((i) => [
       i.id,
       i.captured_at,
       i.station_id || "STATION-01",
+      i.operator_email || "System",
+      i.operator_role || "ENGINEER",
       i.model,
       i.status,
       i.defect_count,
@@ -261,6 +263,7 @@ export default function InspectionsPage() {
                       <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
                       <th className="py-2.5 px-3 font-semibold">Captured At</th>
                       <th className="py-2.5 px-3 font-semibold">Station</th>
+                      <th className="py-2.5 px-3 font-semibold">Operator</th>
                       <th className="py-2.5 px-3 font-semibold">AI Model</th>
                       <th className="py-2.5 px-3 font-semibold">Disposition</th>
                       <th className="py-2.5 px-3 font-semibold">Defects</th>
@@ -286,6 +289,20 @@ export default function InspectionsPage() {
                           <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
                             {i.station_id || "STATION-01"}
                           </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {i.operator_email ? (
+                            <div className="flex flex-col">
+                              <span className="font-mono text-[11px] text-surface-900 font-medium truncate max-w-[130px]" title={i.operator_email}>
+                                {i.operator_email}
+                              </span>
+                              <span className="text-[9px] font-mono uppercase text-brand-700 font-semibold">
+                                {i.operator_role || "ENGINEER"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-[11px] text-surface-400">Station-01</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">
                           {i.model}

@@ -50,6 +50,8 @@ export interface InspectionListItem {
   station_id?: string;
   review_status: ReviewStatus | string;
   final_status?: InspectionStatus;
+  operator_email?: string;
+  operator_role?: string;
 }
 
 export interface InspectionDetail {
@@ -67,6 +69,8 @@ export interface InspectionDetail {
   reviewed_by?: string;
   reviewed_at?: string;
   created_at: string;
+  operator_email?: string;
+  operator_role?: string;
   defects: Defect[];
   reviews?: Review[];
 }
