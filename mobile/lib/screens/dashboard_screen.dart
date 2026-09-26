@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:shimmer/shimmer.dart';
-
-import '../services/api_service.dart';
+import '../services/supabase_service.dart';
+import '../models/models.dart';
+import '../theme/app_theme.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/section_header.dart';
+import '../widgets/pcb_heatmap_view.dart';
+import '../widgets/filter_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,51 +17,185 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  Map<String, dynamic>? _stats;
-  bool _loading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final api = context.read<ApiService>();
-      final data = await api.getStats();
-      if (mounted) setState(() { _stats = data; _loading = false; });
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
-    }
-  }
+  String _trendPeriod = 'Daily'; // 'Daily', 'Weekly', 'Monthly'
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: RefreshIndicator(
-        color: const Color(0xFF6366F1),
-        onRefresh: _load,
+    final service = context.watch<SupabaseService>();
+    final stats = service.stats;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgApp,
+      body: RefreshIndicator(
+        color: AppColors.industrial600,
+        onRefresh: () async {
+          await service.fetchInspections();
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
-            if (_loading) SliverToBoxAdapter(child: _buildShimmer()),
-            if (_error != null) SliverToBoxAdapter(child: _buildError()),
-            if (_stats != null) ...[
-              SliverToBoxAdapter(child: _buildStatCards()),
-              SliverToBoxAdapter(child: const SectionHeader(title: 'Defects by Class')),
-              SliverToBoxAdapter(child: _buildDefectsByClass()),
-              SliverToBoxAdapter(child: const SectionHeader(title: 'Severity Breakdown')),
-              SliverToBoxAdapter(child: _buildSeverityChart()),
-              SliverToBoxAdapter(child: const SectionHeader(title: '30-Day Trend')),
-              SliverToBoxAdapter(child: _buildTrendChart()),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            // Top action bar with filter pill
+            SliverToBoxAdapter(
+              child: _buildFilterBar(service),
+            ),
+
+            if (service.isLoading && stats == null)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.industrial600),
+                ),
+              )
+            else if (stats != null) ...[
+              // 1. KPI Stats Cards Grid
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.35,
+                  ),
+                  delegate: SliverChildListDelegate([
+                    StatCard(
+                      label: 'Total Inspections',
+                      value: stats.totalInspections.toString(),
+                      icon: Icons.biotech_outlined,
+                      accentColor: AppColors.industrial600,
+                      delta: '+8.4%',
+                      deltaIsPositive: true,
+                      subtitle: 'vs prior batch',
+                    ),
+                    StatCard(
+                      label: 'Defect Rate',
+                      value: '${stats.defectRate.toStringAsFixed(1)}%',
+                      icon: Icons.warning_amber_rounded,
+                      accentColor: stats.defectRate > 2.0 ? AppColors.qaFail : AppColors.qaWarning,
+                      delta: '-0.3%',
+                      deltaIsPositive: true,
+                      subtitle: '${stats.failCount} failed boards',
+                    ),
+                    StatCard(
+                      label: 'Yield Rate',
+                      value: '${stats.yieldRate.toStringAsFixed(1)}%',
+                      icon: Icons.verified_outlined,
+                      accentColor: AppColors.qaPass,
+                      delta: '+0.5%',
+                      deltaIsPositive: true,
+                      subtitle: 'IPC Class 3 Target',
+                    ),
+                    StatCard(
+                      label: 'Critical Defects',
+                      value: stats.criticalDefects.toString(),
+                      icon: Icons.crisis_alert_outlined,
+                      accentColor: stats.criticalDefects > 0 ? AppColors.qaFail : AppColors.qaPass,
+                      delta: stats.criticalDefects == 0 ? 'Optimal' : 'Action Req',
+                      deltaIsPositive: stats.criticalDefects == 0,
+                      subtitle: 'Requires QA review',
+                    ),
+                  ]),
+                ),
+              ),
+
+              // 2. Pass / Fail Ratio Indicator
+              SliverToBoxAdapter(
+                child: _buildPassFailBar(stats),
+              ),
+
+              // 3. Time Series Defect Trends
+              SliverToBoxAdapter(
+                child: SectionHeader(
+                  title: 'Defect Trends Over Time',
+                  subtitle: 'Historical defect trajectory & inspection volume',
+                  trailing: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.bgMuted,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: ['Daily', 'Weekly', 'Monthly'].map((p) {
+                        final isSel = _trendPeriod == p;
+                        return GestureDetector(
+                          onTap: () => setState(() => _trendPeriod = p),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSel ? AppColors.industrial600 : Colors.transparent,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              p,
+                              style: AppTypography.mono.copyWith(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isSel ? Colors.white : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildTrendChartCard(stats),
+              ),
+
+              // 4. PCB Defect Location Heatmap
+              SliverToBoxAdapter(
+                child: SectionHeader(
+                  title: 'Defect Location Heatmap',
+                  subtitle: 'Spatial distribution across PCB surface layout',
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.industrial50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.industrial200),
+                    ),
+                    child: Text(
+                      '${stats.heatmapPoints.length} Hotspots',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.industrial700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: PcbHeatmapView(points: stats.heatmapPoints),
+              ),
+
+              // 5. Defects by Classification Type
+              SliverToBoxAdapter(
+                child: const SectionHeader(
+                  title: 'Defects by Classification',
+                  subtitle: 'Breakdown across IPC defect taxonomy categories',
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildDefectsByType(stats),
+              ),
+
+              // 6. Model Performance & Confidence Score Distribution
+              SliverToBoxAdapter(
+                child: const SectionHeader(
+                  title: 'Model Performance & Confidence',
+                  subtitle: 'YOLOv8s detection metrics & score distribution',
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildModelMetricsCard(stats),
+              ),
+
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 32),
+              ),
             ],
           ],
         ),
@@ -68,319 +203,497 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+  Widget _buildFilterBar(SupabaseService service) {
+    return Container(
+      color: AppColors.bgSurface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
-              borderRadius: BorderRadius.circular(12),
+          // Filter button
+          InkWell(
+            onTap: () => FilterSheet.show(context),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.bgMuted,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.tune_outlined, size: 14, color: AppColors.industrial700),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Filters',
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.industrial900,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: const Icon(Icons.memory, color: Colors.white, size: 22),
           ),
-          const SizedBox(width: 12),
-          Text('Dashboard', style: Theme.of(context).textTheme.headlineMedium),
+          const SizedBox(width: 8),
+
+          // Active filter tags scroll
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _filterTag('Time: ${service.filterTimeframe.toUpperCase()}'),
+                  if (service.filterStation != null && service.filterStation != 'All')
+                    _filterTag('Station: ${service.filterStation}'),
+                  if (service.filterBatch != null && service.filterBatch != 'All')
+                    _filterTag('Batch: ${service.filterBatch}'),
+                  if (service.filterDefectType != null && service.filterDefectType != 'All')
+                    _filterTag('Type: ${service.filterDefectType!.toUpperCase()}'),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildShimmer() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Shimmer.fromColors(
-        baseColor: const Color(0xFF1A2236),
-        highlightColor: const Color(0xFF2A3350),
-        child: Column(
-          children: List.generate(3, (_) => Container(
-            height: 80,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-          )),
+  Widget _filterTag(String text) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.industrial50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: AppColors.industrial200),
+      ),
+      child: Text(
+        text,
+        style: AppTypography.mono.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.industrial700,
         ),
       ),
     );
   }
 
-  Widget _buildError() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Icon(Icons.cloud_off, size: 48, color: Colors.white.withValues(alpha: 0.3)),
-          const SizedBox(height: 12),
-          Text('Could not load dashboard', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15)),
-          const SizedBox(height: 6),
-          Text(_error!, style: GoogleFonts.inter(color: const Color(0xFFEF4444), fontSize: 13), textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Retry'),
-          ),
-        ],
+  Widget _buildPassFailBar(DashboardStats stats) {
+    final passPct = stats.yieldRate;
+    final failPct = stats.defectRate;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
-    );
-  }
-
-  Widget _buildStatCards() {
-    final total = _stats!['total_inspections'] ?? 0;
-    final pass = _stats!['pass_count'] ?? 0;
-    final fail = _stats!['fail_count'] ?? 0;
-    final defects = _stats!['total_defects'] ?? 0;
-    final passRate = total > 0 ? (pass / total * 100) : 0.0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: StatCard(
-                label: 'Total Inspections',
-                value: total.toString(),
-                icon: Icons.assignment_outlined,
-                color: const Color(0xFF6366F1),
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: StatCard(
-                label: 'Pass Rate',
-                value: '${passRate.toStringAsFixed(1)}%',
-                icon: Icons.check_circle_outline,
-                color: const Color(0xFF10B981),
-              )),
+              Text(
+                'PASS / FAIL RATIO',
+                style: AppTypography.label.copyWith(fontSize: 10),
+              ),
+              Text(
+                '${passPct.toStringAsFixed(1)}% PASS  •  ${failPct.toStringAsFixed(1)}% FAIL',
+                style: AppTypography.mono.copyWith(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: StatCard(
-                label: 'Failed',
-                value: fail.toString(),
-                icon: Icons.cancel_outlined,
-                color: const Color(0xFFEF4444),
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: StatCard(
-                label: 'Total Defects',
-                value: defects.toString(),
-                icon: Icons.bug_report_outlined,
-                color: const Color(0xFFF59E0B),
-              )),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDefectsByClass() {
-    final byClass = Map<String, dynamic>.from(_stats!['defects_by_class'] ?? {});
-    if (byClass.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Text('No defect data yet', style: GoogleFonts.inter(color: const Color(0xFF94A3B8))),
-      );
-    }
-    final colors = [
-      const Color(0xFFEF4444), const Color(0xFFF59E0B), const Color(0xFF6366F1),
-      const Color(0xFF10B981), const Color(0xFF06B6D4), const Color(0xFFA855F7),
-    ];
-    final entries = byClass.entries.toList();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: List.generate(entries.length, (i) {
-              final e = entries[i];
-              final maxVal = entries.map((x) => (x.value as num).toDouble()).reduce((a, b) => a > b ? a : b);
-              final fraction = maxVal > 0 ? (e.value as num).toDouble() / maxVal : 0.0;
-              return Padding(
-                padding: EdgeInsets.only(bottom: i < entries.length - 1 ? 12 : 0),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 90,
-                      child: Text(e.key, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFCBD5E1))),
-                    ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 10,
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: (passPct * 10).toInt(),
+                    child: Container(color: AppColors.qaPass),
+                  ),
+                  if (failPct > 0)
                     Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: fraction,
-                          minHeight: 8,
-                          backgroundColor: Colors.white.withValues(alpha: 0.06),
-                          valueColor: AlwaysStoppedAnimation(colors[i % colors.length]),
-                        ),
-                      ),
+                      flex: (failPct * 10).toInt().clamp(1, 1000),
+                      child: Container(color: AppColors.qaFail),
                     ),
-                    const SizedBox(width: 10),
-                    SizedBox(
-                      width: 32,
-                      child: Text('${e.value}', textAlign: TextAlign.right,
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _statusBadge('PASS COUNT', stats.passCount.toString(), AppColors.qaPass),
+              _statusBadge('FAIL COUNT', stats.failCount.toString(), AppColors.qaFail),
+              _statusBadge('PENDING QA', stats.pendingReviews.toString(), AppColors.qaWarning),
+              _statusBadge('ACTIVE ALERTS', stats.activeAlerts.toString(), AppColors.qaInfo),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSeverityChart() {
-    final bySeverity = Map<String, dynamic>.from(_stats!['defects_by_severity'] ?? {});
-    if (bySeverity.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Text('No severity data yet', style: GoogleFonts.inter(color: const Color(0xFF94A3B8))),
-      );
+  Widget _statusBadge(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 9)),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrendChartCard(DashboardStats stats) {
+    List<TrendPoint> points;
+    switch (_trendPeriod) {
+      case 'Weekly':
+        points = stats.trendWeekly;
+        break;
+      case 'Monthly':
+        points = stats.trendMonthly;
+        break;
+      default:
+        points = stats.trendDaily;
+        break;
     }
 
-    final severityColors = {
-      'Critical': const Color(0xFFEF4444),
-      'Moderate': const Color(0xFFF59E0B),
-      'Minor': const Color(0xFF10B981),
-    };
+    if (points.isEmpty) return const SizedBox.shrink();
 
-    final sections = bySeverity.entries.map((e) {
-      final color = severityColors[e.key] ?? const Color(0xFF6366F1);
-      return PieChartSectionData(
-        value: (e.value as num).toDouble(),
-        color: color,
-        radius: 28,
-        title: '',
-      );
-    }).toList();
+    final maxY = points.map((p) => p.inspections.toDouble()).fold(10.0, (a, b) => a > b ? a : b) * 1.15;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(14, 16, 16, 12),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: PieChart(PieChartData(
-                  sections: sections,
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 18,
-                  startDegreeOffset: -90,
-                )),
+              Text(
+                '$_trendPeriod Defect Trajectory',
+                style: AppTypography.heading3.copyWith(fontSize: 13),
               ),
-              const SizedBox(width: 24),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: bySeverity.entries.map((e) {
-                    final color = severityColors[e.key] ?? const Color(0xFF6366F1);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-                          const SizedBox(width: 8),
-                          Text(e.key, style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFCBD5E1))),
-                          const Spacer(),
-                          Text('${e.value}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
+              Row(
+                children: [
+                  _chartLegend(AppColors.industrial600, 'Inspections'),
+                  const SizedBox(width: 10),
+                  _chartLegend(AppColors.qaFail, 'Defects'),
+                ],
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrendChart() {
-    final trend = List<Map<String, dynamic>>.from(
-        (_stats!['trend_last_30_days'] as List?)?.map((e) => Map<String, dynamic>.from(e)) ?? []);
-    if (trend.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Text('No trend data', style: GoogleFonts.inter(color: const Color(0xFF94A3B8))),
-      );
-    }
-
-    final inspectionSpots = trend.asMap().entries.map((e) =>
-        FlSpot(e.key.toDouble(), (e.value['inspections'] as num?)?.toDouble() ?? 0)).toList();
-    final defectSpots = trend.asMap().entries.map((e) =>
-        FlSpot(e.key.toDouble(), (e.value['defects'] as num?)?.toDouble() ?? 0)).toList();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
-          child: SizedBox(
+          const SizedBox(height: 16),
+          SizedBox(
             height: 180,
-            child: LineChart(LineChartData(
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                getDrawingHorizontalLine: (_) => FlLine(color: Colors.white.withValues(alpha: 0.05), strokeWidth: 1),
-              ),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(sideTitles: SideTitles(
-                  showTitles: true, reservedSize: 32,
-                  getTitlesWidget: (v, _) => Text(v.toInt().toString(),
-                      style: GoogleFonts.inter(fontSize: 10, color: const Color(0xFF64748B))),
-                )),
-                bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              borderData: FlBorderData(show: false),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: inspectionSpots,
-                  isCurved: true,
-                  color: const Color(0xFF6366F1),
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [const Color(0xFF6366F1).withValues(alpha: 0.2), const Color(0xFF6366F1).withValues(alpha: 0.0)],
+            child: BarChart(
+              BarChartData(
+                maxY: maxY,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (val) => FlLine(
+                    color: AppColors.borderSubtle,
+                    strokeWidth: 0.8,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (val, meta) => Text(
+                        val.toInt().toString(),
+                        style: AppTypography.mono.copyWith(fontSize: 9, color: AppColors.textMuted),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (val, meta) {
+                        final idx = val.toInt();
+                        if (idx >= 0 && idx < points.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              points[idx].label,
+                              style: AppTypography.mono.copyWith(fontSize: 9, color: AppColors.textSecondary),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
                     ),
                   ),
                 ),
-                LineChartBarData(
-                  spots: defectSpots,
-                  isCurved: true,
-                  color: const Color(0xFFEF4444),
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [const Color(0xFFEF4444).withValues(alpha: 0.15), const Color(0xFFEF4444).withValues(alpha: 0.0)],
+                borderData: FlBorderData(show: false),
+                barGroups: points.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final p = entry.value;
+                  return BarChartGroupData(
+                    x: i,
+                    barRods: [
+                      BarChartRodData(
+                        toY: p.inspections.toDouble(),
+                        color: AppColors.industrial600,
+                        width: 10,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                      ),
+                      BarChartRodData(
+                        toY: (p.defects * 4).toDouble().clamp(0.0, maxY), // scaled for visual prominence
+                        color: AppColors.qaFail,
+                        width: 8,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chartLegend(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 4),
+        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+      ],
+    );
+  }
+
+  Widget _buildDefectsByType(DashboardStats stats) {
+    final maxCount = stats.defectsByClass.values.fold(1, (a, b) => a > b ? a : b);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        children: stats.defectsByClass.entries.map((entry) {
+          final count = entry.value;
+          final pct = maxCount > 0 ? (count / maxCount) : 0.0;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    entry.key.toUpperCase(),
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: SizedBox(
+                      height: 8,
+                      child: LinearProgressIndicator(
+                        value: pct.clamp(0.05, 1.0),
+                        backgroundColor: AppColors.bgMuted,
+                        color: _defectColor(entry.key),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    count.toString(),
+                    textAlign: TextAlign.right,
+                    style: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
               ],
-              lineTouchData: const LineTouchData(enabled: false),
-            )),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Color _defectColor(String cls) {
+    switch (cls.toLowerCase()) {
+      case 'short':
+        return AppColors.qaFail;
+      case 'open':
+        return const Color(0xFFE11D48);
+      case 'mousebite':
+        return AppColors.qaWarning;
+      case 'spur':
+        return const Color(0xFFF97316);
+      case 'copper':
+        return AppColors.industrial500;
+      default:
+        return const Color(0xFF8B5CF6);
+    }
+  }
+
+  Widget _buildModelMetricsCard(DashboardStats stats) {
+    final m = stats.modelMetrics;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(m.activeModel, style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.qaPassBg,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${m.inferenceLatencyMs} ms LATENCY',
+                  style: AppTypography.mono.copyWith(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.qaPass),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+          // 4 metric pills
+          Row(
+            children: [
+              _metricPill('mAP@0.5', '${(m.map50 * 100).toStringAsFixed(1)}%'),
+              const SizedBox(width: 8),
+              _metricPill('Precision', '${(m.precision * 100).toStringAsFixed(1)}%'),
+              const SizedBox(width: 8),
+              _metricPill('Recall', '${(m.recall * 100).toStringAsFixed(1)}%'),
+              const SizedBox(width: 8),
+              _metricPill('F1 Score', '${(m.f1Score * 100).toStringAsFixed(1)}%'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'CONFIDENCE SCORE DISTRIBUTION',
+            style: AppTypography.label.copyWith(fontSize: 9),
+          ),
+          const SizedBox(height: 8),
+          // Confidence distribution bars
+          Column(
+            children: stats.confidenceDistribution.map((bin) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 55,
+                      child: Text(
+                        bin.rangeLabel,
+                        style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: (bin.percentage / 100).clamp(0.02, 1.0),
+                          backgroundColor: AppColors.bgMuted,
+                          color: AppColors.industrial600,
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        '${bin.percentage.toStringAsFixed(0)}%',
+                        textAlign: TextAlign.right,
+                        style: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _metricPill(String title, String val) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.borderSubtle),
+        ),
+        child: Column(
+          children: [
+            Text(title, style: AppTypography.bodySmall.copyWith(fontSize: 9)),
+            const SizedBox(height: 2),
+            Text(
+              val,
+              style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.industrial900),
+            ),
+          ],
         ),
       ),
     );
