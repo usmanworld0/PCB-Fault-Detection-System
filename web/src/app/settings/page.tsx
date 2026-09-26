@@ -68,14 +68,11 @@ export default function SettingsPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                System & Quality Control Parameters
+                Settings
               </h1>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
-                CONFIGURATION
-              </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Configure automated quality thresholds, alert triggers, and compliance parameters.
+              Configure system thresholds and preferences.
             </p>
           </div>
         </div>
@@ -98,43 +95,62 @@ export default function SettingsPage() {
         ) : (
           <form onSubmit={handleSave} className="space-y-4">
             {/* Setting 1: Confidence threshold */}
-            <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="text-xs font-bold text-surface-900 uppercase tracking-wider">
-                    Engineering Review Confidence Threshold
-                  </h4>
-                  <p className="text-xs text-surface-500 mt-0.5">
-                    Defect detections with confidence below this threshold are automatically flagged for manual verification
-                  </p>
+            <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-industrial-50 text-industrial-700 border border-industrial-200 shrink-0">
+                    <Sliders className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-surface-900 tracking-tight">
+                      Engineering Review Confidence Threshold
+                    </h4>
+                    <p className="text-xs text-surface-500 mt-0.5">
+                      Defect detections with confidence below this threshold are automatically flagged for manual verification.
+                    </p>
+                  </div>
                 </div>
-                <span className="font-mono text-xs font-bold px-2 py-1 rounded bg-brand-50 text-brand-700 border border-brand-200">
+                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-industrial-50 text-industrial-700 border border-industrial-200 shrink-0">
                   {formValues["review_confidence_threshold"] || "0.60"}
                 </span>
               </div>
-              <input
-                type="range"
-                min="0.30"
-                max="0.95"
-                step="0.05"
-                value={formValues["review_confidence_threshold"] || "0.60"}
-                onChange={(e) => handleChange("review_confidence_threshold", e.target.value)}
-                className="w-full accent-brand-600 cursor-pointer"
-              />
+              <div className="space-y-1.5 pt-2">
+                <input
+                  type="range"
+                  min="0.30"
+                  max="0.95"
+                  step="0.05"
+                  value={formValues["review_confidence_threshold"] || "0.60"}
+                  onChange={(e) => handleChange("review_confidence_threshold", e.target.value)}
+                  className="w-full accent-industrial-600 cursor-pointer h-2 bg-surface-100 rounded-lg"
+                />
+                <div className="flex justify-between text-[10px] font-mono text-surface-400">
+                  <span>0.30 (Relaxed)</span>
+                  <span>0.60 (Standard)</span>
+                  <span>0.95 (Strict)</span>
+                </div>
+              </div>
             </div>
 
             {/* Setting 2: Critical defect alert behavior */}
-            <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
-              <h4 className="text-xs font-bold text-surface-900 uppercase tracking-wider mb-1">
-                Critical Defect Instant Alerts
-              </h4>
-              <p className="text-xs text-surface-500 mb-3">
-                Trigger instant system notifications and audit alerts when open or short circuits are identified
-              </p>
+            <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                  <Shield className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-surface-900 tracking-tight">
+                    Critical Defect Instant Alerts
+                  </h4>
+                  <p className="text-xs text-surface-500 mt-0.5">
+                    Trigger instant system notifications and audit alerts when open or short circuits are identified.
+                  </p>
+                </div>
+              </div>
               <select
                 value={formValues["critical_alert_enabled"] || "true"}
                 onChange={(e) => handleChange("critical_alert_enabled", e.target.value)}
-                className="px-3 py-2 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full sm:w-auto px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-800 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 font-mono shadow-xs"
               >
                 <option value="true">Enabled (Immediate Critical Alarm)</option>
                 <option value="false">Disabled (Log Only)</option>
@@ -142,37 +158,51 @@ export default function SettingsPage() {
             </div>
 
             {/* Setting 3: Default analytics date range */}
-            <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
-              <h4 className="text-xs font-bold text-surface-900 uppercase tracking-wider mb-1">
-                Default Analytics Window
-              </h4>
-              <p className="text-xs text-surface-500 mb-3">
-                Default time horizon shown across operations dashboard charts
-              </p>
+            <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-surface-900 tracking-tight">
+                    Default Analytics Window
+                  </h4>
+                  <p className="text-xs text-surface-500 mt-0.5">
+                    Default time horizon shown across operations dashboard charts.
+                  </p>
+                </div>
+              </div>
               <select
                 value={formValues["default_analytics_range_days"] || "30"}
                 onChange={(e) => handleChange("default_analytics_range_days", e.target.value)}
-                className="px-3 py-2 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full sm:w-auto px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-800 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 font-mono shadow-xs"
               >
-                <option value="7">7 Days</option>
-                <option value="30">30 Days (Standard)</option>
-                <option value="90">90 Days (Quarterly)</option>
+                <option value="7">7 Days (Weekly)</option>
+                <option value="30">30 Days (Monthly Standard)</option>
+                <option value="90">90 Days (Quarterly SPC)</option>
               </select>
             </div>
 
             {/* Setting 4: Report Branding */}
-            <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
-              <h4 className="text-xs font-bold text-surface-900 uppercase tracking-wider mb-1">
-                Official Quality Report Branding Title
-              </h4>
-              <p className="text-xs text-surface-500 mb-2">
-                Header name stamped on generated quality reports and compliance exports
-              </p>
+            <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-xs">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-industrial-50 text-industrial-700 border border-industrial-200 shrink-0">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-surface-900 tracking-tight">
+                    Official Quality Report Branding Title
+                  </h4>
+                  <p className="text-xs text-surface-500 mt-0.5">
+                    Header name stamped on generated quality reports and compliance exports.
+                  </p>
+                </div>
+              </div>
               <input
                 type="text"
                 value={formValues["report_branding"] || "PCB-Vision Industrial QC"}
                 onChange={(e) => handleChange("report_branding", e.target.value)}
-                className="w-full p-2 bg-white border border-surface-200 rounded text-xs text-surface-900 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 shadow-xs"
               />
             </div>
 
@@ -181,7 +211,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-industrial-900 hover:bg-industrial-800 text-white text-xs sm:text-sm font-semibold shadow-xs transition-colors disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 <span>{saving ? "Saving Changes..." : "Save Settings"}</span>

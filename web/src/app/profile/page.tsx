@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { User, Shield, CheckCircle, LogOut, Key } from "lucide-react";
+import { User, Shield, CheckCircle, LogOut, Key, CheckCircle2, Lock } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { RoleBadge } from "@/components/common/RoleBadge";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -14,27 +14,31 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <div className="space-y-5 max-w-4xl mx-auto">
+      <div className="space-y-6 max-w-4xl mx-auto">
         {/* Header */}
         <div className="pb-4 border-b border-surface-200">
-          <h1 className="text-xl font-bold tracking-tight text-surface-900">
-            User Account Profile
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-surface-900">
+              Profile
+            </h1>
+          </div>
           <p className="text-xs text-surface-500 mt-1">
-            Current session identity, assigned RBAC permissions, and workstation authentication status.
+            User details and assigned permissions.
           </p>
         </div>
 
         {/* User Identity Card */}
-        <div className="bg-white border border-surface-200 rounded-lg p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white border border-surface-200 rounded-2xl p-6 sm:p-7 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-600">
-                <User className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-2xl bg-industrial-900 border border-industrial-800 text-white flex items-center justify-center font-mono font-bold text-xl shadow-md">
+                {user?.email?.charAt(0).toUpperCase() || "O"}
               </div>
               <div>
-                <h3 className="text-base font-bold text-surface-900 font-mono">{user?.email}</h3>
-                <div className="flex items-center gap-2 mt-1">
+                <h3 className="text-base sm:text-lg font-bold text-surface-900 font-mono tracking-tight">
+                  {user?.email}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1.5">
                   <RoleBadge role={role || "viewer"} />
                   <span className="text-xs text-surface-500 font-mono">
                     Member since {formatDate(user?.created_at)}
@@ -43,34 +47,39 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <button
-              onClick={logout}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 shadow-xs transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out of Platform</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={logout}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 shadow-2xs transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Role Permissions Matrix */}
-        <div className="bg-white border border-surface-200 rounded-lg p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-4 h-4 text-brand-600" />
-            <h4 className="text-sm font-bold text-surface-900">Active Permissions Matrix</h4>
+        <div className="bg-white border border-surface-200 rounded-2xl p-6 sm:p-7 shadow-xs">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="p-1.5 rounded-lg bg-industrial-50 text-industrial-700 border border-industrial-200">
+              <Shield className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-surface-900">Permissions</h4>
           </div>
           <p className="text-xs text-surface-500 mb-4">
-            The following access rights are granted to your account by virtue of your role (
-            <span className="font-semibold text-surface-800 capitalize">{role}</span>):
+            Assigned access rights for your role (<span className="font-semibold text-surface-800 capitalize">{role}</span>):
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {permissions.map((perm) => (
               <div
                 key={perm}
-                className="flex items-center gap-2 p-2.5 rounded border border-surface-200 bg-surface-50 text-xs text-surface-800"
+                className="flex items-center gap-2.5 p-3 rounded-xl border border-surface-200 bg-surface-50 text-xs text-surface-800 hover:border-industrial-200 transition-colors"
               >
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <div className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                </div>
                 <span className="font-mono text-[11px] font-medium">{perm}</span>
               </div>
             ))}

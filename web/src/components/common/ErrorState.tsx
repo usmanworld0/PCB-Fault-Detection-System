@@ -13,19 +13,19 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center rounded-lg border border-rose-200 bg-rose-50/50 shadow-xs">
-      <div className="w-9 h-9 mb-2 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center rounded-2xl border border-rose-200 bg-rose-50/40 shadow-xs">
+      <div className="w-11 h-11 mb-3 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-2xs">
         <AlertCircle className="w-5 h-5" />
       </div>
-      <h3 className="text-sm font-semibold text-rose-950 tracking-tight">{title}</h3>
-      <p className="mt-1 text-xs text-rose-700 max-w-md">{message}</p>
+      <h3 className="text-sm sm:text-base font-bold text-rose-950 tracking-tight">{title}</h3>
+      <p className="mt-1 text-xs sm:text-sm text-rose-700 max-w-md leading-relaxed">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-surface-0 hover:bg-surface-50 text-surface-800 border border-surface-300 shadow-xs transition-colors"
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-white hover:bg-rose-50 text-rose-800 border border-rose-200 shadow-2xs transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          Retry Operation
+          <span>Retry Operation</span>
         </button>
       )}
     </div>

@@ -49,7 +49,7 @@ export default function ModelsPage() {
               </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Objective benchmark metrics, accuracy scores, and inference latency for trained defect architectures.
+              Accuracy scores and inference latency for detection models.
             </p>
           </div>
           <button
@@ -57,7 +57,7 @@ export default function ModelsPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh Models</span>
+            <span>Refresh</span>
           </button>
         </div>
 
@@ -76,7 +76,7 @@ export default function ModelsPage() {
           <EmptyState
             icon={Cpu}
             title="No models found in registry"
-            description="Models registered in Supabase will appear here once connected."
+            description="Registered models will appear here."
           />
         ) : (
           <div className="space-y-5">
@@ -121,9 +121,9 @@ export default function ModelsPage() {
             <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
               <div className="p-4 border-b border-surface-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Comparative Architecture Benchmarks</h3>
+                  <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Model Benchmarks</h3>
                   <p className="text-xs text-surface-500 mt-0.5">
-                    Empirical metrics recorded during validation on DeepPCB / PKU-Market-PCB datasets
+                    Performance comparison across detection models.
                   </p>
                 </div>
               </div>

@@ -17,12 +17,12 @@ export function StatCard({
   icon: Icon,
   variant = "default",
 }: StatCardProps) {
-  const borderAccents = {
-    default: "border-surface-200",
-    pass: "border-l-4 border-l-emerald-500 border-surface-200",
-    fail: "border-l-4 border-l-rose-500 border-surface-200",
-    review: "border-l-4 border-l-amber-500 border-surface-200",
-    brand: "border-l-4 border-l-industrial-500 border-surface-200",
+  const topAccents = {
+    default: "border-t-2 border-t-surface-300",
+    pass: "border-t-2 border-t-emerald-500",
+    fail: "border-t-2 border-t-rose-500",
+    review: "border-t-2 border-t-amber-500",
+    brand: "border-t-2 border-t-industrial-600",
   };
 
   const iconColors = {
@@ -36,26 +36,34 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-surface-0 p-4 shadow-xs transition-shadow hover:shadow-sm",
-        borderAccents[variant]
+        "rounded-xl border border-surface-200/90 bg-surface-0 p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between",
+        topAccents[variant]
       )}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-2xs font-mono font-semibold uppercase tracking-wider text-surface-500">
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500 line-clamp-1">
           {label}
         </span>
-        <div className={cn("w-7 h-7 rounded border flex items-center justify-center", iconColors[variant])}>
-          <Icon className="w-3.5 h-3.5" />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs",
+            iconColors[variant]
+          )}
+        >
+          <Icon className="w-4 h-4" />
         </div>
       </div>
-      <div className="mt-2 text-2xl font-bold font-mono tracking-tight text-surface-900">
-        {value}
-      </div>
-      {subtext && (
-        <div className="mt-1 text-xs text-surface-500 font-sans flex items-center gap-1">
-          {subtext}
+
+      <div className="mt-2.5">
+        <div className="text-2xl font-bold font-mono tracking-tight text-surface-900">
+          {value}
         </div>
-      )}
+        {subtext && (
+          <div className="mt-1 text-xs text-surface-500 truncate font-sans">
+            {subtext}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -47,14 +47,11 @@ export default function ReviewQueuePage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                QA Verification & Review Queue
+                Review Queue
               </h1>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
-                DISPOSITION QUEUE
-              </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Manual verification workstation and engineering signoff for flagged board inspections.
+              Verify and confirm flagged inspection records.
             </p>
           </div>
           <button
@@ -62,7 +59,7 @@ export default function ReviewQueuePage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh Queue</span>
+            <span>Refresh</span>
           </button>
         </div>
 
@@ -119,74 +116,125 @@ export default function ReviewQueuePage() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                    <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
-                    <th className="py-2.5 px-3 font-semibold">Captured At</th>
-                    <th className="py-2.5 px-3 font-semibold">Station</th>
-                    <th className="py-2.5 px-3 font-semibold">AI Model</th>
-                    <th className="py-2.5 px-3 font-semibold">Model Finding</th>
-                    <th className="py-2.5 px-3 font-semibold">Defect Count</th>
-                    <th className="py-2.5 px-3 font-semibold">Review State</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-100">
-                  {items.map((i) => (
-                    <tr
-                      key={i.id}
-                      onClick={() => router.push(`/reviews/${i.id}`)}
-                      className="hover:bg-surface-50/80 cursor-pointer transition-colors"
-                    >
-                      <td className="py-2.5 px-3 font-mono text-[11px] font-medium text-surface-900">
-                        <span className="text-brand-600 hover:underline">{i.id.slice(0, 8)}...</span>
-                      </td>
-                      <td className="py-2.5 px-3 text-surface-700">
-                        <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
-                        <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(i.captured_at)}</div>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
+                      <th className="py-3 px-4 font-semibold">Inspection ID</th>
+                      <th className="py-3 px-4 font-semibold">Captured At</th>
+                      <th className="py-3 px-4 font-semibold">Station</th>
+                      <th className="py-3 px-4 font-semibold">AI Model</th>
+                      <th className="py-3 px-4 font-semibold">Model Finding</th>
+                      <th className="py-3 px-4 font-semibold">Defect Count</th>
+                      <th className="py-3 px-4 font-semibold">Review State</th>
+                      <th className="py-3 px-4 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-100">
+                    {items.map((i) => (
+                      <tr
+                        key={i.id}
+                        onClick={() => router.push(`/reviews/${i.id}`)}
+                        className="hover:bg-industrial-50/30 cursor-pointer transition-colors"
+                      >
+                        <td className="py-3 px-4 font-mono text-[11px] font-medium text-surface-900">
+                          <span className="text-industrial-600 font-semibold hover:underline">{i.id.slice(0, 8)}...</span>
+                        </td>
+                        <td className="py-3 px-4 text-surface-700">
+                          <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
+                          <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(i.captured_at)}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                            {i.station_id || "STATION-01"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[11px] text-surface-600">{i.model}</td>
+                        <td className="py-3 px-4">
+                          <StatusBadge status={i.status} size="sm" />
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[11px]">
+                          <span
+                            className={`font-semibold ${
+                              i.defect_count > 0 ? "text-rose-600" : "text-emerald-600"
+                            }`}
+                          >
+                            {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 uppercase">
+                            {i.review_status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/reviews/${i.id}`);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-industrial-900 hover:bg-industrial-800 text-white shadow-xs transition-colors"
+                          >
+                            <CheckSquare className="w-3.5 h-3.5" />
+                            <span>Review</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className="md:hidden divide-y divide-surface-200">
+                {items.map((i) => (
+                  <div
+                    key={i.id}
+                    onClick={() => router.push(`/reviews/${i.id}`)}
+                    className="p-4 space-y-3 hover:bg-surface-50/80 active:bg-surface-100 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-industrial-600">
+                          #{i.id.slice(0, 8)}
+                        </span>
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
                           {i.station_id || "STATION-01"}
                         </span>
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">{i.model}</td>
-                      <td className="py-2.5 px-3">
-                        <StatusBadge status={i.status} size="sm" />
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-[11px]">
-                        <span
-                          className={`font-semibold ${
-                            i.defect_count > 0 ? "text-red-600" : "text-emerald-600"
-                          }`}
-                        >
-                          {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 uppercase">
-                          {i.review_status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/reviews/${i.id}`);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
-                        >
-                          <CheckSquare className="w-3.5 h-3.5" />
-                          <span>Review</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                      <StatusBadge status={i.status} size="sm" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="text-surface-500 font-mono text-[11px]">
+                        {formatDate(i.captured_at)}
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-rose-600">
+                        {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 uppercase">
+                        {i.review_status}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/reviews/${i.id}`);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-industrial-900 hover:bg-industrial-800 text-white shadow-xs"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        <span>Review</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -93,14 +93,11 @@ export default function AnalyticsPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                Quality & Production Analytics
+                Analytics
               </h1>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
-                TELEMETRY & STATS
-              </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Statistical process control, defect density trends, and comparative inference performance.
+              Inspection trends, defect counts, and model performance metrics.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -111,7 +108,7 @@ export default function AnalyticsPage() {
                   daysFilter === 7 ? "bg-white text-surface-900 shadow-xs" : "text-surface-600 hover:text-surface-900"
                 }`}
               >
-                Last 7 Days
+                7 Days
               </button>
               <button
                 onClick={() => setDaysFilter(30)}
@@ -119,7 +116,7 @@ export default function AnalyticsPage() {
                   daysFilter === 30 ? "bg-white text-surface-900 shadow-xs" : "text-surface-600 hover:text-surface-900"
                 }`}
               >
-                Last 30 Days
+                30 Days
               </button>
             </div>
             <button
@@ -153,8 +150,8 @@ export default function AnalyticsPage() {
               <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-surface-900">Inspection Throughput Volume</h3>
-                    <p className="text-xs text-surface-500 mt-0.5">Daily number of inspected PCB units</p>
+                    <h3 className="text-sm font-semibold text-surface-900">Inspection Throughput</h3>
+                    <p className="text-xs text-surface-500 mt-0.5">Daily inspected boards</p>
                   </div>
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
                     VOLUME
@@ -198,8 +195,8 @@ export default function AnalyticsPage() {
               <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-surface-900">Defect Density Rate (%)</h3>
-                    <p className="text-xs text-surface-500 mt-0.5">Ratio of defects per inspected board over time</p>
+                    <h3 className="text-sm font-semibold text-surface-900">Defect Rate (%)</h3>
+                    <p className="text-xs text-surface-500 mt-0.5">Defects per inspected board</p>
                   </div>
                   <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                     TARGET: &lt; 5.0%
@@ -238,8 +235,8 @@ export default function AnalyticsPage() {
             <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-900">Defect Classification Pareto Breakdown</h3>
-                  <p className="text-xs text-surface-500 mt-0.5">Total counts localized across the 6 defect categories</p>
+                  <h3 className="text-sm font-semibold text-surface-900">Defects by Category</h3>
+                  <p className="text-xs text-surface-500 mt-0.5">Distribution across defect types</p>
                 </div>
                 <span className="text-xs font-mono font-medium text-surface-600">
                   Total: <span className="font-semibold text-surface-900">{stats.total_defects}</span>
@@ -274,54 +271,99 @@ export default function AnalyticsPage() {
             <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
               <div className="p-4 border-b border-surface-200 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Model Benchmark Accuracy Summary</h3>
+                  <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Model Performance Summary</h3>
                   <p className="text-xs text-surface-500 mt-0.5">
-                    Evaluating trained detection architectures on held-out DeepPCB test set
+                    Accuracy metrics across detection models
                   </p>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
                   BENCHMARK
                 </span>
               </div>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                      <th className="py-2.5 px-3 font-semibold">Model</th>
-                      <th className="py-2.5 px-3 font-semibold">Architecture</th>
-                      <th className="py-2.5 px-3 font-semibold">Dataset</th>
-                      <th className="py-2.5 px-3 font-semibold">mAP@50</th>
-                      <th className="py-2.5 px-3 font-semibold">Precision</th>
-                      <th className="py-2.5 px-3 font-semibold">Recall</th>
-                      <th className="py-2.5 px-3 font-semibold">F1-Score</th>
-                      <th className="py-2.5 px-3 font-semibold">Latency (ms)</th>
+                      <th className="py-3 px-4 font-semibold">Model</th>
+                      <th className="py-3 px-4 font-semibold">Architecture</th>
+                      <th className="py-3 px-4 font-semibold">Dataset</th>
+                      <th className="py-3 px-4 font-semibold">mAP@50</th>
+                      <th className="py-3 px-4 font-semibold">Precision</th>
+                      <th className="py-3 px-4 font-semibold">Recall</th>
+                      <th className="py-3 px-4 font-semibold">F1-Score</th>
+                      <th className="py-3 px-4 font-semibold">Latency (ms)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-100">
                     {models.map((m) => (
-                      <tr key={m.id} className="hover:bg-surface-50/80 transition-colors">
-                        <td className="py-2.5 px-3 font-mono font-semibold text-surface-900">{m.name}</td>
-                        <td className="py-2.5 px-3 text-surface-700">{m.arch}</td>
-                        <td className="py-2.5 px-3 font-mono text-surface-500">{m.dataset || "DeepPCB"}</td>
-                        <td className="py-2.5 px-3 font-semibold text-brand-700 font-mono">
+                      <tr key={m.id} className="hover:bg-industrial-50/30 transition-colors">
+                        <td className="py-3 px-4 font-mono font-semibold text-surface-900">{m.name}</td>
+                        <td className="py-3 px-4 text-surface-700">{m.arch}</td>
+                        <td className="py-3 px-4 font-mono text-surface-500">{m.dataset || "DeepPCB"}</td>
+                        <td className="py-3 px-4 font-semibold text-industrial-700 font-mono">
                           {m.map50 ? `${(m.map50 * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3 px-4 text-surface-700 font-mono">
                           {m.precision ? `${(m.precision * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3 px-4 text-surface-700 font-mono">
                           {m.recall ? `${(m.recall * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3 px-4 text-surface-700 font-mono">
                           {m.f1 ? `${(m.f1 * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-emerald-700 font-medium">
+                        <td className="py-3 px-4 font-mono text-emerald-700 font-medium">
                           {m.cpu_ms ? `${m.cpu_ms.toFixed(1)} ms` : "—"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-surface-200">
+                {models.map((m) => (
+                  <div key={m.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-mono font-bold text-xs text-surface-900">{m.name}</div>
+                        <div className="text-[10px] text-surface-500 font-mono">{m.arch} · {m.dataset || "DeepPCB"}</div>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-industrial-700 bg-industrial-50 px-2 py-0.5 rounded border border-industrial-200">
+                        {m.map50 ? `${(m.map50 * 100).toFixed(1)}% mAP` : "—"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2 pt-1 border-t border-surface-100 text-center font-mono">
+                      <div className="bg-surface-50 p-1.5 rounded">
+                        <span className="text-[9px] text-surface-400 block uppercase">Prec</span>
+                        <span className="text-xs font-semibold text-surface-800">
+                          {m.precision ? `${(m.precision * 100).toFixed(0)}%` : "—"}
+                        </span>
+                      </div>
+                      <div className="bg-surface-50 p-1.5 rounded">
+                        <span className="text-[9px] text-surface-400 block uppercase">Recall</span>
+                        <span className="text-xs font-semibold text-surface-800">
+                          {m.recall ? `${(m.recall * 100).toFixed(0)}%` : "—"}
+                        </span>
+                      </div>
+                      <div className="bg-surface-50 p-1.5 rounded">
+                        <span className="text-[9px] text-surface-400 block uppercase">F1</span>
+                        <span className="text-xs font-semibold text-surface-800">
+                          {m.f1 ? `${(m.f1 * 100).toFixed(0)}%` : "—"}
+                        </span>
+                      </div>
+                      <div className="bg-surface-50 p-1.5 rounded">
+                        <span className="text-[9px] text-surface-400 block uppercase">Speed</span>
+                        <span className="text-xs font-semibold text-emerald-700">
+                          {m.cpu_ms ? `${m.cpu_ms.toFixed(0)}ms` : "—"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

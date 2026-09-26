@@ -71,15 +71,15 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                Quality Assurance Control Center
+                QA Dashboard
               </h1>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                AOI LINE-01 ACTIVE
+                LINE 01 ACTIVE
               </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Real-time automated optical inspection (AOI) metrics, line yield analysis, and defect localization telemetry.
+              Inspection metrics, yield rates, and defect analytics.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function DashboardPage() {
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${refreshing ? "animate-spin" : ""}`} />
-              <span>{refreshing ? "Synchronizing..." : "Refresh Telemetry"}</span>
+              <span>{refreshing ? "Syncing..." : "Refresh"}</span>
             </button>
           </div>
         </div>
@@ -98,28 +98,28 @@ export default function DashboardPage() {
           <ErrorState message={error} onRetry={loadDashboardData} />
         ) : loading || !stats ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3.5">
               {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-lg" />
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
               ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
-              <Skeleton className="h-80 rounded-lg" />
+              <Skeleton className="h-80 lg:col-span-2 rounded-xl" />
+              <Skeleton className="h-80 rounded-xl" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
-              <Skeleton className="h-80 rounded-lg" />
+              <Skeleton className="h-80 lg:col-span-2 rounded-xl" />
+              <Skeleton className="h-80 rounded-xl" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Skeleton className="h-80 lg:col-span-2 rounded-lg" />
-              <Skeleton className="h-80 rounded-lg" />
+              <Skeleton className="h-80 lg:col-span-2 rounded-xl" />
+              <Skeleton className="h-80 rounded-xl" />
             </div>
           </div>
         ) : (
           <>
             {/* Top KPI Cards (7 Metrics) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3.5">
               <StatCard
                 label="Total Inspections"
                 value={stats.total_inspections}

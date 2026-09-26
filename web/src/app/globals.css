@@ -13,6 +13,10 @@
     --border-strong: #cbd5e1;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--bg-app);
     color: var(--text-primary);
@@ -34,7 +38,7 @@
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -43,7 +47,7 @@
 
 /* Enterprise table utilities */
 .table-dense th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.625rem 0.875rem;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -54,12 +58,45 @@
 }
 
 .table-dense td {
-  padding: 0.625rem 0.75rem;
+  padding: 0.75rem 0.875rem;
   font-size: 0.8125rem;
   color: #1e293b;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .table-dense tr:hover td {
-  background-color: #f8fafc;
+  background-color: rgba(240, 247, 252, 0.6);
+}
+
+/* Subtle circuit grid pattern for authentic industrial hardware feel */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-circuit-dark {
+  background-color: #0b1523;
+  background-image: radial-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+                    radial-gradient(rgba(14, 165, 233, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* Drawer transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

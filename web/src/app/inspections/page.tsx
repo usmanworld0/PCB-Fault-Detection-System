@@ -118,10 +118,10 @@ export default function InspectionsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-surface-900">
-              Inspection History Archive
+              Inspection History
             </h1>
             <p className="text-xs text-surface-500 mt-1">
-              Synchronized automated optical inspection records from factory lines and stations.
+              View and filter all PCB inspection records.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function InspectionsPage() {
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-surface-400" />
               <input
                 type="text"
-                placeholder="Search by source image name, station identifier, or model..."
+                placeholder="Search by ID, station, or model..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-surface-50 border border-surface-200 rounded text-xs text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white font-mono"
@@ -256,19 +256,20 @@ export default function InspectionsPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                      <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
-                      <th className="py-2.5 px-3 font-semibold">Captured At</th>
-                      <th className="py-2.5 px-3 font-semibold">Station</th>
-                      <th className="py-2.5 px-3 font-semibold">Operator</th>
-                      <th className="py-2.5 px-3 font-semibold">AI Model</th>
-                      <th className="py-2.5 px-3 font-semibold">Disposition</th>
-                      <th className="py-2.5 px-3 font-semibold">Defects</th>
-                      <th className="py-2.5 px-3 font-semibold">Review Status</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Actions</th>
+                      <th className="py-3 px-3.5 font-semibold">Inspection ID</th>
+                      <th className="py-3 px-3.5 font-semibold">Captured At</th>
+                      <th className="py-3 px-3.5 font-semibold">Station</th>
+                      <th className="py-3 px-3.5 font-semibold">Operator</th>
+                      <th className="py-3 px-3.5 font-semibold">AI Model</th>
+                      <th className="py-3 px-3.5 font-semibold">Disposition</th>
+                      <th className="py-3 px-3.5 font-semibold">Defects</th>
+                      <th className="py-3 px-3.5 font-semibold">Review Status</th>
+                      <th className="py-3 px-3.5 font-semibold text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-100">
@@ -276,27 +277,27 @@ export default function InspectionsPage() {
                       <tr
                         key={i.id}
                         onClick={() => router.push(`/inspections/${i.id}`)}
-                        className="hover:bg-surface-50/80 cursor-pointer transition-colors"
+                        className="hover:bg-industrial-50/40 cursor-pointer transition-colors"
                       >
-                        <td className="py-2.5 px-3 font-mono text-[11px] font-medium text-surface-900">
-                          <span className="text-brand-600 hover:underline">{i.id.slice(0, 8)}</span>
+                        <td className="py-3 px-3.5 font-mono text-[11px] font-medium text-surface-900">
+                          <span className="text-industrial-600 font-semibold hover:underline">{i.id.slice(0, 8)}</span>
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700">
+                        <td className="py-3 px-3.5 text-surface-700">
                           <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
                           <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(i.captured_at)}</div>
                         </td>
-                        <td className="py-2.5 px-3">
-                          <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                        <td className="py-3 px-3.5">
+                          <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
                             {i.station_id || "STATION-01"}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3.5">
                           {i.operator_email ? (
                             <div className="flex flex-col">
                               <span className="font-mono text-[11px] text-surface-900 font-medium truncate max-w-[130px]" title={i.operator_email}>
                                 {i.operator_email}
                               </span>
-                              <span className="text-[9px] font-mono uppercase text-brand-700 font-semibold">
+                              <span className="text-[9px] font-mono uppercase text-industrial-700 font-semibold">
                                 {i.operator_role || "ENGINEER"}
                               </span>
                             </div>
@@ -304,33 +305,33 @@ export default function InspectionsPage() {
                             <span className="font-mono text-[11px] text-surface-400">Station-01</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-surface-600">
+                        <td className="py-3 px-3.5 font-mono text-[11px] text-surface-600">
                           {i.model}
                         </td>
-                        <td className="py-2.5 px-3">
+                        <td className="py-3 px-3.5">
                           <StatusBadge status={i.final_status || i.status} size="sm" />
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                        <td className="py-3 px-3.5 font-mono text-[11px]">
                           {i.defect_count > 0 ? (
-                            <span className="font-semibold text-red-600">
+                            <span className="font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
                               {i.defect_count} defect{i.defect_count === 1 ? "" : "s"}
                             </span>
                           ) : (
-                            <span className="font-medium text-emerald-600">0 defects</span>
+                            <span className="font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">0 defects</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3">
-                          <span className="font-mono text-[10px] uppercase text-surface-500">
+                        <td className="py-3 px-3.5">
+                          <span className="font-mono text-[10px] uppercase text-surface-500 font-medium">
                             {i.review_status}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-3 px-3.5 text-right">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/inspections/${i.id}`);
                             }}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-surface-600 hover:text-surface-900 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold text-surface-700 hover:text-surface-900 bg-surface-100 hover:bg-surface-200 border border-surface-200 shadow-2xs transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5 text-surface-500" />
                             <span>Workstation</span>
@@ -340,6 +341,55 @@ export default function InspectionsPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card List View */}
+              <div className="md:hidden divide-y divide-surface-200">
+                {items.map((i) => (
+                  <div
+                    key={i.id}
+                    onClick={() => router.push(`/inspections/${i.id}`)}
+                    className="p-4 hover:bg-surface-50/80 active:bg-surface-100 transition-colors cursor-pointer space-y-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-industrial-600">
+                          #{i.id.slice(0, 8)}
+                        </span>
+                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                          {i.station_id || "STATION-01"}
+                        </span>
+                      </div>
+                      <StatusBadge status={i.final_status || i.status} size="sm" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-surface-600">
+                      <div className="font-mono text-[11px]">
+                        <span>{formatDate(i.captured_at)}</span>
+                        <span className="text-surface-400 ml-1.5">({formatTimeAgo(i.captured_at)})</span>
+                      </div>
+                      <div className="font-mono text-[11px]">
+                        {i.defect_count > 0 ? (
+                          <span className="font-semibold text-rose-600">
+                            {i.defect_count} flaw{i.defect_count === 1 ? "" : "s"}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-600 font-medium">0 defects</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="text-[11px] text-surface-500 font-mono">
+                        Model: <span className="text-surface-800 font-semibold">{i.model}</span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-industrial-600">
+                        <span>Workstation</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Pagination Controls */}

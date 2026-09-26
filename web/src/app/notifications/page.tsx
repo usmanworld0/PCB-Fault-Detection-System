@@ -79,7 +79,7 @@ export default function NotificationsPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                Quality Alerts & Notifications
+                Notifications
               </h1>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white font-mono">
@@ -88,7 +88,7 @@ export default function NotificationsPage() {
               )}
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Quality threshold anomalies, critical defect flags, and engineering review triggers.
+              Alerts, defect flags, and system events.
             </p>
           </div>
           <div className="flex items-center gap-2">

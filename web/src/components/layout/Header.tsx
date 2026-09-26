@@ -3,11 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronRight, HardDrive, Shield, User, RefreshCw } from "lucide-react";
+import { Bell, ChevronRight, HardDrive, Shield, User, RefreshCw, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getNotifications } from "@/lib/api/notifications";
 
-export function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export function Header({ onToggleSidebar }: HeaderProps) {
   const pathname = usePathname();
   const { user, role } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -52,23 +56,34 @@ export function Header() {
   const crumbs = getBreadcrumbs(pathname);
 
   return (
-    <header className="h-13 flex-shrink-0 flex items-center justify-between px-6 border-b border-surface-200 bg-surface-0 shadow-xs">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-1.5 text-xs text-surface-500 font-mono">
-        {crumbs.map((crumb, idx) => (
-          <React.Fragment key={crumb}>
-            {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-surface-400" />}
-            <span
-              className={
-                idx === crumbs.length - 1
-                  ? "font-semibold text-surface-900 font-sans text-sm"
-                  : "hover:text-surface-700 transition-colors"
-              }
-            >
-              {crumb}
-            </span>
-          </React.Fragment>
-        ))}
+    <header className="h-14 flex-shrink-0 flex items-center justify-between px-3.5 sm:px-6 border-b border-surface-200 bg-surface-0 shadow-xs z-20">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Mobile Sidebar Hamburger Toggle */}
+        <button
+          onClick={onToggleSidebar}
+          aria-label="Open Navigation Menu"
+          className="lg:hidden p-2 rounded-md text-surface-600 hover:text-surface-900 hover:bg-surface-100 transition-colors focus:outline-none focus:ring-1 focus:ring-industrial-500"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-1.5 text-xs text-surface-500 font-mono truncate">
+          <div className="hidden sm:flex items-center gap-1.5">
+            {crumbs.slice(0, -1).map((crumb, idx) => (
+              <React.Fragment key={crumb}>
+                {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-surface-300 shrink-0" />}
+                <span className="hover:text-surface-700 transition-colors truncate">
+                  {crumb}
+                </span>
+              </React.Fragment>
+            ))}
+            {crumbs.length > 1 && <ChevronRight className="w-3.5 h-3.5 text-surface-300 shrink-0" />}
+          </div>
+          <span className="font-semibold text-surface-900 font-sans text-xs sm:text-sm tracking-tight truncate">
+            {crumbs[crumbs.length - 1]}
+          </span>
+        </div>
       </div>
 
       {/* Right Controls & Telemetry */}
@@ -76,14 +91,14 @@ export function Header() {
         {/* System Online Badge */}
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-200 bg-emerald-50/60 text-emerald-800 text-2xs font-mono font-medium">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-          <span>STATION ONLINE</span>
+          <span>ONLINE</span>
         </div>
 
         {/* Notifications Icon Button */}
         <Link
           href="/notifications"
           className="relative p-1.5 rounded border border-surface-200 text-surface-600 hover:text-surface-900 hover:bg-surface-50 transition-colors"
-          title="Station Notifications"
+          title="Notifications"
         >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (

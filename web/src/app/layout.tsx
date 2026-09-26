@@ -5,6 +5,10 @@ import { AuthProvider } from "@/lib/auth/AuthContext";
 export const metadata: Metadata = {
   title: "PCB-Vision — Quality Inspection & Manufacturing QA",
   description: "Enterprise Automated PCB Fault Detection, Manufacturing QA & Defect Analytics Platform",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({

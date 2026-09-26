@@ -70,14 +70,11 @@ export default function AuditLogsPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-surface-900">
-                System Audit Trail & Compliance Log
+                Audit Log
               </h1>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
-                IMMUTABLE AUDIT
-              </span>
             </div>
             <p className="text-xs text-surface-500 mt-1">
-              Append-only audit trail recording user authentications, disposition overrides, and management actions.
+              Activity log of user actions, sign-offs, and settings.
             </p>
           </div>
           <button
@@ -138,46 +135,83 @@ export default function AuditLogsPage() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                    <th className="py-2.5 px-3 font-semibold">Timestamp</th>
-                    <th className="py-2.5 px-3 font-semibold">User</th>
-                    <th className="py-2.5 px-3 font-semibold">Action</th>
-                    <th className="py-2.5 px-3 font-semibold">Target Entity</th>
-                    <th className="py-2.5 px-3 font-semibold">Audit Context & Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-100">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-surface-50/80 transition-colors">
-                      <td className="py-2.5 px-3 font-mono text-[11px] text-surface-500 whitespace-nowrap">
-                        {formatDate(log.timestamp)}
-                      </td>
-                      <td className="py-2.5 px-3 font-mono text-surface-900 font-medium">
-                        {log.user_email || "System"}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${getActionBadge(
-                            log.action
-                          )}`}
-                        >
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-surface-600 font-mono text-[11px] capitalize">
-                        {log.entity} {log.entity_id ? `(#${log.entity_id.slice(0, 8)})` : ""}
-                      </td>
-                      <td className="py-2.5 px-3 text-surface-700 max-w-md">
-                        {log.description}
-                      </td>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
+                      <th className="py-3 px-4 font-semibold">Timestamp</th>
+                      <th className="py-3 px-4 font-semibold">User</th>
+                      <th className="py-3 px-4 font-semibold">Action</th>
+                      <th className="py-3 px-4 font-semibold">Target Entity</th>
+                      <th className="py-3 px-4 font-semibold">Audit Context & Details</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-surface-100">
+                    {logs.map((log) => (
+                      <tr key={log.id} className="hover:bg-industrial-50/30 transition-colors">
+                        <td className="py-3 px-4 font-mono text-[11px] text-surface-500 whitespace-nowrap">
+                          {formatDate(log.timestamp)}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-surface-900 font-medium">
+                          {log.user_email || "System"}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${getActionBadge(
+                              log.action
+                            )}`}
+                          >
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-surface-600 font-mono text-[11px] capitalize">
+                          {log.entity} {log.entity_id ? `(#${log.entity_id.slice(0, 8)})` : ""}
+                        </td>
+                        <td className="py-3 px-4 text-surface-700 max-w-md text-xs">
+                          {log.description}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-surface-200">
+                {logs.map((log) => (
+                  <div key={log.id} className="p-4 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${getActionBadge(
+                          log.action
+                        )}`}
+                      >
+                        {log.action}
+                      </span>
+                      <span className="font-mono text-[11px] text-surface-400">
+                        {formatDate(log.timestamp)}
+                      </span>
+                    </div>
+
+                    <div className="text-xs font-mono text-surface-900 font-medium truncate">
+                      {log.user_email || "System"}
+                    </div>
+
+                    <p className="text-xs text-surface-600 leading-relaxed">
+                      {log.description}
+                    </p>
+
+                    {log.entity && (
+                      <div className="text-[10px] font-mono text-surface-400">
+                        Target: {log.entity} {log.entity_id ? `(#${log.entity_id.slice(0, 8)})` : ""}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

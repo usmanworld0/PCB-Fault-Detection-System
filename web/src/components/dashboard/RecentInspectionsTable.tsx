@@ -19,14 +19,14 @@ export function RecentInspectionsTable({ inspections }: RecentInspectionsTablePr
     <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
       <div className="p-4 border-b border-surface-200 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Recent Inspection Runs</h3>
-          <p className="text-xs text-surface-500 mt-0.5">Automated visual inspection runs synchronized from factory stations</p>
+          <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Recent Inspections</h3>
+          <p className="text-xs text-surface-500 mt-0.5">Latest PCB inspection runs.</p>
         </div>
         <Link
           href="/inspections"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-industrial-600 hover:text-industrial-700 transition-colors"
         >
-          <span>All Inspection Logs</span>
+          <span>View All</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
