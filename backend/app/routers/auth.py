@@ -12,7 +12,71 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == payload.email.lower()))
+    norm_email = payload.email.lower()
+
+    # 1. Primary: Verify credentials via Supabase GoTrue Auth
+    from ..config import get_settings
+    import requests
+    import uuid
+
+    settings = get_settings()
+    supabase_url = settings.supabase_url.rstrip("/")
+    service_key = settings.supabase_service_key
+
+    if supabase_url and service_key:
+        try:
+            res = requests.post(
+                f"{supabase_url}/auth/v1/token?grant_type=password",
+                headers={"apikey": service_key, "Content-Type": "application/json"},
+                json={"email": norm_email, "password": payload.password},
+                timeout=6,
+            )
+            if res.status_code == 200:
+                data = res.json()
+                u_obj = data.get("user", {})
+                role_str = u_obj.get("app_metadata", {}).get("role") or u_obj.get("user_metadata", {}).get("role") or "engineer"
+                matched_role = UserRole.engineer
+                for r in UserRole:
+                    if r.value == role_str.lower():
+                        matched_role = r
+                        break
+                uid_str = u_obj.get("id")
+                uid = uuid.UUID(uid_str) if uid_str else uuid.uuid4()
+
+                # Ensure user exists in local table for audit logs / inspection references
+                user = db.scalar(select(User).where(User.email == norm_email))
+                if not user:
+                    user = User(
+                        id=uid,
+                        email=norm_email,
+                        password_hash="supabase_auth",
+                        role=matched_role,
+                        is_active=True,
+                    )
+                    db.add(user)
+                    db.commit()
+
+                db.add(AuditLog(
+                    user_id=user.id,
+                    user_email=user.email,
+                    action="LOGIN",
+                    entity="user",
+                    entity_id=str(user.id),
+                    description=f"User {user.email} signed in via Supabase Auth",
+                ))
+                db.commit()
+
+                return TokenResponse(
+                    access_token=data.get("access_token"),
+                    role=matched_role,
+                    user_id=user.id,
+                    email=user.email,
+                )
+        except Exception:
+            pass
+
+    # 2. Fallback: Local database check
+    user = db.scalar(select(User).where(User.email == norm_email))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
     if not user.is_active:

@@ -1,12 +1,55 @@
 import { getSupabase } from "@/lib/supabase";
 import { apiFetch, setStoredToken, getStoredToken } from "./client";
 import { LoginResponse } from "@/types/api";
-import { User } from "@/types/models";
+import { User, UserRole } from "@/types/models";
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const normEmail = email.trim().toLowerCase();
+  const supabase = getSupabase();
 
-  // Try REST API first if available
+  // 1. Primary: Native Supabase Authentication (GoTrue / auth.users)
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: normEmail,
+      password,
+    });
+
+    if (!authError && authData.session && authData.user) {
+      const user = authData.user;
+      let role = (user.app_metadata?.role || user.user_metadata?.role || "") as UserRole;
+
+      // Fallback: lookup role in public.users if not present in Auth metadata
+      if (!role) {
+        const { data: row } = await supabase
+          .from("users")
+          .select("role")
+          .eq("email", normEmail)
+          .single();
+        role = (row?.role || "engineer") as UserRole;
+      }
+
+      const token = authData.session.access_token;
+      setStoredToken(token);
+
+      return {
+        access_token: token,
+        token_type: "bearer",
+        role: role || UserRole.engineer,
+        user_id: user.id,
+        email: normEmail,
+      };
+    }
+    if (authError) {
+      throw new Error(authError.message || "Invalid email or password.");
+    }
+  } catch (err: any) {
+    if (err && err.message && !err.message.includes("fetch")) {
+      throw err;
+    }
+    // Network or API fallback
+  }
+
+  // 2. Secondary: REST API endpoint (if backend is running)
   try {
     const data = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
@@ -14,40 +57,8 @@ export async function login(email: string, password: string): Promise<LoginRespo
     });
     setStoredToken(data.access_token);
     return data;
-  } catch (apiErr) {
-    // Direct Supabase / Client sign-in fallback (for zero-backend Vercel deployment)
-    const supabase = getSupabase();
-    const { data: userRow } = await supabase
-      .from("users")
-      .select("id, email, role, is_active")
-      .eq("email", normEmail)
-      .single();
-
-    const isValidAdmin = normEmail === "admin@example.com" && (password === "changeme" || password.length >= 6);
-    const isValidUser = userRow && userRow.is_active && (isValidAdmin || password.length >= 6);
-
-    if (!isValidUser && !isValidAdmin) {
-      throw new Error("Invalid email or password.");
-    }
-
-    const role = (userRow?.role || "admin") as any;
-    const token = `pcb_session_${btoa(
-      JSON.stringify({
-        id: userRow?.id || "admin-001",
-        email: normEmail,
-        role,
-        exp: Date.now() + 86400000,
-      })
-    )}`;
-
-    setStoredToken(token);
-    return {
-      access_token: token,
-      token_type: "bearer",
-      role,
-      user_id: userRow?.id || "admin-001",
-      email: normEmail,
-    };
+  } catch (apiErr: any) {
+    throw new Error("Invalid email or password.");
   }
 }
 
@@ -57,11 +68,33 @@ export async function getMe(): Promise<User> {
     throw new Error("Not authenticated");
   }
 
-  // Try API first
+  // 1. Primary: Native Supabase Auth session
+  try {
+    const supabase = getSupabase();
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (!error && user && user.email) {
+      let role = (user.app_metadata?.role || user.user_metadata?.role) as UserRole;
+      if (!role) {
+        const { data: row } = await supabase.from("users").select("role").eq("email", user.email).single();
+        role = (row?.role || "engineer") as UserRole;
+      }
+      return {
+        id: user.id,
+        email: user.email,
+        role: role || UserRole.engineer,
+        is_active: true,
+        created_at: user.created_at,
+      };
+    }
+  } catch {
+    // Continue to fallback
+  }
+
+  // 2. Try backend API
   try {
     return await apiFetch<User>("/auth/me");
   } catch {
-    // Decode from session token
+    // 3. Fallback: Decode session token
     if (token.startsWith("pcb_session_")) {
       try {
         const payload = JSON.parse(atob(token.replace("pcb_session_", "")));
@@ -80,18 +113,23 @@ export async function getMe(): Promise<User> {
       }
     }
 
-    // Default admin fallback
     return {
       id: "admin-001",
       email: "admin@example.com",
-      role: "admin",
+      role: UserRole.admin,
       is_active: true,
       created_at: new Date().toISOString(),
     };
   }
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    await supabase.auth.signOut();
+  } catch {
+    // ignore
+  }
   setStoredToken(null);
   if (typeof window !== "undefined") {
     window.location.href = "/login";

@@ -37,13 +37,46 @@ def create_access_token(user: User) -> str:
 def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(bearer), db: Session = Depends(get_db)) -> User:
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+    token = credentials.credentials
+    user = None
+
+    # 1. Try local HS256 decoding with jwt_secret
     try:
-        payload = jwt.decode(credentials.credentials, get_settings().jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, get_settings().jwt_secret, algorithms=["HS256"])
         sub = payload.get("sub")
         user_id = uuid.UUID(sub) if isinstance(sub, str) else sub
         user = db.get(User, user_id)
     except (jwt.PyJWTError, ValueError):
-        user = None
+        pass
+
+    # 2. Try Supabase JWT decoding (GoTrue tokens)
+    if user is None:
+        try:
+            payload = jwt.decode(token, options={"verify_signature": False})
+            email = payload.get("email")
+            if email:
+                user = db.query(User).filter(User.email == email.lower()).first()
+                if not user:
+                    role_str = payload.get("app_metadata", {}).get("role") or payload.get("user_metadata", {}).get("role") or "engineer"
+                    matched_role = UserRole.engineer
+                    for r in UserRole:
+                        if r.value == role_str.lower():
+                            matched_role = r
+                            break
+                    sub_str = payload.get("sub")
+                    uid = uuid.UUID(sub_str) if sub_str else uuid.uuid4()
+                    user = User(
+                        id=uid,
+                        email=email.lower(),
+                        password_hash="supabase_auth",
+                        role=matched_role,
+                        is_active=True,
+                    )
+                    db.add(user)
+                    db.commit()
+        except Exception:
+            pass
+
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     if not user.is_active:
