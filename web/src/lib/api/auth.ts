@@ -1,7 +1,7 @@
 import { getSupabase } from "@/lib/supabase";
 import { apiFetch, setStoredToken, getStoredToken } from "./client";
 import { LoginResponse } from "@/types/api";
-import { User, UserRole } from "@/types/models";
+import type { User, UserRole } from "@/types/models";
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const normEmail = email.trim().toLowerCase();
@@ -34,7 +34,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
       return {
         access_token: token,
         token_type: "bearer",
-        role: role || UserRole.engineer,
+        role: role || "engineer",
         user_id: user.id,
         email: normEmail,
       };
@@ -81,7 +81,7 @@ export async function getMe(): Promise<User> {
       return {
         id: user.id,
         email: user.email,
-        role: role || UserRole.engineer,
+        role: role || "engineer",
         is_active: true,
         created_at: user.created_at,
       };
@@ -116,7 +116,7 @@ export async function getMe(): Promise<User> {
     return {
       id: "admin-001",
       email: "admin@example.com",
-      role: UserRole.admin,
+      role: "admin",
       is_active: true,
       created_at: new Date().toISOString(),
     };
