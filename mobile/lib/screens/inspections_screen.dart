@@ -404,6 +404,18 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (item.pcbId != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'PCB: ${item.pcbId}  ·  Image #${item.imageIndex}',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 6),
 
                   // Metadata tags: Station, Batch, Time

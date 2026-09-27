@@ -19,9 +19,10 @@ def _conn():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ts TEXT, source TEXT, model TEXT, status TEXT, defect_count INTEGER,
         image_path TEXT, annotated_path TEXT, result_json TEXT, synced INTEGER DEFAULT 0,
-        operator_email TEXT, operator_role TEXT)""")
+        operator_email TEXT, operator_role TEXT,
+        pcb_id TEXT, image_index INTEGER DEFAULT 1)""")
 
-    # Ensure operator columns exist in existing SQLite databases
+    # Ensure all columns exist in existing SQLite databases (migration)
     cursor = c.cursor()
     cursor.execute("PRAGMA table_info(inspections)")
     existing_cols = {col[1] for col in cursor.fetchall()}
@@ -29,11 +30,17 @@ def _conn():
         c.execute("ALTER TABLE inspections ADD COLUMN operator_email TEXT")
     if "operator_role" not in existing_cols:
         c.execute("ALTER TABLE inspections ADD COLUMN operator_role TEXT")
+    if "pcb_id" not in existing_cols:
+        c.execute("ALTER TABLE inspections ADD COLUMN pcb_id TEXT")
+    if "image_index" not in existing_cols:
+        c.execute("ALTER TABLE inspections ADD COLUMN image_index INTEGER DEFAULT 1")
 
     return c
 
 
-def save(frame, annotated, result, source_name, operator_email: str | None = None, operator_role: str | None = None):
+def save(frame, annotated, result, source_name,
+         operator_email: str | None = None, operator_role: str | None = None,
+         pcb_id: str | None = None, image_index: int = 1):
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now()
     stem = ts.strftime("%Y%m%d_%H%M%S_%f")
@@ -43,15 +50,18 @@ def save(frame, annotated, result, source_name, operator_email: str | None = Non
     with _conn() as c:
         cur = c.execute(
             "INSERT INTO inspections (ts, source, model, status, defect_count, image_path,"
-            " annotated_path, result_json, operator_email, operator_role) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            " annotated_path, result_json, operator_email, operator_role, pcb_id, image_index)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (ts.isoformat(), source_name, result.model, result.status, len(result.detections),
-             str(img_p), str(ann_p), json.dumps(result.to_dict()), operator_email, operator_role))
+             str(img_p), str(ann_p), json.dumps(result.to_dict()),
+             operator_email, operator_role, pcb_id, image_index))
         return cur.lastrowid
 
 
 def pending():
     with _conn() as c:
-        return c.execute("SELECT id, ts, source, result_json, image_path, annotated_path, operator_email, operator_role"
+        return c.execute("SELECT id, ts, source, result_json, image_path, annotated_path,"
+                         " operator_email, operator_role, pcb_id, image_index"
                          " FROM inspections WHERE synced = 0").fetchall()
 
 

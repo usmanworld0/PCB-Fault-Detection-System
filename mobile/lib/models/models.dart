@@ -304,6 +304,8 @@ class InspectionRecord {
   final InspectionStatus finalStatus;
   final List<DefectItem> defects;
   final List<ReviewRecord> reviews;
+  final String? pcbId;
+  final int imageIndex;
 
   InspectionRecord({
     required this.id,
@@ -320,6 +322,8 @@ class InspectionRecord {
     required this.finalStatus,
     required this.defects,
     required this.reviews,
+    this.pcbId,
+    this.imageIndex = 1,
   });
 
   factory InspectionRecord.fromJson(Map<String, dynamic> json) {
@@ -352,14 +356,37 @@ class InspectionRecord {
       finalStatus: InspectionStatusExt.fromString(json['final_status']?.toString() ?? json['status']?.toString()),
       defects: defectList,
       reviews: reviewList,
+      pcbId: json['pcb_id']?.toString(),
+      imageIndex: (json['image_index'] as num?)?.toInt() ?? 1,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'captured_at': capturedAt.toIso8601String(),
+        'source': source,
+        'model': model,
+        'status': status.value,
+        'image_url': imageUrl,
+        'annotated_url': annotatedUrl,
+        'golden_reference_url': goldenReferenceUrl,
+        'station_id': stationId,
+        'batch_number': batchNumber,
+        'review_status': reviewStatus,
+        'final_status': finalStatus.value,
+        'defects': defects.map((d) => d.toJson()).toList(),
+        'reviews': reviews.map((r) => r.toJson()).toList(),
+        'pcb_id': pcbId,
+        'image_index': imageIndex,
+      };
 
   InspectionRecord copyWith({
     InspectionStatus? finalStatus,
     String? reviewStatus,
     List<DefectItem>? defects,
     List<ReviewRecord>? reviews,
+    String? pcbId,
+    int? imageIndex,
   }) {
     return InspectionRecord(
       id: id,
@@ -376,6 +403,8 @@ class InspectionRecord {
       finalStatus: finalStatus ?? this.finalStatus,
       defects: defects ?? this.defects,
       reviews: reviews ?? this.reviews,
+      pcbId: pcbId ?? this.pcbId,
+      imageIndex: imageIndex ?? this.imageIndex,
     );
   }
 }

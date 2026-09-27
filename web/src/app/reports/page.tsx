@@ -15,7 +15,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
 import { EmptyState } from "@/components/common/EmptyState";
-import { getReports, generateReport, getReportDownloadUrl } from "@/lib/api/reports";
+import { getReports, generateReport, downloadReport } from "@/lib/api/reports";
 import { Report } from "@/types/models";
 import { formatDate } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
@@ -289,14 +289,13 @@ export default function ReportsPage() {
                           {r.summary_json?.total_inspections ?? "—"}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <a
-                            href={getReportDownloadUrl(r.id)}
-                            download
+                          <button
+                            onClick={() => downloadReport(r)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-industrial-50 hover:bg-industrial-100 text-industrial-700 border border-industrial-200 text-xs font-semibold shadow-2xs transition-colors"
                           >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download</span>
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -327,14 +326,13 @@ export default function ReportsPage() {
                       <div className="font-mono text-[11px] text-surface-600">
                         Inspections: <span className="font-semibold text-surface-900">{r.summary_json?.total_inspections ?? "—"}</span>
                       </div>
-                      <a
-                        href={getReportDownloadUrl(r.id)}
-                        download
+                      <button
+                        onClick={() => downloadReport(r)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-industrial-900 hover:bg-industrial-800 text-white text-xs font-semibold shadow-2xs transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Download</span>
-                      </a>
+                      </button>
                     </div>
                   </div>
                 ))}

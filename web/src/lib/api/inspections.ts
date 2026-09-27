@@ -47,6 +47,10 @@ export async function getInspections(params: InspectionListParams = {}): Promise
       station_id: row.station_id || "STATION-01",
       review_status: row.review_status || "UNREVIEWED",
       final_status: row.final_status || row.status,
+      operator_email: row.operator_email,
+      operator_role: row.operator_role,
+      pcb_id: row.pcb_id || undefined,
+      image_index: row.image_index ?? 1,
     }));
 
     let filteredItems = items;
@@ -112,6 +116,10 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
       reviews: [],
       review_status: data.review_status || "UNREVIEWED",
       final_status: data.final_status || data.status,
+      operator_email: data.operator_email,
+      operator_role: data.operator_role,
+      pcb_id: data.pcb_id || undefined,
+      image_index: data.image_index ?? 1,
     };
   } catch {
     return apiFetch<InspectionDetail>(`/inspections/${id}`);

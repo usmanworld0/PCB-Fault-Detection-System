@@ -52,6 +52,8 @@ export interface InspectionListItem {
   final_status?: InspectionStatus;
   operator_email?: string;
   operator_role?: string;
+  pcb_id?: string;
+  image_index?: number;
 }
 
 export interface InspectionDetail {
@@ -71,6 +73,8 @@ export interface InspectionDetail {
   created_at: string;
   operator_email?: string;
   operator_role?: string;
+  pcb_id?: string;
+  image_index?: number;
   defects: Defect[];
   reviews?: Review[];
 }

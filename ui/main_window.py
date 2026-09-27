@@ -5,7 +5,7 @@ import cv2
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QFileDialog, QHBoxLayout, QHeaderView,
-                               QLabel, QMainWindow, QPushButton, QSizePolicy, QSlider,
+                               QLabel, QLineEdit, QMainWindow, QPushButton, QSizePolicy, QSlider,
                                QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QFrame, QMessageBox)
 
 from core import store
@@ -90,6 +90,8 @@ class MainWindow(QMainWindow):
         self.current = None       # (frame, name)
         self.last = None          # (frame, annotated, result, name)
         self.last_autosave = 0.0
+        self.current_pcb_id = ""
+        self.current_pcb_image_count = 0
 
         # ---- Operator Identity Header Card (Left Panel) ----
         self.operator_card = QFrame()
@@ -143,6 +145,61 @@ class MainWindow(QMainWindow):
         op_layout.addWidget(self.lbl_op_role)
         op_layout.addWidget(self.btn_switch_user)
 
+        # --- PCB Identity Section ---
+        pcb_frame = QFrame()
+        pcb_frame.setStyleSheet("""
+            QFrame {
+                background-color: #0f172a;
+                border: 1px solid #1e3a5f;
+                border-radius: 6px;
+                padding: 4px;
+            }
+        """)
+        pcb_layout = QVBoxLayout(pcb_frame)
+        pcb_layout.setSpacing(3)
+
+        lbl_pcb_title = QLabel("PCB UNIQUE ID")
+        lbl_pcb_title.setStyleSheet("font-size: 9px; font-weight: bold; color: #94a3b8;")
+
+        self.pcb_id_input = QLineEdit()
+        self.pcb_id_input.setPlaceholderText("e.g. PCB-2026-A001")
+        self.pcb_id_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #1e293b;
+                color: #e2e8f0;
+                border: 1px solid #334155;
+                border-radius: 3px;
+                padding: 4px 6px;
+                font-family: monospace;
+                font-size: 11px;
+            }
+            QLineEdit:focus {
+                border-color: #3b82f6;
+            }
+        """)
+
+        self.lbl_image_count = QLabel("Images for this PCB: 0")
+        self.lbl_image_count.setStyleSheet("font-size: 10px; color: #64748b;")
+
+        self.btn_new_pcb = QPushButton("New PCB / Reset")
+        self.btn_new_pcb.setCursor(Qt.PointingHandCursor)
+        self.btn_new_pcb.setStyleSheet("""
+            QPushButton {
+                background-color: #164e63;
+                color: #a5f3fc;
+                font-size: 10px;
+                border: 1px solid #0e7490;
+                border-radius: 3px;
+                padding: 3px 6px;
+            }
+            QPushButton:hover { background-color: #0e7490; color: white; }
+        """)
+
+        pcb_layout.addWidget(lbl_pcb_title)
+        pcb_layout.addWidget(self.pcb_id_input)
+        pcb_layout.addWidget(self.lbl_image_count)
+        pcb_layout.addWidget(self.btn_new_pcb)
+
         # left panel controls
         self.model_box = QComboBox()
         self.model_box.addItems(list(self.models))
@@ -170,6 +227,8 @@ class MainWindow(QMainWindow):
 
         left = QVBoxLayout()
         left.addWidget(self.operator_card)
+        left.addSpacing(6)
+        left.addWidget(pcb_frame)
         left.addSpacing(6)
         for w in (QLabel("Model Architecture"), self.model_box, self.btn_live, self.btn_image, self.btn_folder,
                   self.btn_prev, self.btn_next, self.conf_label, self.conf, self.chk_auto,
@@ -223,6 +282,7 @@ class MainWindow(QMainWindow):
         self.btn_sync.clicked.connect(self.sync)
         self.btn_models_sync.clicked.connect(self.sync_models)
         self.btn_compare.clicked.connect(self.compare_models)
+        self.btn_new_pcb.clicked.connect(self.reset_pcb_session)
 
         # Apply role permissions & load model
         self.apply_role_permissions()
@@ -266,6 +326,14 @@ class MainWindow(QMainWindow):
             self.current_user = dlg.authenticated_user
             self.apply_role_permissions()
             self.statusBar().showMessage(f"Active operator switched: {self.current_user['email']} ({self.current_user['role'].upper()})")
+
+    def reset_pcb_session(self):
+        """Resets the PCB session - clears PCB ID and image counter."""
+        self.current_pcb_id = ""
+        self.current_pcb_image_count = 0
+        self.pcb_id_input.clear()
+        self.lbl_image_count.setText("Images for this PCB: 0")
+        self.statusBar().showMessage("PCB session reset. Enter a new PCB ID to begin.")
 
     # ---- model ----
     def load_model(self, label):
@@ -382,6 +450,28 @@ class MainWindow(QMainWindow):
             )
             return
 
+        # Validate PCB ID
+        pcb_id = self.pcb_id_input.text().strip()
+        if not pcb_id:
+            QMessageBox.warning(
+                self,
+                "PCB ID Required",
+                "Please enter the PCB Unique ID before saving.\n"
+                "Each PCB must have a unique identifier (e.g. PCB-2026-A001)."
+            )
+            self.pcb_id_input.setFocus()
+            return
+
+        # Increment image index for this PCB session
+        if pcb_id != self.current_pcb_id:
+            # New PCB ID entered
+            self.current_pcb_id = pcb_id
+            self.current_pcb_image_count = 0
+
+        self.current_pcb_image_count += 1
+        image_index = self.current_pcb_image_count
+        self.lbl_image_count.setText(f"Images for this PCB: {image_index}")
+
         frame, annotated, result, name = self.last
         operator_email = self.current_user.get("email", "operator")
         operator_role = self.current_user.get("role", "engineer")
@@ -389,7 +479,9 @@ class MainWindow(QMainWindow):
         # 1. Save locally with operator attribution
         rid = store.save(frame, annotated, result, name,
                          operator_email=operator_email,
-                         operator_role=operator_role)
+                         operator_role=operator_role,
+                         pcb_id=pcb_id,
+                         image_index=image_index)
 
         # 2. Push immediately to Supabase Cloud Database + Storage
         sent, failed, msg, details = sync_pending()
@@ -414,11 +506,11 @@ class MainWindow(QMainWindow):
         )
 
         if synced_flag:
-            self.statusBar().showMessage(f"✓ Saved #{rid} & Synced to Supabase Database ({total} total runs)")
+            self.statusBar().showMessage(f"✓ PCB {pcb_id} Image #{image_index} saved & synced to Supabase ({total} total)")
         elif unsynced > 0:
-            self.statusBar().showMessage(f"Saved #{rid} locally ({total} total, {unsynced} queued for sync)")
+            self.statusBar().showMessage(f"PCB {pcb_id} Image #{image_index} saved locally ({total} total, {unsynced} queued)")
         else:
-            self.statusBar().showMessage(f"Saved #{rid} ({total} total)")
+            self.statusBar().showMessage(f"PCB {pcb_id} Image #{image_index} saved (#{rid})")
 
     def sync(self):
         role = self.current_user.get("role", "viewer")

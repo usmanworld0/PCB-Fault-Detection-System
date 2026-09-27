@@ -86,6 +86,59 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
             // Interactive inspection viewer
             _buildImageWorkspace(inspection),
 
+            // PCB Information Card
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.bgSurface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.memory_outlined, size: 16, color: AppColors.industrial600),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PCB UNIT',
+                          style: AppTypography.label.copyWith(fontSize: 9),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          inspection.pcbId ?? 'N/A',
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.industrial900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.industrial50,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppColors.industrial200),
+                    ),
+                    child: Text(
+                      'Image #${inspection.imageIndex}',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.industrial700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // Viewer mode warning if user is a viewer
             if (auth.isReadOnly)
               Container(

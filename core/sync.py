@@ -89,11 +89,18 @@ def sync_pending():
         pending_items = store.pending()
         for item in pending_items:
             # Handle tuple unpacking with backward compatibility
-            if len(item) == 8:
+            # New shape (10): id, ts, source, result_json, img_p, ann_p, operator_email, operator_role, pcb_id, image_index
+            if len(item) >= 10:
+                row_id, ts, source, result_json, img_p, ann_p, operator_email, operator_role, pcb_id, image_index = item[:10]
+            elif len(item) == 8:
                 row_id, ts, source, result_json, img_p, ann_p, operator_email, operator_role = item
+                pcb_id = None
+                image_index = 1
             else:
                 row_id, ts, source, result_json, img_p, ann_p = item[:6]
                 operator_email = operator_role = None
+                pcb_id = None
+                image_index = 1
 
             try:
                 # 1. Upload Images to Supabase Storage
@@ -133,6 +140,8 @@ def sync_pending():
                     "created_at": now_str,
                     "operator_email": operator_email,
                     "operator_role": operator_role,
+                    "pcb_id": pcb_id,
+                    "image_index": image_index,
                 }
 
                 r_insp = requests.post(

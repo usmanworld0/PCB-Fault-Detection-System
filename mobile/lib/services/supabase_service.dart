@@ -559,6 +559,8 @@ class SupabaseService extends ChangeNotifier {
           ),
         ],
         reviews: [],
+        pcbId: 'PCB-2026-A9821',
+        imageIndex: 1,
       ),
       InspectionRecord(
         id: 'INSP-2026-0890',
@@ -597,6 +599,8 @@ class SupabaseService extends ChangeNotifier {
             createdAt: now.subtract(const Duration(minutes: 15)),
           ),
         ],
+        pcbId: 'PCB-2026-B1042',
+        imageIndex: 1,
       ),
       InspectionRecord(
         id: 'INSP-2026-0889',
@@ -613,6 +617,8 @@ class SupabaseService extends ChangeNotifier {
         finalStatus: InspectionStatus.pass,
         defects: [],
         reviews: [],
+        pcbId: 'PCB-2026-C4910',
+        imageIndex: 1,
       ),
       InspectionRecord(
         id: 'INSP-2026-0888',
@@ -652,6 +658,8 @@ class SupabaseService extends ChangeNotifier {
             createdAt: now.subtract(const Duration(minutes: 50)),
           ),
         ],
+        pcbId: 'PCB-2026-D8372',
+        imageIndex: 2,
       ),
       InspectionRecord(
         id: 'INSP-2026-0887',
@@ -668,6 +676,8 @@ class SupabaseService extends ChangeNotifier {
         finalStatus: InspectionStatus.pass,
         defects: [],
         reviews: [],
+        pcbId: 'PCB-2026-E2301',
+        imageIndex: 1,
       ),
       InspectionRecord(
         id: 'INSP-2026-0886',
@@ -705,6 +715,8 @@ class SupabaseService extends ChangeNotifier {
           ),
         ],
         reviews: [],
+        pcbId: 'PCB-2026-F9012',
+        imageIndex: 1,
       ),
     ];
   }
