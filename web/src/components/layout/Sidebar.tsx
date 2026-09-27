@@ -6,14 +6,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ScanLine,
-  CheckSquare,
-  BarChart3,
   Cpu,
   FileSpreadsheet,
   Bell,
   Users,
-  ScrollText,
-  Settings,
   LogOut,
   Layers,
   Activity,
@@ -34,8 +30,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { user, role, logout } = useAuth();
 
   const isAdmin = role === "admin";
-  const isEngineer = role === "engineer";
-  const canReview = isAdmin || isEngineer;
 
   const sections = [
     {
@@ -43,13 +37,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       items: [
         { label: "QA Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { label: "PCB Inspections", href: "/inspections", icon: ScanLine },
-        ...(canReview ? [{ label: "Review Queue", href: "/reviews", icon: CheckSquare }] : []),
       ],
     },
     {
       title: "ANALYTICS & METRICS",
       items: [
-        { label: "Defect Analysis", href: "/analytics", icon: BarChart3 },
         { label: "Model Registry", href: "/models", icon: Cpu },
         { label: "Quality Reports", href: "/reports", icon: FileSpreadsheet },
         { label: "Station Alerts", href: "/notifications", icon: Bell },
@@ -61,8 +53,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             title: "SYSTEM ADMINISTRATION",
             items: [
               { label: "Operator Directory", href: "/users", icon: Users },
-              { label: "Audit Trail", href: "/audit-logs", icon: ScrollText },
-              { label: "Station Config", href: "/settings", icon: Settings },
             ],
           },
         ]

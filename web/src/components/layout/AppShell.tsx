@@ -31,15 +31,8 @@ export function AppShell({ children }: AppShellProps) {
     }
 
     // Role-based route protection
-    if (pathname.startsWith("/users") || pathname.startsWith("/audit-logs") || pathname.startsWith("/settings")) {
+    if (pathname.startsWith("/users")) {
       if (role !== "admin") {
-        router.push("/403");
-        return;
-      }
-    }
-
-    if (pathname.startsWith("/reviews")) {
-      if (role !== "admin" && role !== "engineer") {
         router.push("/403");
         return;
       }

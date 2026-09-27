@@ -2,16 +2,11 @@ import type { UserRole } from "@/types/models";
 
 export type Permission =
   | "inspection.read"
-  | "inspection.review"
-  | "inspection.override"
-  | "analytics.read"
   | "reports.read"
   | "reports.generate"
   | "notifications.read"
   | "users.read"
-  | "users.manage"
-  | "audit.read"
-  | "settings.manage";
+  | "users.manage";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "ADMIN",
@@ -22,29 +17,20 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     "inspection.read",
-    "inspection.review",
-    "inspection.override",
-    "analytics.read",
     "reports.read",
     "reports.generate",
     "notifications.read",
     "users.read",
     "users.manage",
-    "audit.read",
-    "settings.manage",
   ],
   engineer: [
     "inspection.read",
-    "inspection.review",
-    "inspection.override",
-    "analytics.read",
     "reports.read",
     "reports.generate",
     "notifications.read",
   ],
   viewer: [
     "inspection.read",
-    "analytics.read",
     "reports.read",
     "notifications.read",
   ],

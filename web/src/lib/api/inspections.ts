@@ -78,7 +78,7 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from("inspections")
-      .select("*, defects(*), reviews(*)")
+      .select("*, defects(*)")
       .eq("id", id)
       .single();
 
@@ -98,18 +98,6 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
       };
     });
 
-    const reviews = (data.reviews || []).map((r: any) => ({
-      id: r.id,
-      inspection_id: r.inspection_id,
-      automated_result: data.status,
-      review_decision: r.review_decision || r.status || "CONFIRM",
-      final_result: r.final_result || data.status,
-      reviewer_email: r.reviewer_email || r.inspector_email || "reviewer@example.com",
-      justification: r.justification || r.notes || "",
-      notes: r.notes,
-      created_at: r.reviewed_at || r.created_at || new Date().toISOString(),
-    }));
-
     return {
       id: data.id,
       captured_at: data.captured_at,
@@ -121,7 +109,7 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
       station_id: data.station_id || "STATION-01",
       created_at: data.captured_at,
       defects,
-      reviews,
+      reviews: [],
       review_status: data.review_status || "UNREVIEWED",
       final_status: data.final_status || data.status,
     };

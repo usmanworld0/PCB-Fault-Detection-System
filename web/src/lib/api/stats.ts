@@ -57,13 +57,7 @@ export async function getStats(): Promise<Stats> {
       }
     }
 
-    // 3. Pending Reviews
-    const { count: pendingReviews } = await supabase
-      .from("inspections")
-      .select("*", { count: "exact", head: true })
-      .or("review_status.eq.UNREVIEWED,review_status.eq.unreviewed,review_status.eq.pending");
-
-    // 4. Active Alerts
+    // 3. Active Alerts
     const { count: activeAlerts } = await supabase
       .from("notifications")
       .select("*", { count: "exact", head: true })
@@ -107,7 +101,7 @@ export async function getStats(): Promise<Stats> {
       yield_rate: yieldRate,
       total_defects: totalDefects,
       critical_defects: criticalDefects,
-      pending_reviews: pendingReviews || 0,
+      pending_reviews: 0,
       active_alerts: activeAlerts || 0,
       trend_last_30_days: trendLast30Days,
       defects_by_class: defectsByClass,

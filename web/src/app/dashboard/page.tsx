@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Layers,
   Percent,
-  Clock,
   Bell,
   RefreshCw,
   Activity,
@@ -118,8 +117,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Top KPI Cards (7 Metrics) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3.5">
+            {/* Top KPI Cards (6 Metrics) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3.5">
               <StatCard
                 label="Total Inspections"
                 value={stats.total_inspections}
@@ -154,13 +153,6 @@ export default function DashboardPage() {
                 subtext="Open / short circuit"
                 icon={AlertTriangle}
                 variant="fail"
-              />
-              <StatCard
-                label="Pending Review"
-                value={stats.pending_reviews}
-                subtext="Awaiting signoff"
-                icon={Clock}
-                variant="review"
               />
               <StatCard
                 label="Active Alerts"

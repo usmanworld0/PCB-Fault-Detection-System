@@ -1,13 +1,10 @@
 import {
-  AuditLog,
   InspectionDetail,
   InspectionListItem,
   ModelMetric,
   Notification,
   Report,
-  Review,
   Stats,
-  SystemSetting,
   User,
   UserRole,
 } from "./models";
@@ -38,28 +35,10 @@ export interface InspectionListApiResponse {
   items: InspectionListItem[];
 }
 
-export interface ReviewQueueParams {
-  filter_status?: "PENDING" | "COMPLETED" | "ALL";
-  limit?: number;
-  offset?: number;
-}
-
-export interface ReviewSubmitPayload {
-  inspection_id: string;
-  review_decision: "CONFIRM" | "OVERRIDE_PASS" | "OVERRIDE_FAIL";
-  justification: string;
-  notes?: string;
-}
-
 export interface NotificationListApiResponse {
   total: number;
   unread_count: number;
   items: Notification[];
-}
-
-export interface AuditLogListApiResponse {
-  total: number;
-  items: AuditLog[];
 }
 
 export interface ReportGeneratePayload {

@@ -40,15 +40,10 @@ export function Header({ onToggleSidebar }: HeaderProps) {
     if (path.startsWith("/dashboard")) return ["Operations", "QA Dashboard"];
     if (path.startsWith("/inspections/")) return ["Quality Control", "Inspections", "Inspection Detail"];
     if (path.startsWith("/inspections")) return ["Quality Control", "Inspection History"];
-    if (path.startsWith("/reviews/")) return ["Quality Control", "Review Queue", "Engineering Review"];
-    if (path.startsWith("/reviews")) return ["Quality Control", "Review Queue"];
-    if (path.startsWith("/analytics")) return ["Analytics & Metrics", "Defect Analysis"];
     if (path.startsWith("/models")) return ["Analytics & Metrics", "Model Registry"];
     if (path.startsWith("/reports")) return ["Analytics & Metrics", "Quality Reports"];
     if (path.startsWith("/notifications")) return ["Operations", "Station Alerts"];
     if (path.startsWith("/users")) return ["System Administration", "Operator Directory"];
-    if (path.startsWith("/audit-logs")) return ["System Administration", "Audit Trail"];
-    if (path.startsWith("/settings")) return ["System Administration", "Station Config"];
     if (path.startsWith("/profile")) return ["User Account", "Profile & Security"];
     return ["PCB-Vision", "Manufacturing QA"];
   };

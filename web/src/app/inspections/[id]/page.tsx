@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  CheckSquare,
   Cpu,
   Clock,
   HardDrive,
   CheckCircle,
   AlertTriangle,
   History,
-  FileCheck2,
   Sliders,
   Maximize2,
 } from "lucide-react";
@@ -26,14 +23,11 @@ import { getInspectionDetail } from "@/lib/api/inspections";
 import { InspectionDetail } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
-import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function InspectionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const { role } = useAuth();
-  const canReview = role === "admin" || role === "engineer";
 
   const [inspection, setInspection] = useState<InspectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,16 +75,6 @@ export default function InspectionDetailPage() {
               <p className="text-xs text-surface-500 mt-0.5 font-mono">UID: {id}</p>
             </div>
           </div>
-
-          {canReview && inspection && (
-            <Link
-              href={`/reviews/${id}`}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
-            >
-              <CheckSquare className="w-4 h-4" />
-              <span>QA Review / Override</span>
-            </Link>
-          )}
         </div>
 
         {error ? (
@@ -107,41 +91,6 @@ export default function InspectionDetailPage() {
           </div>
         ) : (
           <>
-            {/* Review Decision Banner (if reviewed) */}
-            {inspection.reviews && inspection.reviews.length > 0 && (
-              <div className="rounded-lg border border-brand-200 bg-brand-50/50 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded bg-white text-brand-700 border border-brand-200 shadow-xs shrink-0">
-                    <FileCheck2 className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-brand-900">
-                        Human QA Disposition: {inspection.reviews[0].review_decision}
-                      </h4>
-                      <span className="text-[11px] text-surface-500 font-mono">
-                        {formatDate(inspection.reviews[0].created_at)}
-                      </span>
-                    </div>
-                    <div className="mt-1.5 text-xs text-surface-700">
-                      <span className="font-semibold text-surface-900">Reviewer: </span>
-                      {inspection.reviews[0].reviewer_email}
-                    </div>
-                    <div className="mt-1 text-xs text-surface-700">
-                      <span className="font-semibold text-surface-900">Engineering Justification: </span>
-                      {inspection.reviews[0].justification}
-                    </div>
-                    {inspection.reviews[0].notes && (
-                      <div className="mt-1 text-xs text-surface-600 italic">
-                        <span className="font-semibold text-surface-900 not-italic">Operator Notes: </span>
-                        {inspection.reviews[0].notes}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Industrial Metadata Telemetry Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
@@ -278,11 +227,9 @@ export default function InspectionDetailPage() {
                   <div className="text-[10px] text-surface-400 font-mono mt-0.5">{formatDate(inspection.created_at)}</div>
                 </div>
                 <div className="p-3 rounded border border-surface-200 bg-surface-50">
-                  <div className="text-[10px] font-mono text-surface-500 uppercase font-semibold">4. QA Disposition</div>
-                  <div className="text-xs text-surface-900 font-semibold mt-1 uppercase">{inspection.review_status}</div>
-                  <div className="text-[10px] text-surface-400 font-mono mt-0.5">
-                    {inspection.reviewed_at ? formatDate(inspection.reviewed_at) : "Pending Review"}
-                  </div>
+                  <div className="text-[10px] font-mono text-surface-500 uppercase font-semibold">4. Final Disposition</div>
+                  <div className="text-xs text-surface-900 font-semibold mt-1 uppercase">{inspection.final_status || inspection.status}</div>
+                  <div className="text-[10px] text-surface-400 font-mono mt-0.5">{inspection.status === "PASS" ? "Automated Pass" : "Defect Detected"}</div>
                 </div>
               </div>
             </div>
