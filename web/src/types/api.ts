@@ -26,6 +26,7 @@ export interface InspectionListParams {
   station_id?: string;
   review_status?: string;
   search?: string;
+  pcb_id?: string;
   limit?: number;
   offset?: number;
 }

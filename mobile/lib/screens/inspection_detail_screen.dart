@@ -20,6 +20,13 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
   String _viewMode = 'OVERLAY';
   double _splitRatio = 0.5; // for golden board compare slider
   DefectItem? _selectedDefect;
+  late String _activeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeId = widget.inspectionId;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +34,17 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
     final auth = context.watch<AuthProvider>();
 
     final inspection = service.inspections.firstWhere(
-      (i) => i.id == widget.inspectionId,
-      orElse: () => service.inspections.first,
+      (i) => i.id == _activeId,
+      orElse: () => service.inspections.firstWhere(
+        (i) => i.id == widget.inspectionId,
+        orElse: () => service.inspections.first,
+      ),
     );
+
+    final relatedSubInspections = (inspection.pcbId != null && inspection.pcbId!.isNotEmpty)
+        ? service.inspections.where((i) => i.pcbId == inspection.pcbId).toList()
+        : <InspectionRecord>[];
+    relatedSubInspections.sort((a, b) => a.imageIndex.compareTo(b.imageIndex));
 
     return Scaffold(
       backgroundColor: AppColors.bgApp,
@@ -138,6 +153,137 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
                 ],
               ),
             ),
+
+            // PCB Sub-Inspections Gallery
+            if (relatedSubInspections.length > 1) ...[
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.bgSurface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.layers_outlined, size: 16, color: AppColors.industrial600),
+                            const SizedBox(width: 6),
+                            Text(
+                              'PCB Sub-Inspections (${relatedSubInspections.length})',
+                              style: AppTypography.mono.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.industrial900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Tap to switch image',
+                          style: AppTypography.bodySmall.copyWith(fontSize: 10, color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 80,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: relatedSubInspections.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemBuilder: (context, idx) {
+                          final sub = relatedSubInspections[idx];
+                          final isCurrent = sub.id == inspection.id;
+                          final isFail = sub.finalStatus == InspectionStatus.fail;
+                          return InkWell(
+                            onTap: () {
+                              if (!isCurrent) {
+                                setState(() {
+                                  _activeId = sub.id;
+                                  _selectedDefect = null;
+                                });
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              width: 105,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: isCurrent ? AppColors.industrial50 : AppColors.bgMuted,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isCurrent ? AppColors.industrial600 : AppColors.borderSubtle,
+                                  width: isCurrent ? 2 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Img #${sub.imageIndex}',
+                                        style: AppTypography.mono.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: isCurrent ? AppColors.industrial700 : AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: isFail ? AppColors.qaFailBg : AppColors.qaPassBg,
+                                          borderRadius: BorderRadius.circular(3),
+                                          border: Border.all(
+                                            color: isFail ? AppColors.qaFailBorder : AppColors.qaPassBorder,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          sub.finalStatus.value,
+                                          style: AppTypography.mono.copyWith(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w700,
+                                            color: isFail ? AppColors.qaFail : AppColors.qaPass,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    '${sub.defects.length} defect${sub.defects.length == 1 ? "" : "s"}',
+                                    style: AppTypography.mono.copyWith(
+                                      fontSize: 9,
+                                      color: isFail ? AppColors.qaFail : AppColors.qaPass,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    isCurrent ? '● Viewing' : 'Tap to view',
+                                    style: AppTypography.mono.copyWith(
+                                      fontSize: 8,
+                                      color: isCurrent ? AppColors.industrial700 : AppColors.textMuted,
+                                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // Viewer mode warning if user is a viewer
             if (auth.isReadOnly)

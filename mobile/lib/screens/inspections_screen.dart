@@ -46,6 +46,7 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
     if (query.isNotEmpty) {
       list = list.where((i) =>
         i.id.toLowerCase().contains(query) ||
+        (i.pcbId != null && i.pcbId!.toLowerCase().contains(query)) ||
         i.source.toLowerCase().contains(query) ||
         i.batchNumber.toLowerCase().contains(query) ||
         i.stationId.toLowerCase().contains(query)
@@ -405,15 +406,38 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (item.pcbId != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      'PCB: ${item.pcbId}  ·  Image #${item.imageIndex}',
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 10,
-                        color: AppColors.textMuted,
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgMuted,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppColors.borderSubtle),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.memory, size: 12, color: AppColors.industrial600),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.pcbId!,
+                            style: AppTypography.mono.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.industrial900,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '• Img #${item.imageIndex}',
+                            style: AppTypography.mono.copyWith(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.industrial700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                   const SizedBox(height: 6),

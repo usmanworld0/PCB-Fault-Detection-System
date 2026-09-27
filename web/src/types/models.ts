@@ -47,6 +47,8 @@ export interface InspectionListItem {
   model: string;
   defect_count: number;
   image_url: string;
+  annotated_url?: string;
+  source?: string;
   station_id?: string;
   review_status: ReviewStatus | string;
   final_status?: InspectionStatus;

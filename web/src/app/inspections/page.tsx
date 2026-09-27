@@ -38,6 +38,7 @@ export default function InspectionsPage() {
   const [defectClass, setDefectClass] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [stationId, setStationId] = useState<string>("");
+  const [pcbIdFilter, setPcbIdFilter] = useState<string>("");
   const [limit, setLimit] = useState<number>(20);
   const [offset, setOffset] = useState<number>(0);
 
@@ -50,6 +51,7 @@ export default function InspectionsPage() {
         model: model || undefined,
         defect_class: defectClass || undefined,
         station_id: stationId || undefined,
+        pcb_id: pcbIdFilter.trim() || undefined,
         search: search.trim() || undefined,
         limit,
         offset,
@@ -65,7 +67,7 @@ export default function InspectionsPage() {
 
   useEffect(() => {
     fetchInspections();
-  }, [status, model, defectClass, stationId, limit, offset]);
+  }, [status, model, defectClass, stationId, pcbIdFilter, limit, offset]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,15 +80,18 @@ export default function InspectionsPage() {
     setModel("");
     setDefectClass("");
     setStationId("");
+    setPcbIdFilter("");
     setSearch("");
     setOffset(0);
   };
 
   const exportCurrentCsv = () => {
     if (items.length === 0) return;
-    const headers = ["ID", "Captured At", "Station", "Operator", "Role", "Model", "Status", "Defects", "Review Status"];
+    const headers = ["Inspection ID", "PCB ID", "Sub-Image #", "Captured At", "Station", "Operator", "Role", "Model", "Status", "Defects", "Review Status"];
     const rows = items.map((i) => [
       i.id,
+      i.pcb_id || "Unassigned",
+      i.image_index ?? 1,
       i.captured_at,
       i.station_id || "STATION-01",
       i.operator_email || "System",
@@ -151,7 +156,7 @@ export default function InspectionsPage() {
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-surface-400" />
               <input
                 type="text"
-                placeholder="Search by ID, station, or model..."
+                placeholder="Search by PCB ID, Inspection ID, station, or model..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-surface-50 border border-surface-200 rounded text-xs text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white font-mono"
@@ -166,7 +171,23 @@ export default function InspectionsPage() {
           </form>
 
           {/* Secondary Filter Dropdowns */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-surface-100">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-surface-100">
+            <div>
+              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+                Filter by PCB ID
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. PCB-001"
+                value={pcbIdFilter}
+                onChange={(e) => {
+                  setPcbIdFilter(e.target.value);
+                  setOffset(0);
+                }}
+                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+              />
+            </div>
+
             <div>
               <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
                 Disposition
@@ -262,6 +283,8 @@ export default function InspectionsPage() {
                   <thead>
                     <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
                       <th className="py-3 px-3.5 font-semibold">Inspection ID</th>
+                      <th className="py-3 px-3.5 font-semibold">PCB Unique ID</th>
+                      <th className="py-3 px-3.5 font-semibold">Sub-Image</th>
                       <th className="py-3 px-3.5 font-semibold">Captured At</th>
                       <th className="py-3 px-3.5 font-semibold">Station</th>
                       <th className="py-3 px-3.5 font-semibold">Operator</th>
@@ -281,6 +304,21 @@ export default function InspectionsPage() {
                       >
                         <td className="py-3 px-3.5 font-mono text-[11px] font-medium text-surface-900">
                           <span className="text-industrial-600 font-semibold hover:underline">{i.id.slice(0, 8)}</span>
+                        </td>
+                        <td className="py-3 px-3.5 font-mono text-[11px]">
+                          {i.pcb_id ? (
+                            <span className="font-bold text-surface-900 bg-surface-100 border border-surface-300 px-2 py-0.5 rounded text-[11px] shadow-2xs font-mono inline-flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-industrial-600"></span>
+                              {i.pcb_id}
+                            </span>
+                          ) : (
+                            <span className="text-surface-400 italic text-[10px]">—</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3.5 font-mono text-[11px]">
+                          <span className="font-semibold text-industrial-700 bg-industrial-50 border border-industrial-200 px-2 py-0.5 rounded text-[10px]">
+                            Image #{i.image_index ?? 1}
+                          </span>
                         </td>
                         <td className="py-3 px-3.5 text-surface-700">
                           <div className="font-mono text-[11px]">{formatDate(i.captured_at)}</div>
@@ -352,13 +390,20 @@ export default function InspectionsPage() {
                     className="p-4 hover:bg-surface-50/80 active:bg-surface-100 transition-colors cursor-pointer space-y-3"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono font-bold text-xs text-industrial-600">
                           #{i.id.slice(0, 8)}
                         </span>
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
-                          {i.station_id || "STATION-01"}
-                        </span>
+                        {i.pcb_id ? (
+                          <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-surface-100 text-surface-900 border border-surface-300 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-industrial-600"></span>
+                            {i.pcb_id} · Img #{i.image_index ?? 1}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                            {i.station_id || "STATION-01"}
+                          </span>
+                        )}
                       </div>
                       <StatusBadge status={i.final_status || i.status} size="sm" />
                     </div>

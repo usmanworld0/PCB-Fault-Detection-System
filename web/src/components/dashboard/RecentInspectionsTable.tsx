@@ -45,6 +45,8 @@ export function RecentInspectionsTable({ inspections }: RecentInspectionsTablePr
             <thead>
               <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
                 <th className="py-2.5 px-3 font-semibold">Inspection ID</th>
+                <th className="py-2.5 px-3 font-semibold">PCB Unique ID</th>
+                <th className="py-2.5 px-3 font-semibold">Sub-Image</th>
                 <th className="py-2.5 px-3 font-semibold">Timestamp</th>
                 <th className="py-2.5 px-3 font-semibold">Station</th>
                 <th className="py-2.5 px-3 font-semibold">Operator</th>
@@ -64,6 +66,21 @@ export function RecentInspectionsTable({ inspections }: RecentInspectionsTablePr
                 >
                   <td className="py-2.5 px-3 font-mono text-[11px] font-medium text-surface-900">
                     <span className="text-brand-600 hover:underline">{item.id.slice(0, 8)}</span>
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">
+                    {item.pcb_id ? (
+                      <span className="font-bold text-surface-900 bg-surface-100 border border-surface-300 px-2 py-0.5 rounded text-[11px] font-mono inline-flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+                        {item.pcb_id}
+                      </span>
+                    ) : (
+                      <span className="text-surface-400 italic text-[10px]">—</span>
+                    )}
+                  </td>
+                  <td className="py-2.5 px-3 font-mono text-[11px]">
+                    <span className="font-semibold text-brand-700 bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded text-[10px]">
+                      #{item.image_index ?? 1}
+                    </span>
                   </td>
                   <td className="py-2.5 px-3 text-surface-700">
                     <div className="font-mono text-[11px]">{formatDate(item.captured_at)}</div>

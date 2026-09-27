@@ -12,6 +12,8 @@ import {
   History,
   Sliders,
   Maximize2,
+  Layers,
+  Image as ImageIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { InspectionImageViewer } from "@/components/inspections/InspectionImageViewer";
@@ -19,8 +21,8 @@ import { StatusBadge } from "@/components/common/StatusBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
-import { getInspectionDetail } from "@/lib/api/inspections";
-import { InspectionDetail } from "@/types/models";
+import { getInspectionDetail, getSubInspections } from "@/lib/api/inspections";
+import { InspectionDetail, InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
 
@@ -30,6 +32,8 @@ export default function InspectionDetailPage() {
   const id = params?.id as string;
 
   const [inspection, setInspection] = useState<InspectionDetail | null>(null);
+  const [subInspections, setSubInspections] = useState<InspectionListItem[]>([]);
+  const [loadingSub, setLoadingSub] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +43,18 @@ export default function InspectionDetailPage() {
     try {
       const data = await getInspectionDetail(id);
       setInspection(data);
+
+      if (data.pcb_id) {
+        setLoadingSub(true);
+        try {
+          const subs = await getSubInspections(data.pcb_id);
+          setSubInspections(subs);
+        } catch {
+          setSubInspections([]);
+        } finally {
+          setLoadingSub(false);
+        }
+      }
     } catch (err: any) {
       setError(err.message || "Failed to retrieve inspection details.");
     } finally {
@@ -92,7 +108,16 @@ export default function InspectionDetailPage() {
         ) : (
           <>
             {/* Industrial Metadata Telemetry Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
+                <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">PCB Unique ID</div>
+                <div className="mt-1 text-xs font-bold text-surface-900 font-mono truncate" title={inspection.pcb_id || "Unassigned"}>
+                  {inspection.pcb_id || "Unassigned"}
+                </div>
+                <div className="text-[9px] font-mono uppercase text-industrial-700 font-semibold mt-0.5">
+                  Sub-Image #{inspection.image_index ?? 1} {subInspections.length > 0 ? `of ${subInspections.length}` : ""}
+                </div>
+              </div>
               <div className="p-3 rounded-lg border border-surface-200 bg-white shadow-xs">
                 <div className="text-[10px] font-mono font-semibold uppercase tracking-wider text-surface-500">Station ID</div>
                 <div className="mt-1 text-xs font-semibold text-surface-900">{inspection.station_id || "STATION-01"}</div>
@@ -133,6 +158,105 @@ export default function InspectionDetailPage() {
                 <div className="mt-1 text-xs font-mono font-semibold uppercase text-surface-700">{inspection.review_status}</div>
               </div>
             </div>
+
+            {/* PCB Sub-Inspections Gallery: Display all sub inspections carried out of that relevant PCB */}
+            {inspection.pcb_id && (
+              <div className="bg-white border border-surface-200 rounded-lg p-4 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-surface-100">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-industrial-600" />
+                    <h3 className="text-sm font-bold text-surface-900">
+                      Sub-Inspections for PCB: <span className="text-industrial-600 font-mono">{inspection.pcb_id}</span>
+                    </h3>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                      {subInspections.length > 0 ? `${subInspections.length} sub-images` : "1 scan"}
+                    </span>
+                  </div>
+                  {subInspections.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <span className="text-[11px] text-surface-500">Board Overview:</span>
+                      {subInspections.some((s) => (s.final_status || s.status) === "FAIL") ? (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                          OVERALL FAIL ({subInspections.filter(s => (s.final_status || s.status) === "FAIL").length} of {subInspections.length} sub-images defective)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                          OVERALL PASS (All {subInspections.length} sub-images passed)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-surface-500">
+                  Each physical PCB board is inspected across segmented image captures. Click any sub-inspection thumbnail to inspect its defect localization in this workstation:
+                </p>
+
+                {loadingSub ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                    ))}
+                  </div>
+                ) : subInspections.length === 0 ? (
+                  <div className="p-3 bg-surface-50 rounded border border-surface-200 text-xs text-surface-500 font-mono">
+                    No other sub-inspections recorded for PCB {inspection.pcb_id}.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-1">
+                    {subInspections.map((sub) => {
+                      const isCurrent = sub.id === inspection.id;
+                      const isFail = (sub.final_status || sub.status) === "FAIL";
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            if (!isCurrent) router.push(`/inspections/${sub.id}`);
+                          }}
+                          className={`group relative text-left p-2 rounded-lg border transition-all ${
+                            isCurrent
+                              ? "bg-industrial-50/70 border-industrial-500 ring-2 ring-industrial-400 shadow-sm"
+                              : "bg-surface-50 hover:bg-white border-surface-200 hover:border-surface-300 hover:shadow-sm"
+                          }`}
+                        >
+                          <div className="relative aspect-4/3 w-full bg-surface-900 rounded overflow-hidden border border-surface-200 mb-2">
+                            <img
+                              src={sub.annotated_url || sub.image_url}
+                              alt={`Sub-Image ${sub.image_index ?? 1}`}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            />
+                            <div className="absolute top-1 left-1 bg-surface-950/80 backdrop-blur-xs text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                              Sub-Img #{sub.image_index ?? 1}
+                            </div>
+                            <div className="absolute top-1 right-1">
+                              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded text-white ${isFail ? "bg-rose-600" : "bg-emerald-600"}`}>
+                                {sub.final_status || sub.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] font-mono">
+                            <span className="font-semibold text-surface-900 truncate">
+                              {sub.source ? sub.source.slice(0, 14) : `Frame #${sub.image_index}`}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] font-mono text-surface-500 mt-1">
+                            <span className={sub.defect_count > 0 ? "text-rose-600 font-semibold" : "text-emerald-600"}>
+                              {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"}
+                            </span>
+                            {isCurrent && (
+                              <span className="text-[9px] font-bold text-industrial-700 bg-industrial-100 px-1 py-0.2 rounded">
+                                Viewing
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* High-Resolution Optical Inspection Viewer */}
             <InspectionImageViewer

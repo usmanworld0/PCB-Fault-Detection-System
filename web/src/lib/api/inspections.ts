@@ -26,8 +26,11 @@ export async function getInspections(params: InspectionListParams = {}): Promise
     if (params.date_to) {
       query = query.lte("captured_at", params.date_to);
     }
+    if (params.pcb_id) {
+      query = query.eq("pcb_id", params.pcb_id);
+    }
     if (params.search) {
-      query = query.or(`source.ilike.%${params.search}%,station_id.ilike.%${params.search}%,model.ilike.%${params.search}%`);
+      query = query.or(`source.ilike.%${params.search}%,station_id.ilike.%${params.search}%,model.ilike.%${params.search}%,pcb_id.ilike.%${params.search}%`);
     }
 
     const limit = params.limit ?? 20;
@@ -44,6 +47,8 @@ export async function getInspections(params: InspectionListParams = {}): Promise
       status: row.status,
       defect_count: Array.isArray(row.defects) ? row.defects.length : (row.defect_count ?? 0),
       image_url: row.image_url || row.image_path || "",
+      annotated_url: row.annotated_url || row.annotated_image_path || row.image_url || "",
+      source: row.source || row.source_image_name || "capture.jpg",
       station_id: row.station_id || "STATION-01",
       review_status: row.review_status || "UNREVIEWED",
       final_status: row.final_status || row.status,
@@ -123,5 +128,39 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
     };
   } catch {
     return apiFetch<InspectionDetail>(`/inspections/${id}`);
+  }
+}
+
+export async function getSubInspections(pcbId: string): Promise<InspectionListItem[]> {
+  if (!pcbId) return [];
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("inspections")
+      .select("*, defects(*)")
+      .eq("pcb_id", pcbId)
+      .order("image_index", { ascending: true });
+
+    if (error || !data) return [];
+
+    return data.map((row: any) => ({
+      id: row.id,
+      captured_at: row.captured_at,
+      model: row.model || "yolov8s",
+      status: row.status,
+      defect_count: Array.isArray(row.defects) ? row.defects.length : (row.defect_count ?? 0),
+      image_url: row.image_url || row.image_path || "",
+      annotated_url: row.annotated_url || row.annotated_image_path || row.image_url || "",
+      source: row.source || row.source_image_name || "capture.jpg",
+      station_id: row.station_id || "STATION-01",
+      review_status: row.review_status || "UNREVIEWED",
+      final_status: row.final_status || row.status,
+      operator_email: row.operator_email,
+      operator_role: row.operator_role,
+      pcb_id: row.pcb_id || undefined,
+      image_index: row.image_index ?? 1,
+    }));
+  } catch {
+    return [];
   }
 }
