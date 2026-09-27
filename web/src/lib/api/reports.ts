@@ -105,7 +105,7 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
     .single();
 
   // 5. Always trigger client-side download
-  _triggerDownload(payload.format, payload.title, summaryJson);
+  _triggerDownload(payload.format ?? "CSV", payload.title, summaryJson);
 
   if (insertErr) {
     // Table may not exist yet — return a local ephemeral report object
@@ -114,7 +114,7 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
       id: `local-${Date.now()}`,
       title: payload.title,
       report_type: payload.report_type,
-      format: payload.format,
+      format: payload.format ?? "CSV",
       status: "ready",
       summary_json: summaryJson,
       created_by_email: userEmail,
