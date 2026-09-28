@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.auth import authenticate_station_user, get_active_session
+from core.auth import authenticate_station_user, get_active_session, request_password_reset
 
 # Locate official logo asset
 _ASSETS_DIR = Path(__file__).resolve().parent / "assets"
@@ -227,6 +227,25 @@ class LoginDialog(QDialog):
         lbl_pass_row.addWidget(lbl_pass)
         lbl_pass_row.addStretch()
 
+        self.btn_forgot = QPushButton("Forgot?")
+        self.btn_forgot.setCursor(Qt.PointingHandCursor)
+        self.btn_forgot.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                border: none;
+                color: #2563eb;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 0px 4px;
+            }
+            QPushButton:hover {
+                color: #1d4ed8;
+                text-decoration: underline;
+            }
+        """)
+        self.btn_forgot.clicked.connect(self._prompt_forgot_password)
+        lbl_pass_row.addWidget(self.btn_forgot)
+
         self.lbl_caps = QLabel("Caps Lock is ON")
         self.lbl_caps.setStyleSheet("font-size: 10px; font-weight: 600; color: #d97706;")
         self.lbl_caps.hide()
@@ -436,3 +455,33 @@ class LoginDialog(QDialog):
     def show_error(self, message: str):
         self.error_text.setText(message)
         self.error_banner.show()
+
+    def _prompt_forgot_password(self):
+        email = self.txt_email.text().strip()
+        if not email:
+            self.show_error("Please enter your operator email address first to reset password.")
+            self.txt_email.setFocus()
+            return
+
+        from PySide6.QtWidgets import QMessageBox
+        reply = QMessageBox.question(
+            self,
+            "Reset Station Password",
+            f"Send a Supabase password recovery link to:\n\n{email}\n\nDo you want to proceed?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            request_password_reset(email)
+            QMessageBox.information(
+                self,
+                "Password Recovery Link Sent",
+                f"A secure password reset link has been dispatched to {email} via Supabase Auth.\n\n"
+                "Please follow the link in your email to choose a new strong password.",
+            )
+        except Exception as e:
+            self.show_error(f"Failed to request reset: {e}")
+

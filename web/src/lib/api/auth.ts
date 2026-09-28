@@ -135,3 +135,55 @@ export async function logout(): Promise<void> {
     window.location.href = "/login";
   }
 }
+
+/**
+ * Initiates the Forgot Password recovery flow via Supabase Auth.
+ * Supabase sends an email containing a secure password reset link pointing to /reset-password.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const normEmail = email.trim().toLowerCase();
+  if (!normEmail) {
+    throw new Error("Please enter your registered email address.");
+  }
+
+  const supabase = getSupabase();
+  const redirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/reset-password`
+      : undefined;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(normEmail, {
+    redirectTo,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to send password reset email.");
+  }
+}
+
+/**
+ * Updates the user's password using Supabase Auth.
+ * Enforces strong password requirements.
+ */
+export async function updateUserPassword(newPassword: string): Promise<void> {
+  if (!newPassword) {
+    throw new Error("Password is required.");
+  }
+
+  // Validate strong password requirements
+  const { checkPasswordStrength } = await import("@/lib/utils/password");
+  const check = checkPasswordStrength(newPassword);
+  if (!check.isValid) {
+    throw new Error(check.errorMessage || "Password does not meet strong password requirements.");
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to update password.");
+  }
+}
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/supabase_service.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 
@@ -46,6 +47,105 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final emailTextController = TextEditingController(text: _emailController.text.trim());
+    bool isSending = false;
+    String? dialogError;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text(
+            'Reset Password',
+            style: AppTypography.heading2.copyWith(fontSize: 18),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Enter your email address to receive a secure password recovery link via Supabase Auth.',
+                style: AppTypography.bodySmall,
+              ),
+              const SizedBox(height: 14),
+              if (dialogError != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.qaFailBg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.qaFailBorder),
+                  ),
+                  child: Text(
+                    dialogError!,
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.qaFail, fontSize: 11),
+                  ),
+                ),
+              TextField(
+                controller: emailTextController,
+                keyboardType: TextInputType.emailAddress,
+                style: AppTypography.mono.copyWith(fontSize: 13),
+                decoration: const InputDecoration(
+                  labelText: 'Operator Email',
+                  prefixIcon: Icon(Icons.email_outlined, size: 18),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSending ? null : () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSending
+                  ? null
+                  : () async {
+                      final resetEmail = emailTextController.text.trim();
+                      if (resetEmail.isEmpty) {
+                        setDialogState(() => dialogError = 'Please enter your email.');
+                        return;
+                      }
+                      setDialogState(() {
+                        isSending = true;
+                        dialogError = null;
+                      });
+                      try {
+                        final supabaseService = context.read<SupabaseService>();
+                        await supabaseService.resetPasswordForEmail(resetEmail);
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.industrial900,
+                              content: Text('Password reset instructions sent to $resetEmail via Supabase Auth.'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setDialogState(() {
+                          isSending = false;
+                          dialogError = e.toString();
+                        });
+                      }
+                    },
+              child: isSending
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Send Reset Link'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -167,7 +267,27 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.lock_outline, size: 18),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: _showForgotPasswordDialog,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(50, 30),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Forgot Password?',
+                            style: AppTypography.mono.copyWith(
+                              fontSize: 11,
+                              color: AppColors.industrial600,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
 
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,

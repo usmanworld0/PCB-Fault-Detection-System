@@ -18,6 +18,8 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { getUsers, createUser, updateUser } from "@/lib/api/users";
 import { User, UserRole } from "@/types/models";
 import { formatDate } from "@/lib/utils";
+import { PasswordStrengthMeter } from "@/components/common/PasswordStrengthMeter";
+import { checkPasswordStrength } from "@/lib/utils/password";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -52,6 +54,16 @@ export default function UsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    const strength = checkPasswordStrength(newPassword);
+    if (!strength.isValid) {
+      setFormError(
+        strength.errorMessage ||
+          "Password does not meet strong security requirements. Please fulfill all criteria."
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       await createUser({
@@ -159,12 +171,12 @@ export default function UsersPage() {
                   <input
                     type="password"
                     required
-                    minLength={6}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
                     className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 transition-all font-mono"
                   />
+                  <PasswordStrengthMeter password={newPassword} />
                 </div>
 
                 <div>

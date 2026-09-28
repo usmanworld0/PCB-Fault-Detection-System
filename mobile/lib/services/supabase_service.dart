@@ -720,4 +720,11 @@ class SupabaseService extends ChangeNotifier {
       ),
     ];
   }
+
+  /// Request password reset via Supabase Auth GoTrue service
+  Future<void> resetPasswordForEmail(String email) async {
+    final client = _client ?? Supabase.instance.client;
+    await client.auth.resetPasswordForEmail(email.trim());
+  }
 }
+

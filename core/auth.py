@@ -307,3 +307,59 @@ def check_role_permission(role: str, action: str) -> bool:
     if role == "viewer":
         return action == "inspect"
     return False
+
+
+def validate_strong_password(password: str) -> tuple[bool, str]:
+    """Validates password against strong password security criteria:
+    - Min 8 characters
+    - At least 1 uppercase letter
+    - At least 1 lowercase letter
+    - At least 1 digit
+    - At least 1 special character
+    """
+    import re
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter (A-Z)."
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter (a-z)."
+    if not re.search(r"[0-9]", password):
+        return False, "Password must contain at least one numeric digit (0-9)."
+    if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?`~]", password):
+        return False, "Password must contain at least one special character (!@#$%...)."
+    return True, ""
+
+
+def request_password_reset(email: str) -> bool:
+    """Requests a password recovery email from Supabase Auth GoTrue service."""
+    norm_email = email.strip().lower()
+    if not norm_email:
+        raise ValueError("Please provide a valid operator email address.")
+
+    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_PUBLISHABLE_KEY", "")
+
+    if not supabase_url or not supabase_key:
+        raise ValueError("Supabase connection parameters are not configured.")
+
+    recover_url = f"{supabase_url}/auth/v1/recover"
+    headers = {
+        "apikey": supabase_key,
+        "Content-Type": "application/json",
+    }
+    try:
+        res = requests.post(recover_url, headers=headers, json={"email": norm_email}, timeout=10)
+        if res.status_code in (200, 204):
+            return True
+        else:
+            err_data = {}
+            try:
+                err_data = res.json()
+            except Exception:
+                pass
+            msg = err_data.get("msg") or err_data.get("error_description") or f"HTTP {res.status_code}"
+            raise ValueError(f"Supabase password reset failed: {msg}")
+    except requests.RequestException as e:
+        raise ConnectionError(f"Network error communicating with Supabase: {e}")
+

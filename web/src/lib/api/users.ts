@@ -17,13 +17,19 @@ export async function getUsers(): Promise<User[]> {
   }
 }
 
+import { checkPasswordStrength } from "@/lib/utils/password";
+
 export async function createUser(payload: UserCreatePayload): Promise<User> {
   const normEmail = payload.email.trim().toLowerCase();
   const supabase = getSupabase();
-  const password = payload.password?.trim();
+  const password = payload.password?.trim() || "";
 
-  if (!password || password.length < 6) {
-    throw new Error("A valid password of at least 6 characters is required.");
+  const strength = checkPasswordStrength(password);
+  if (!strength.isValid) {
+    throw new Error(
+      strength.errorMessage ||
+        "Password must be at least 8 characters long, including uppercase, lowercase, numbers, and special symbols."
+    );
   }
 
   // 1. Provision user in native Supabase Authentication (auth.users)
