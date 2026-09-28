@@ -125,12 +125,7 @@ function ResetPasswordForm() {
   };
 
   if (isVerifying) {
-    return (
-      <div className="py-12 flex flex-col items-center justify-center gap-3 text-center">
-        <div className="w-6 h-6 border-2 border-industrial-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-mono text-surface-500">Verifying secure recovery token...</p>
-      </div>
-    );
+    return <div className="py-12" />;
   }
 
   if (success) {
@@ -339,14 +334,7 @@ export default function ResetPasswordPage() {
               </p>
             </div>
 
-            <Suspense
-              fallback={
-                <div className="h-44 flex flex-col items-center justify-center gap-2 text-xs text-surface-400">
-                  <div className="w-5 h-5 border-2 border-industrial-500 border-t-transparent rounded-full animate-spin" />
-                  <span>Loading...</span>
-                </div>
-              }
-            >
+            <Suspense fallback={<div className="h-44" />}>
               <ResetPasswordForm />
             </Suspense>
           </div>

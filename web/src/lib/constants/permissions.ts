@@ -2,11 +2,13 @@ import type { UserRole } from "@/types/models";
 
 export type Permission =
   | "inspection.read"
+  | "inspection.delete"
   | "reports.read"
   | "reports.generate"
   | "notifications.read"
   | "users.read"
-  | "users.manage";
+  | "users.manage"
+  | "users.delete";
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "ADMIN",
@@ -17,11 +19,13 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     "inspection.read",
+    "inspection.delete",
     "reports.read",
     "reports.generate",
     "notifications.read",
     "users.read",
     "users.manage",
+    "users.delete",
   ],
   engineer: [
     "inspection.read",

@@ -112,3 +112,22 @@ export async function updateUser(userId: string, payload: UserUpdatePayload): Pr
     });
   }
 }
+
+export async function deleteUser(userId: string): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", userId);
+    if (error) throw error;
+  } catch (err: any) {
+    if (err && err.message && !err.message.includes("fetch")) {
+      throw err;
+    }
+    return apiFetch<void>(`/users/${userId}`, {
+      method: "DELETE",
+    });
+  }
+}
+

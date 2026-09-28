@@ -1,4 +1,5 @@
 import time
+import threading
 from pathlib import Path
 
 import cv2
@@ -47,30 +48,75 @@ class ImageView(QLabel):
 
 
 class LiveWorker(QThread):
-    """Reads frames and runs the model off the UI thread. If the model is slower than
-    the camera, frames are skipped naturally because we always read the newest one."""
+    """Reads frames and runs the model off the UI thread in an isolated worker context.
+    Prevents DirectShow COM collisions with native Windows dialogs and race conditions."""
     frame_ready = Signal(object, object)
     failed = Signal(str)
 
-    def __init__(self, source, detector, conf):
+    def __init__(self, camera_index, detector, conf, model_lock):
         super().__init__()
-        self.source, self.detector, self.conf = source, detector, conf
+        self.camera_index = camera_index
+        self.detector = detector
+        self.conf = conf
+        self.model_lock = model_lock
         self._running = True
+        self.source = None
 
     def run(self):
         try:
+            # Initialize WebcamSource strictly on this worker thread
+            self.source = WebcamSource(self.camera_index)
+            if not self.source.is_open():
+                if self._running:
+                    self.failed.emit("Could not open camera device")
+                return
+
             while self._running:
-                ok, frame = self.source.read()
-                if not ok:
-                    self.failed.emit("Could not read from the camera")
+                if not self.source:
                     break
-                self.frame_ready.emit(frame, self.detector.predict(frame, self.conf))
+                ok, frame = self.source.read()
+                if not ok or not self._running:
+                    if self._running:
+                        self.failed.emit("Could not read from the camera")
+                    break
+
+                with self.model_lock:
+                    if not self._running:
+                        break
+                    prediction = self.detector.predict(frame, self.conf)
+
+                if self._running:
+                    self.frame_ready.emit(frame, prediction)
+        except Exception as e:
+            if self._running:
+                self.failed.emit(f"Camera error: {e}")
         finally:
-            self.source.release()
+            if self.source:
+                try:
+                    self.source.release()
+                except Exception:
+                    pass
+                self.source = None
 
     def stop(self):
         self._running = False
-        self.wait(3000)
+        try:
+            self.frame_ready.disconnect()
+        except Exception:
+            pass
+        try:
+            self.failed.disconnect()
+        except Exception:
+            pass
+        if self.source:
+            try:
+                self.source.release()
+            except Exception:
+                pass
+            self.source = None
+        if not self.wait(500):
+            self.terminate()
+            self.wait(200)
 
 
 class MainWindow(QMainWindow):
@@ -92,6 +138,7 @@ class MainWindow(QMainWindow):
         self.last_autosave = 0.0
         self.current_pcb_id = ""
         self.current_pcb_image_count = 0
+        self.model_lock = threading.Lock()
 
         # ---- Operator Identity Header Card (Left Panel) ----
         self.operator_card = QFrame()
@@ -338,12 +385,14 @@ class MainWindow(QMainWindow):
     # ---- model ----
     def load_model(self, label):
         try:
-            self.detector = self.models[label]()
+            new_detector = self.models[label]()
         except Exception as e:
             self.statusBar().showMessage(f"Could not load model: {e}")
             return
-        if self.worker:
-            self.worker.detector = self.detector
+        with self.model_lock:
+            self.detector = new_detector
+            if self.worker:
+                self.worker.detector = self.detector
         self.statusBar().showMessage(f"Model loaded: {label}")
         if self.current and not self.worker:
             self.run_on(*self.current)
@@ -360,17 +409,21 @@ class MainWindow(QMainWindow):
 
     # ---- sources ----
     def open_image(self):
+        # Stop live feed and worker cleanly before invoking the native modal file dialog
+        if self.worker:
+            self.stop_live()
         path, _ = QFileDialog.getOpenFileName(self, "Select image", "",
                                               "Images (*.jpg *.jpeg *.png *.bmp *.tif *.tiff)")
         if path:
-            self.stop_live()
             self.source = FolderSource([Path(path)])
             self.run_on(*self.source.current())
 
     def open_folder(self):
+        # Stop live feed and worker cleanly before invoking the native modal directory dialog
+        if self.worker:
+            self.stop_live()
         folder = QFileDialog.getExistingDirectory(self, "Select folder")
         if folder:
-            self.stop_live()
             src = FolderSource.from_folder(folder)
             if not len(src):
                 self.statusBar().showMessage("No images in that folder")
@@ -386,11 +439,7 @@ class MainWindow(QMainWindow):
         if self.worker:
             self.stop_live()
             return
-        cam = WebcamSource(0)
-        if not cam.is_open():
-            self.statusBar().showMessage("No camera found")
-            return
-        self.worker = LiveWorker(cam, self.detector, self.conf_value())
+        self.worker = LiveWorker(0, self.detector, self.conf_value(), self.model_lock)
         self.worker.frame_ready.connect(self.on_live_frame)
         self.worker.failed.connect(lambda m: (self.statusBar().showMessage(m), self.stop_live()))
         self.worker.start()
@@ -398,8 +447,9 @@ class MainWindow(QMainWindow):
 
     def stop_live(self):
         if self.worker:
-            self.worker.stop()
+            w = self.worker
             self.worker = None
+            w.stop()
             self.btn_live.setText("Start live feed")
 
     # ---- inference display ----
@@ -409,7 +459,8 @@ class MainWindow(QMainWindow):
             return
         self.current = (frame, name)
         self.btn_compare.setEnabled(True)
-        result = self.detector.predict(frame, self.conf_value())
+        with self.model_lock:
+            result = self.detector.predict(frame, self.conf_value())
         self.display(frame, result, name)
 
     def on_live_frame(self, frame, result):

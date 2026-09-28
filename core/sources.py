@@ -49,15 +49,23 @@ class WebcamSource:
         if height:
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        self._released = False
 
     def is_open(self):
-        return self.cap.isOpened()
+        return not self._released and self.cap.isOpened()
 
     def read(self):
+        if self._released or not self.cap.isOpened():
+            return False, None
         return self.cap.read()
 
     def release(self):
-        self.cap.release()
+        self._released = True
+        try:
+            if self.cap.isOpened():
+                self.cap.release()
+        except Exception:
+            pass
 
 
 class IndustrialCamSource:

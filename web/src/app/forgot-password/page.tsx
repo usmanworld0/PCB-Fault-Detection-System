@@ -181,14 +181,7 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
 
-            <Suspense
-              fallback={
-                <div className="h-44 flex flex-col items-center justify-center gap-2 text-xs text-surface-400">
-                  <div className="w-5 h-5 border-2 border-industrial-500 border-t-transparent rounded-full animate-spin" />
-                  <span>Loading...</span>
-                </div>
-              }
-            >
+            <Suspense fallback={<div className="h-44" />}>
               <ForgotPasswordForm />
             </Suspense>
           </div>

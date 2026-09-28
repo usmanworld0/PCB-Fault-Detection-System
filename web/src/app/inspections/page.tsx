@@ -16,16 +16,19 @@ import {
   SlidersHorizontal,
   Filter,
   FileSpreadsheet,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { TableSkeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
 import { EmptyState } from "@/components/common/EmptyState";
-import { getInspections } from "@/lib/api/inspections";
+import { getInspections, deleteInspection, deletePcbInspections } from "@/lib/api/inspections";
 import { InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 interface GroupedPCBItem {
   key: string;
@@ -45,12 +48,22 @@ interface GroupedPCBItem {
 
 export default function InspectionsPage() {
   const router = useRouter();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
 
   const [items, setItems] = useState<InspectionListItem[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "single" | "pcb";
+    id: string;
+    pcbId?: string;
+    count?: number;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Filters & Pagination
   const [status, setStatus] = useState<string>("");
@@ -163,6 +176,24 @@ export default function InspectionsPage() {
     setPcbIdFilter("");
     setSearch("");
     setOffset(0);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTarget.type === "pcb" && deleteTarget.pcbId) {
+        await deletePcbInspections(deleteTarget.pcbId);
+      } else {
+        await deleteInspection(deleteTarget.id);
+      }
+      setDeleteTarget(null);
+      await fetchInspections();
+    } catch (err: any) {
+      alert("Failed to delete inspection: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const exportCurrentCsv = () => {
@@ -468,6 +499,22 @@ export default function InspectionsPage() {
                                 >
                                   <span>Workstation</span>
                                 </button>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDeleteTarget(
+                                        group.pcb_id
+                                          ? { type: "pcb", id: group.primary_id, pcbId: group.pcb_id, count: group.sub_count }
+                                          : { type: "single", id: group.primary_id }
+                                      )
+                                    }
+                                    className="p-1.5 rounded-md text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                                    title={group.pcb_id ? `Delete PCB group (${group.sub_count} scans)` : "Delete inspection"}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -529,7 +576,22 @@ export default function InspectionsPage() {
                                           </div>
                                           <div className="pt-2 mt-2 border-t border-surface-100 flex items-center justify-between text-industrial-600 group-hover:text-industrial-800 text-[10px] font-semibold">
                                             <span>Inspect in Workstation</span>
-                                            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                            <div className="flex items-center gap-1">
+                                              {isAdmin && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeleteTarget({ type: "single", id: sub.id });
+                                                  }}
+                                                  className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                                                  title="Delete this sub-inspection"
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              )}
+                                              <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                            </div>
                                           </div>
                                         </div>
                                       );
@@ -599,14 +661,32 @@ export default function InspectionsPage() {
                           <Eye className="w-3 h-3 text-industrial-600" />
                           <span>{isExpanded ? "Hide Sub-Images" : `View Sub-Images (${group.sub_count})`}</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/inspections/${group.primary_id}`)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800"
-                        >
-                          <span>Workstation</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/inspections/${group.primary_id}`)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800"
+                          >
+                            <span>Workstation</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDeleteTarget(
+                                  group.pcb_id
+                                    ? { type: "pcb", id: group.primary_id, pcbId: group.pcb_id, count: group.sub_count }
+                                    : { type: "single", id: group.primary_id }
+                                )
+                              }
+                              className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                              title="Delete inspection"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Expanded sub-inspections list on mobile */}
@@ -630,7 +710,22 @@ export default function InspectionsPage() {
                                     <span className="font-mono text-xs font-bold text-surface-900">
                                       Sub-Image #{sub.image_index ?? 1}
                                     </span>
-                                    <StatusBadge status={sub.final_status || sub.status} size="sm" />
+                                    <div className="flex items-center gap-1.5">
+                                      <StatusBadge status={sub.final_status || sub.status} size="sm" />
+                                      {isAdmin && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeleteTarget({ type: "single", id: sub.id });
+                                          }}
+                                          className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50"
+                                          title="Delete sub-inspection"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="text-[10px] font-mono text-surface-500 mt-0.5">
                                     {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"} • {formatTimeAgo(sub.captured_at)}
@@ -675,6 +770,82 @@ export default function InspectionsPage() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-950/50 backdrop-blur-xs">
+          <div className="bg-white rounded-xl border border-surface-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-surface-900">
+                  {deleteTarget.type === "pcb"
+                    ? "Delete PCB Inspection Group?"
+                    : "Delete Inspection Record?"}
+                </h3>
+                <p className="text-sm text-surface-600 leading-relaxed">
+                  {deleteTarget.type === "pcb" ? (
+                    <>
+                      Are you sure you want to permanently delete PCB{" "}
+                      <span className="font-mono font-bold text-surface-900">
+                        {deleteTarget.pcbId}
+                      </span>{" "}
+                      and all{" "}
+                      <span className="font-bold text-rose-600">
+                        {deleteTarget.count || "associated"}
+                      </span>{" "}
+                      sub-inspections and defect logs?
+                    </>
+                  ) : (
+                    <>
+                      Are you sure you want to permanently delete inspection{" "}
+                      <span className="font-mono font-bold text-surface-900">
+                        #{deleteTarget.id.slice(0, 8)}
+                      </span>{" "}
+                      and its associated defect data?
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+              Warning: This action is permanent and cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-surface-100">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

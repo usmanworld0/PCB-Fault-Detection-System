@@ -164,3 +164,48 @@ export async function getSubInspections(pcbId: string): Promise<InspectionListIt
     return [];
   }
 }
+
+export async function deleteInspection(id: string): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    // 1. Delete associated defects
+    await supabase.from("defects").delete().eq("inspection_id", id);
+    // 2. Delete inspection record
+    const { error } = await supabase.from("inspections").delete().eq("id", id);
+    if (error) throw error;
+  } catch (err: any) {
+    if (err && err.message && !err.message.includes("fetch")) {
+      throw err;
+    }
+    return apiFetch<void>(`/inspections/${id}`, {
+      method: "DELETE",
+    });
+  }
+}
+
+export async function deletePcbInspections(pcbId: string): Promise<void> {
+  if (!pcbId) return;
+  try {
+    const supabase = getSupabase();
+    // Find all inspections for this PCB ID
+    const { data: list } = await supabase
+      .from("inspections")
+      .select("id")
+      .eq("pcb_id", pcbId);
+
+    const ids = (list || []).map((x: any) => x.id);
+    if (ids.length > 0) {
+      await supabase.from("defects").delete().in("inspection_id", ids);
+    }
+    const { error } = await supabase.from("inspections").delete().eq("pcb_id", pcbId);
+    if (error) throw error;
+  } catch (err: any) {
+    if (err && err.message && !err.message.includes("fetch")) {
+      throw err;
+    }
+    return apiFetch<void>(`/inspections?pcb_id=${encodeURIComponent(pcbId)}`, {
+      method: "DELETE",
+    });
+  }
+}
+

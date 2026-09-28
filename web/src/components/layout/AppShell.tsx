@@ -40,24 +40,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [isLoading, isAuthenticated, role, pathname, router]);
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-surface-50 text-surface-700 bg-grid-pattern">
-        <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-surface-200 shadow-md max-w-xs w-full text-center">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-xl bg-surface-900 border border-surface-700 flex items-center justify-center p-2 shadow-md">
-              <img src="/logo.png" alt="PCB Vision Logo" className="w-full h-full object-contain" />
-            </div>
-            <div className="absolute -inset-1 rounded-2xl border-2 border-industrial-500 border-t-transparent animate-spin" />
-          </div>
-          <div>
-            <div className="text-xs font-bold text-surface-900 tracking-wider font-mono">PCB-VISION</div>
-            <div className="text-[11px] text-surface-500 font-mono tracking-wider uppercase mt-1">
-              Initializing Station...
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!isAuthenticated) {

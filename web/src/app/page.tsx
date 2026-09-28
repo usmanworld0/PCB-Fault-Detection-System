@@ -18,9 +18,5 @@ export default function HomePage() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#090D16]">
-      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  return null;
 }

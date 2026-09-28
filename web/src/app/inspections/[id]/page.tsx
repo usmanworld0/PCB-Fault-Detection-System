@@ -14,6 +14,8 @@ import {
   Maximize2,
   Layers,
   Image as ImageIcon,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { InspectionImageViewer } from "@/components/inspections/InspectionImageViewer";
@@ -21,21 +23,44 @@ import { StatusBadge } from "@/components/common/StatusBadge";
 import { SeverityBadge } from "@/components/common/SeverityBadge";
 import { Skeleton } from "@/components/common/LoadingSkeleton";
 import { ErrorState } from "@/components/common/ErrorState";
-import { getInspectionDetail, getSubInspections } from "@/lib/api/inspections";
+import { getInspectionDetail, getSubInspections, deleteInspection, deletePcbInspections } from "@/lib/api/inspections";
 import { InspectionDetail, InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function InspectionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
 
   const [inspection, setInspection] = useState<InspectionDetail | null>(null);
   const [subInspections, setSubInspections] = useState<InspectionListItem[]>([]);
   const [loadingSub, setLoadingSub] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<"single" | "pcb">("single");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteMode === "pcb" && inspection?.pcb_id) {
+        await deletePcbInspections(inspection.pcb_id);
+      } else {
+        await deleteInspection(id);
+      }
+      setShowDeleteModal(false);
+      router.push("/inspections");
+    } catch (err: any) {
+      alert("Failed to delete inspection: " + (err.message || "Unknown error"));
+      setIsDeleting(false);
+    }
+  };
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -91,6 +116,23 @@ export default function InspectionDetailPage() {
               <p className="text-xs text-surface-500 mt-0.5 font-mono">UID: {id}</p>
             </div>
           </div>
+
+          {isAdmin && inspection && (
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteMode("single");
+                  setShowDeleteModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 shadow-2xs transition-colors cursor-pointer"
+                title="Delete this inspection"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Inspection</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {error ? (
@@ -360,6 +402,92 @@ export default function InspectionDetailPage() {
           </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-950/50 backdrop-blur-xs">
+          <div className="bg-white rounded-xl border border-surface-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-surface-900">
+                  Delete Inspection Record?
+                </h3>
+                <p className="text-sm text-surface-600 leading-relaxed">
+                  Are you sure you want to permanently delete this inspection (UID:{" "}
+                  <span className="font-mono font-bold text-surface-900">{id.slice(0, 8)}</span>)
+                  and its associated defect data?
+                </p>
+              </div>
+            </div>
+
+            {inspection?.pcb_id && subInspections.length > 1 && (
+              <div className="p-3 rounded-lg border border-industrial-200 bg-industrial-50/50 space-y-2">
+                <p className="text-xs font-semibold text-industrial-900">
+                  This inspection belongs to PCB group: <span className="font-mono">{inspection.pcb_id}</span> ({subInspections.length} scans)
+                </p>
+                <div className="space-y-1.5 text-xs text-surface-700">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="deleteMode"
+                      checked={deleteMode === "single"}
+                      onChange={() => setDeleteMode("single")}
+                      className="text-brand-600 focus:ring-brand-500"
+                    />
+                    <span>Delete only this scan image</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-rose-700 font-medium">
+                    <input
+                      type="radio"
+                      name="deleteMode"
+                      checked={deleteMode === "pcb"}
+                      onChange={() => setDeleteMode("pcb")}
+                      className="text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>Delete entire PCB group ({subInspections.length} scans)</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2.5 rounded-lg border border-rose-100">
+              Warning: This action is permanent and cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-surface-100">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

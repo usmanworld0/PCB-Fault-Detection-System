@@ -317,14 +317,7 @@ export default function LoginPage() {
 
           {/* Form Card */}
           <div className="bg-white border border-surface-200 rounded-2xl p-6 sm:p-8 shadow-sm sm:shadow-md">
-            <Suspense
-              fallback={
-                <div className="h-44 flex flex-col items-center justify-center gap-2 text-xs text-surface-400">
-                  <div className="w-5 h-5 border-2 border-industrial-500 border-t-transparent rounded-full animate-spin" />
-                  <span>Loading...</span>
-                </div>
-              }
-            >
+            <Suspense fallback={<div className="h-44" />}>
               <LoginForm />
             </Suspense>
           </div>
