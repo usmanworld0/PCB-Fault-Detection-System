@@ -416,13 +416,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '$_trendPeriod Defect Trajectory',
-                style: AppTypography.heading3.copyWith(fontSize: 13),
+              Expanded(
+                child: Text(
+                  '$_trendPeriod Defect Trajectory',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.heading3.copyWith(fontSize: 13),
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   _chartLegend(AppColors.industrial600, 'Inspections'),
                   const SizedBox(width: 10),
