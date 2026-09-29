@@ -1,723 +1,574 @@
+import 'dart:math' as math;
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
-import '../services/supabase_service.dart';
+
 import '../models/models.dart';
+import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/stat_card.dart';
-import '../widgets/section_header.dart';
-import '../widgets/pcb_heatmap_view.dart';
-import '../widgets/filter_sheet.dart';
 
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
-
-  @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends State<DashboardScreen> {
-  String _trendPeriod = 'Daily'; // 'Daily', 'Weekly', 'Monthly'
 
   @override
   Widget build(BuildContext context) {
     final service = context.watch<SupabaseService>();
-    final stats = service.stats;
-
+    final analytics = service.analytics;
     return Scaffold(
       backgroundColor: AppColors.bgApp,
       body: RefreshIndicator(
         color: AppColors.industrial600,
-        onRefresh: () async {
-          await service.fetchInspections();
-        },
-        child: CustomScrollView(
+        onRefresh: service.fetchStats,
+        child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Top action bar with filter pill
-            SliverToBoxAdapter(
-              child: _buildFilterBar(service),
-            ),
-
-            if (service.isLoading && stats == null)
-              const SliverFillRemaining(
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.industrial600),
-                ),
-              )
-            else if (stats != null) ...[
-              // 1. KPI Stats Cards Grid
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.35,
-                  ),
-                  delegate: SliverChildListDelegate([
-                    StatCard(
-                      label: 'Total Inspections',
-                      value: stats.totalInspections.toString(),
-                      icon: Icons.biotech_outlined,
-                      accentColor: AppColors.industrial600,
-                      delta: '+8.4%',
-                      deltaIsPositive: true,
-                      subtitle: 'vs prior batch',
-                    ),
-                    StatCard(
-                      label: 'Defect Rate',
-                      value: '${stats.defectRate.toStringAsFixed(1)}%',
-                      icon: Icons.warning_amber_rounded,
-                      accentColor: stats.defectRate > 2.0 ? AppColors.qaFail : AppColors.qaWarning,
-                      delta: '-0.3%',
-                      deltaIsPositive: true,
-                      subtitle: '${stats.failCount} failed boards',
-                    ),
-                    StatCard(
-                      label: 'Yield Rate',
-                      value: '${stats.yieldRate.toStringAsFixed(1)}%',
-                      icon: Icons.verified_outlined,
-                      accentColor: AppColors.qaPass,
-                      delta: '+0.5%',
-                      deltaIsPositive: true,
-                      subtitle: 'IPC Class 3 Target',
-                    ),
-                    StatCard(
-                      label: 'Critical Defects',
-                      value: stats.criticalDefects.toString(),
-                      icon: Icons.crisis_alert_outlined,
-                      accentColor: stats.criticalDefects > 0 ? AppColors.qaFail : AppColors.qaPass,
-                      delta: stats.criticalDefects == 0 ? 'Optimal' : 'Action Req',
-                      deltaIsPositive: stats.criticalDefects == 0,
-                      subtitle: 'Requires QA review',
-                    ),
-                  ]),
-                ),
-              ),
-
-              // 2. Pass / Fail Ratio Indicator
-              SliverToBoxAdapter(
-                child: _buildPassFailBar(stats),
-              ),
-
-              // 3. Time Series Defect Trends
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: 'Defect Trends Over Time',
-                  subtitle: 'Historical defect trajectory & inspection volume',
-                  trailing: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.bgMuted,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: AppColors.borderSubtle),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: ['Daily', 'Weekly', 'Monthly'].map((p) {
-                        final isSel = _trendPeriod == p;
-                        return GestureDetector(
-                          onTap: () => setState(() => _trendPeriod = p),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isSel ? AppColors.industrial600 : Colors.transparent,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              p,
-                              style: AppTypography.mono.copyWith(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: isSel ? Colors.white : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildTrendChartCard(stats),
-              ),
-
-              // 4. PCB Defect Location Heatmap
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: 'Defect Location Heatmap',
-                  subtitle: 'Spatial distribution across PCB surface layout',
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.industrial50,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: AppColors.industrial200),
-                    ),
-                    child: Text(
-                      '${stats.heatmapPoints.length} Hotspots',
-                      style: AppTypography.mono.copyWith(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.industrial700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: PcbHeatmapView(points: stats.heatmapPoints),
-              ),
-
-              // 5. Defects by Classification Type
-              SliverToBoxAdapter(
-                child: const SectionHeader(
-                  title: 'Defects by Classification',
-                  subtitle: 'Breakdown across IPC defect taxonomy categories',
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildDefectsByType(stats),
-              ),
-
-              // 6. Model Performance & Confidence Score Distribution
-              SliverToBoxAdapter(
-                child: const SectionHeader(
-                  title: 'Model Performance & Confidence',
-                  subtitle: 'YOLOv8s detection metrics & score distribution',
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildModelMetricsCard(stats),
-              ),
-
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 32),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilterBar(SupabaseService service) {
-    return Container(
-      color: AppColors.bgSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          // Filter button
-          InkWell(
-            onTap: () => FilterSheet.show(context),
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.borderSubtle),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.tune_outlined, size: 14, color: AppColors.industrial700),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Filters',
-                    style: AppTypography.mono.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.industrial900,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Active filter tags scroll
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _filterTag('Time: ${service.filterTimeframe.toUpperCase()}'),
-                  if (service.filterStation != null && service.filterStation != 'All')
-                    _filterTag('Station: ${service.filterStation}'),
-                  if (service.filterBatch != null && service.filterBatch != 'All')
-                    _filterTag('Batch: ${service.filterBatch}'),
-                  if (service.filterDefectType != null && service.filterDefectType != 'All')
-                    _filterTag('Type: ${service.filterDefectType!.toUpperCase()}'),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterTag(String text) {
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.industrial50,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.industrial200),
-      ),
-      child: Text(
-        text,
-        style: AppTypography.mono.copyWith(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: AppColors.industrial700,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPassFailBar(DashboardStats stats) {
-    final passPct = stats.yieldRate;
-    final failPct = stats.defectRate;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  'PASS / FAIL RATIO',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.label.copyWith(fontSize: 10),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  '${passPct.toStringAsFixed(1)}% PASS  •  ${failPct.toStringAsFixed(1)}% FAIL',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.mono.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: SizedBox(
-              height: 10,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: (passPct * 10).toInt(),
-                    child: Container(color: AppColors.qaPass),
-                  ),
-                  if (failPct > 0)
-                    Expanded(
-                      flex: (failPct * 10).toInt().clamp(1, 1000),
-                      child: Container(color: AppColors.qaFail),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _statusBadge('PASS COUNT', stats.passCount.toString(), AppColors.qaPass)),
-              Expanded(child: _statusBadge('FAIL COUNT', stats.failCount.toString(), AppColors.qaFail)),
-              Expanded(child: _statusBadge('PENDING QA', stats.pendingReviews.toString(), AppColors.qaWarning)),
-              Expanded(child: _statusBadge('ACTIVE ALERTS', stats.activeAlerts.toString(), AppColors.qaInfo)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statusBadge(String label, String value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.bodySmall.copyWith(fontSize: 9),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
           children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTrendChartCard(DashboardStats stats) {
-    List<TrendPoint> points;
-    switch (_trendPeriod) {
-      case 'Weekly':
-        points = stats.trendWeekly;
-        break;
-      case 'Monthly':
-        points = stats.trendMonthly;
-        break;
-      default:
-        points = stats.trendDaily;
-        break;
-    }
-
-    if (points.isEmpty) return const SizedBox.shrink();
-
-    final maxY = points.map((p) => p.inspections.toDouble()).fold(10.0, (a, b) => a > b ? a : b) * 1.15;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.fromLTRB(14, 16, 16, 12),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$_trendPeriod Defect Trajectory',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.heading3.copyWith(fontSize: 13),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _chartLegend(AppColors.industrial600, 'Inspections'),
-                  const SizedBox(width: 10),
-                  _chartLegend(AppColors.qaFail, 'Defects'),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            child: BarChart(
-              BarChartData(
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (val) => FlLine(
-                    color: AppColors.borderSubtle,
-                    strokeWidth: 0.8,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (val, meta) => Text(
-                        val.toInt().toString(),
-                        style: AppTypography.mono.copyWith(fontSize: 9, color: AppColors.textMuted),
-                      ),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (val, meta) {
-                        final idx = val.toInt();
-                        if (idx >= 0 && idx < points.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              points[idx].label,
-                              style: AppTypography.mono.copyWith(fontSize: 9, color: AppColors.textSecondary),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: points.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final p = entry.value;
-                  return BarChartGroupData(
-                    x: i,
-                    barRods: [
-                      BarChartRodData(
-                        toY: p.inspections.toDouble(),
-                        color: AppColors.industrial600,
-                        width: 10,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                      ),
-                      BarChartRodData(
-                        toY: (p.defects * 4).toDouble().clamp(0.0, maxY), // scaled for visual prominence
-                        color: AppColors.qaFail,
-                        width: 8,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _chartLegend(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-        const SizedBox(width: 4),
-        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
-      ],
-    );
-  }
-
-  Widget _buildDefectsByType(DashboardStats stats) {
-    final maxCount = stats.defectsByClass.values.fold(1, (a, b) => a > b ? a : b);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        children: stats.defectsByClass.entries.map((entry) {
-          final count = entry.value;
-          final pct = maxCount > 0 ? (count / maxCount) : 0.0;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Row(
+            Row(
               children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    entry.key.toUpperCase(),
-                    style: AppTypography.mono.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
                 Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: SizedBox(
-                      height: 8,
-                      child: LinearProgressIndicator(
-                        value: pct.clamp(0.05, 1.0),
-                        backgroundColor: AppColors.bgMuted,
-                        color: _defectColor(entry.key),
-                      ),
-                    ),
+                  child: Text(
+                    'Live production summary',
+                    style: AppTypography.heading2.copyWith(fontSize: 18),
                   ),
                 ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 28,
-                  child: Text(
-                    count.toString(),
-                    textAlign: TextAlign.right,
-                    style: AppTypography.mono.copyWith(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                IconButton(
+                  tooltip: 'Refresh analytics',
+                  onPressed: service.fetchStats,
+                  icon: const Icon(Icons.refresh),
                 ),
               ],
             ),
-          );
-        }).toList(),
+            if (analytics == null && service.analyticsError == null)
+              const Padding(
+                padding: EdgeInsets.only(top: 100),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (analytics == null)
+              _errorState(service.analyticsError!, service.fetchStats)
+            else ...[
+              if (analytics.totalInspections == 0)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.industrial50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.industrial200),
+                  ),
+                  child: const Text(
+                    'No inspection data yet. Analytics will appear when inspections are added.',
+                  ),
+                ),
+              GridView.count(
+                crossAxisCount: MediaQuery.sizeOf(context).width >= 720 ? 3 : 2,
+                childAspectRatio: 1.8,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _metric(
+                    'Inspections',
+                    analytics.totalInspections,
+                    Icons.biotech_outlined,
+                    AppColors.industrial600,
+                  ),
+                  _metric(
+                    'PASS',
+                    analytics.passCount,
+                    Icons.check_circle_outline,
+                    AppColors.qaPass,
+                  ),
+                  _metric(
+                    'FAIL',
+                    analytics.failCount,
+                    Icons.error_outline,
+                    AppColors.qaFail,
+                  ),
+                  _metric(
+                    'Defects',
+                    analytics.totalDefects,
+                    Icons.warning_amber_rounded,
+                    AppColors.qaWarning,
+                  ),
+                  _metric(
+                    'PCB IDs',
+                    analytics.distinctPcbCount,
+                    Icons.memory_outlined,
+                    AppColors.industrial600,
+                  ),
+                  _metric(
+                    'Inspections · 30 days',
+                    analytics.inspectionsLast30Days,
+                    Icons.calendar_month_outlined,
+                    AppColors.industrial600,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _passFailCard(analytics),
+              const SizedBox(height: 14),
+              _chartCard(
+                title: 'Defects by class',
+                subtitle: 'Counts from the defects table',
+                child: _classChart(analytics.defectsByClass),
+              ),
+              const SizedBox(height: 14),
+              _severityCard(analytics.defectsBySeverity),
+              const SizedBox(height: 14),
+              _chartCard(
+                title: 'Last 30 days',
+                subtitle: 'Daily inspection and defect counts',
+                child: _trendChart(analytics.trend),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Color _defectColor(String cls) {
-    switch (cls.toLowerCase()) {
-      case 'short':
-        return AppColors.qaFail;
-      case 'open':
-        return const Color(0xFFE11D48);
-      case 'mousebite':
-        return AppColors.qaWarning;
-      case 'spur':
-        return const Color(0xFFF97316);
-      case 'copper':
-        return AppColors.industrial500;
-      default:
-        return const Color(0xFF8B5CF6);
-    }
-  }
+  Widget _metric(String label, int value, IconData icon, Color color) =>
+      Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: AppColors.bgSurface,
+          border: Border.all(color: AppColors.borderSubtle),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textPrimary.withValues(alpha: 0.035),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    value.toString(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.heading2.copyWith(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    style: AppTypography.bodySmallReadable,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
 
-  Widget _buildModelMetricsCard(DashboardStats stats) {
-    final m = stats.modelMetrics;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
+  Widget _passFailCard(AnalyticsSnapshot data) {
+    final total = data.passCount + data.failCount;
+    final passRatio = total == 0 ? 0.0 : data.passCount / total;
+    return _panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(m.activeModel, style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.qaPassBg,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${m.inferenceLatencyMs} ms LATENCY',
-                  style: AppTypography.mono.copyWith(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.qaPass),
-                ),
-              ),
-            ],
+          Text(
+            'PASS / FAIL RATIO',
+            style: AppTypography.label.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
-          // 4 metric pills
-          Row(
-            children: [
-              _metricPill('mAP@0.5', '${(m.map50 * 100).toStringAsFixed(1)}%'),
-              const SizedBox(width: 8),
-              _metricPill('Precision', '${(m.precision * 100).toStringAsFixed(1)}%'),
-              const SizedBox(width: 8),
-              _metricPill('Recall', '${(m.recall * 100).toStringAsFixed(1)}%'),
-              const SizedBox(width: 8),
-              _metricPill('F1 Score', '${(m.f1Score * 100).toStringAsFixed(1)}%'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'CONFIDENCE SCORE DISTRIBUTION',
-            style: AppTypography.label.copyWith(fontSize: 9),
-          ),
-          const SizedBox(height: 8),
-          // Confidence distribution bars
-          Column(
-            children: stats.confidenceDistribution.map((bin) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 55,
-                      child: Text(
-                        bin.rangeLabel,
-                        style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textSecondary),
-                      ),
-                    ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: SizedBox(
+              height: 12,
+              child: Row(
+                children: [
+                  if (passRatio > 0)
                     Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: (bin.percentage / 100).clamp(0.02, 1.0),
-                          backgroundColor: AppColors.bgMuted,
-                          color: AppColors.industrial600,
-                          minHeight: 6,
-                        ),
-                      ),
+                      flex: (passRatio * 1000).round(),
+                      child: const ColoredBox(color: AppColors.qaPass),
                     ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        '${bin.percentage.toStringAsFixed(0)}%',
-                        textAlign: TextAlign.right,
-                        style: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w600),
-                      ),
+                  if (passRatio < 1)
+                    Expanded(
+                      flex: ((1 - passRatio) * 1000)
+                          .round()
+                          .clamp(1, 1000)
+                          .toInt(),
+                      child: const ColoredBox(color: AppColors.qaFail),
                     ),
-                  ],
-                ),
-              );
-            }).toList(),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            total == 0
+                ? 'No inspections recorded'
+                : '${(passRatio * 100).toStringAsFixed(1)}% pass  •  ${(100 - passRatio * 100).toStringAsFixed(1)}% fail',
+            style: AppTypography.bodySmallReadable,
           ),
         ],
       ),
     );
   }
 
-  Widget _metricPill(String title, String val) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppColors.borderSubtle),
-        ),
-        child: Column(
-          children: [
-            Text(title, style: AppTypography.bodySmall.copyWith(fontSize: 9)),
-            const SizedBox(height: 2),
-            Text(
-              val,
-              style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.industrial900),
+  Widget _classChart(Map<String, int> values) {
+    final entries = values.entries.where((e) => e.value > 0).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    if (entries.isEmpty) {
+      return const _EmptyChart(message: 'No defects recorded.');
+    }
+    final largest = entries
+        .map((e) => e.value)
+        .fold<int>(1, (a, b) => a > b ? a : b);
+    final maxY = largest.toDouble() * 1.2;
+    return SizedBox(
+      height: math.max(190, entries.length * 38).toDouble(),
+      child: BarChart(
+        BarChartData(
+          maxY: maxY,
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.textPrimary,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final name = entries[groupIndex].key;
+                return BarTooltipItem(
+                  '$name\n${rod.toY.toInt()} defects',
+                  AppTypography.bodySmallReadable.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
             ),
-          ],
+          ),
+          gridData: const FlGridData(show: false),
+          borderData: FlBorderData(show: false),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < 0 || index >= entries.length) {
+                    return const SizedBox.shrink();
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      entries[index].key,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodySmallReadable.copyWith(
+                        fontSize: 9,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          barGroups: entries
+              .asMap()
+              .entries
+              .map(
+                (entry) => BarChartGroupData(
+                  x: entry.key,
+                  barRods: [
+                    BarChartRodData(
+                      toY: entry.value.value.toDouble(),
+                      color: AppColors.qaWarning,
+                      width: 20,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ],
+                ),
+              )
+              .toList(),
         ),
       ),
     );
   }
+
+  Widget _severityCard(Map<String, int> counts) {
+    const levels = [
+      ('Critical', AppColors.qaFail),
+      ('Moderate', AppColors.qaWarning),
+      ('Minor', AppColors.qaPass),
+    ];
+    return _panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Defects by severity',
+            style: AppTypography.heading3.copyWith(fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: levels
+                .map(
+                  (level) => Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 7),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: level.$2.withValues(alpha: 0.09),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (counts[level.$1] ?? 0).toString(),
+                            style: AppTypography.heading2.copyWith(
+                              color: level.$2,
+                              fontSize: 18,
+                            ),
+                          ),
+                          Text(
+                            level.$1,
+                            style: AppTypography.bodySmallReadable.copyWith(
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _trendChart(List<AnalyticsTrendPoint> points) {
+    if (points.isEmpty) {
+      return const _EmptyChart(message: 'No trend data available.');
+    }
+    if (points.every((point) => point.inspections == 0)) {
+      return const _EmptyChart(
+        message: 'No inspections recorded in the last 30 days.',
+      );
+    }
+    final maxY =
+        math
+            .max(
+              1,
+              points
+                  .map((p) => math.max(p.inspections, p.defects))
+                  .reduce(math.max),
+            )
+            .toDouble() *
+        1.2;
+    return Column(
+      children: [
+        Wrap(
+          spacing: 18,
+          runSpacing: 6,
+          children: [
+            _legendItem('Inspections', AppColors.textSecondary),
+            _legendItem('Defects', AppColors.qaWarning),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 205,
+          child: BarChart(
+            BarChartData(
+              maxY: maxY,
+              groupsSpace: 5,
+              barTouchData: BarTouchData(
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => AppColors.textPrimary,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final label = rodIndex == 0 ? 'Inspections' : 'Defects';
+                    return BarTooltipItem(
+                      '$label: ${rod.toY.toInt()}',
+                      AppTypography.bodySmallReadable.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => const FlLine(
+                  color: AppColors.borderSubtle,
+                  strokeWidth: 0.7,
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, reservedSize: 28),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 ||
+                          index >= points.length ||
+                          index % 5 != 0) {
+                        return const SizedBox.shrink();
+                      }
+                      final date = points[index].date;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text(
+                          '${date.month}/${date.day}',
+                          style: AppTypography.bodySmallReadable.copyWith(
+                            fontSize: 8,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              barGroups: points
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: entry.value.inspections.toDouble(),
+                          color: AppColors.textSecondary,
+                          width: 5,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        BarChartRodData(
+                          toY: entry.value.defects.toDouble(),
+                          color: AppColors.qaWarning,
+                          width: 5,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ],
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _legendItem(String label, Color color) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 9,
+        height: 9,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+      const SizedBox(width: 6),
+      Text(label, style: AppTypography.bodySmallReadable),
+    ],
+  );
+
+  Widget _chartCard({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) => _panel(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: AppTypography.heading3.copyWith(fontSize: 14)),
+        const SizedBox(height: 3),
+        Text(subtitle, style: AppTypography.bodySmallReadable),
+        const SizedBox(height: 12),
+        child,
+      ],
+    ),
+  );
+
+  Widget _panel({required Widget child}) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: AppColors.bgSurface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.borderSubtle),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.textPrimary.withValues(alpha: 0.035),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: child,
+  );
+
+  Widget _errorState(String message, Future<void> Function() retry) => Padding(
+    padding: const EdgeInsets.only(top: 70),
+    child: Column(
+      children: [
+        const Icon(
+          Icons.cloud_off_outlined,
+          size: 42,
+          color: AppColors.qaWarning,
+        ),
+        const SizedBox(height: 12),
+        Text('Could not load live analytics', style: AppTypography.heading3),
+        const SizedBox(height: 6),
+        const Text(
+          'Could not read analytics from Supabase. Check your sign-in and data access, then retry.',
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        SelectableText(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodySmallReadable,
+        ),
+        TextButton(onPressed: retry, child: const Text('Retry')),
+      ],
+    ),
+  );
+}
+
+class _EmptyChart extends StatelessWidget {
+  final String message;
+  const _EmptyChart({required this.message});
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 110,
+    child: Center(child: Text(message, style: AppTypography.bodySmallReadable)),
+  );
 }

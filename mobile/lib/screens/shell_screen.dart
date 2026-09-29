@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../services/local_alert_notifications.dart';
 import '../widgets/enterprise_header.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'inspections_screen.dart';
 import 'models_screen.dart';
 import 'settings_screen.dart';
+import 'alerts_screen.dart';
+import 'inspection_detail_screen.dart';
 
 class ShellScreen extends StatefulWidget {
   const ShellScreen({super.key});
@@ -16,10 +19,28 @@ class ShellScreen extends StatefulWidget {
 class _ShellScreenState extends State<ShellScreen> {
   int _index = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      LocalAlertNotifications.initialize((inspectionId) async {
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => InspectionDetailScreen(inspectionId: inspectionId),
+          ),
+        );
+      }).catchError((Object error) {
+        debugPrint('Could not initialize alert tap handling: $error');
+      });
+    });
+  }
+
   final List<String> _titles = [
     'Enterprise Analytics Dashboard',
     'Real-time Inspection Stream',
     'YOLOv8 AI Inference Registry',
+    'Inspection Alerts',
     'Workstation & RBAC Settings',
   ];
 
@@ -27,6 +48,7 @@ class _ShellScreenState extends State<ShellScreen> {
     DashboardScreen(),
     InspectionsScreen(),
     ModelsScreen(),
+    AlertsScreen(),
     SettingsScreen(),
   ];
 
@@ -34,9 +56,7 @@ class _ShellScreenState extends State<ShellScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgApp,
-      appBar: EnterpriseHeader(
-        title: _titles[_index],
-      ),
+      appBar: EnterpriseHeader(title: _titles[_index]),
       body: IndexedStack(index: _index, children: _screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -53,8 +73,14 @@ class _ShellScreenState extends State<ShellScreen> {
           unselectedItemColor: AppColors.textMuted,
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          selectedLabelStyle: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w700),
-          unselectedLabelStyle: AppTypography.mono.copyWith(fontSize: 10, fontWeight: FontWeight.w500),
+          selectedLabelStyle: AppTypography.mono.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: AppTypography.mono.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics_outlined, size: 20),
@@ -70,6 +96,11 @@ class _ShellScreenState extends State<ShellScreen> {
               icon: Icon(Icons.memory_outlined, size: 20),
               activeIcon: Icon(Icons.memory, size: 20),
               label: 'Models',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications_outlined, size: 20),
+              activeIcon: Icon(Icons.notifications, size: 20),
+              label: 'Alerts',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.tune_outlined, size: 20),

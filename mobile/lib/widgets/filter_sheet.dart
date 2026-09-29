@@ -27,9 +27,27 @@ class _FilterSheetState extends State<FilterSheet> {
   String? _station;
   InspectionStatus? _status;
 
-  final List<String> _batches = ['All', 'BATCH-2026-A1', 'BATCH-2026-B2', 'BATCH-2026-C3'];
-  final List<String> _defectTypes = ['All', 'open', 'short', 'mousebite', 'spur', 'copper', 'pinhole'];
-  final List<String> _stations = ['All', 'STATION-01', 'STATION-02', 'STATION-03'];
+  final List<String> _batches = [
+    'All',
+    'BATCH-2026-A1',
+    'BATCH-2026-B2',
+    'BATCH-2026-C3',
+  ];
+  final List<String> _defectTypes = [
+    'All',
+    'open',
+    'short',
+    'mousebite',
+    'spur',
+    'copper',
+    'pinhole',
+  ];
+  final List<String> _stations = [
+    'All',
+    'STATION-01',
+    'STATION-02',
+    'STATION-03',
+  ];
 
   @override
   void initState() {
@@ -49,159 +67,178 @@ class _FilterSheetState extends State<FilterSheet> {
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.borderStrong,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'FILTER INSPECTIONS & ANALYTICS',
-                style: AppTypography.heading3.copyWith(
-                  letterSpacing: 0.5,
-                  fontSize: 13,
-                  color: AppColors.industrial900,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _timeframe = '30d';
-                    _batch = 'All';
-                    _defectType = 'All';
-                    _station = 'All';
-                    _status = null;
-                  });
-                },
-                child: Text(
-                  'Reset',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.industrial600,
-                    fontWeight: FontWeight.w600,
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.borderStrong,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
+              const SizedBox(height: 14),
+
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'FILTER INSPECTIONS & ANALYTICS',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.heading3.copyWith(
+                        letterSpacing: 0.5,
+                        fontSize: 13,
+                        color: AppColors.industrial900,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _timeframe = '30d';
+                        _batch = 'All';
+                        _defectType = 'All';
+                        _station = 'All';
+                        _status = null;
+                      });
+                    },
+                    child: Text(
+                      'Reset',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.industrial600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+
+              // 1. Date Range
+              Text('TIMEFRAME', style: AppTypography.label),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _timeChip('Today', 'today'),
+                  const SizedBox(width: 8),
+                  _timeChip('7 Days', '7d'),
+                  const SizedBox(width: 8),
+                  _timeChip('30 Days', '30d'),
+                  const SizedBox(width: 8),
+                  _timeChip('All Time', 'all'),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 2. Inspection Station
+              Text('INSPECTION STATION', style: AppTypography.label),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _stations.map((st) {
+                  final isSel = _station == st;
+                  return ChoiceChip(
+                    label: Text(st),
+                    selected: isSel,
+                    onSelected: (val) => setState(() => _station = st),
+                    selectedColor: AppColors.industrial100,
+                    labelStyle: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      color: isSel
+                          ? AppColors.industrial800
+                          : AppColors.textSecondary,
+                      fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              // 3. PCB Batch
+              Text('PCB BATCH', style: AppTypography.label),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _batches.map((b) {
+                  final isSel = _batch == b;
+                  return ChoiceChip(
+                    label: Text(b),
+                    selected: isSel,
+                    onSelected: (val) => setState(() => _batch = b),
+                    selectedColor: AppColors.industrial100,
+                    labelStyle: AppTypography.mono.copyWith(
+                      fontSize: 11,
+                      color: isSel
+                          ? AppColors.industrial800
+                          : AppColors.textSecondary,
+                      fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              // 4. Defect Type
+              Text('DEFECT TYPE', style: AppTypography.label),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: _defectTypes.map((dt) {
+                  final isSel = _defectType == dt;
+                  return ChoiceChip(
+                    label: Text(dt.toUpperCase()),
+                    selected: isSel,
+                    onSelected: (val) => setState(() => _defectType = dt),
+                    selectedColor: AppColors.industrial100,
+                    labelStyle: AppTypography.mono.copyWith(
+                      fontSize: 10,
+                      color: isSel
+                          ? AppColors.industrial800
+                          : AppColors.textSecondary,
+                      fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Apply button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.read<SupabaseService>().setFilters(
+                      timeframe: _timeframe,
+                      batch: _batch,
+                      defectType: _defectType,
+                      station: _station,
+                      status: _status,
+                    );
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Apply Filters'),
+                ),
+              ),
             ],
           ),
-          const Divider(height: 16),
-
-          // 1. Date Range
-          Text('TIMEFRAME', style: AppTypography.label),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _timeChip('Today', 'today'),
-              const SizedBox(width: 8),
-              _timeChip('7 Days', '7d'),
-              const SizedBox(width: 8),
-              _timeChip('30 Days', '30d'),
-              const SizedBox(width: 8),
-              _timeChip('All Time', 'all'),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // 2. Inspection Station
-          Text('INSPECTION STATION', style: AppTypography.label),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: _stations.map((st) {
-              final isSel = _station == st;
-              return ChoiceChip(
-                label: Text(st),
-                selected: isSel,
-                onSelected: (val) => setState(() => _station = st),
-                selectedColor: AppColors.industrial100,
-                labelStyle: AppTypography.mono.copyWith(
-                  fontSize: 11,
-                  color: isSel ? AppColors.industrial800 : AppColors.textSecondary,
-                  fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-
-          // 3. PCB Batch
-          Text('PCB BATCH', style: AppTypography.label),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: _batches.map((b) {
-              final isSel = _batch == b;
-              return ChoiceChip(
-                label: Text(b),
-                selected: isSel,
-                onSelected: (val) => setState(() => _batch = b),
-                selectedColor: AppColors.industrial100,
-                labelStyle: AppTypography.mono.copyWith(
-                  fontSize: 11,
-                  color: isSel ? AppColors.industrial800 : AppColors.textSecondary,
-                  fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-
-          // 4. Defect Type
-          Text('DEFECT TYPE', style: AppTypography.label),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: _defectTypes.map((dt) {
-              final isSel = _defectType == dt;
-              return ChoiceChip(
-                label: Text(dt.toUpperCase()),
-                selected: isSel,
-                onSelected: (val) => setState(() => _defectType = dt),
-                selectedColor: AppColors.industrial100,
-                labelStyle: AppTypography.mono.copyWith(
-                  fontSize: 10,
-                  color: isSel ? AppColors.industrial800 : AppColors.textSecondary,
-                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-
-          // Apply button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                context.read<SupabaseService>().setFilters(
-                  timeframe: _timeframe,
-                  batch: _batch,
-                  defectType: _defectType,
-                  station: _station,
-                  status: _status,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Apply Filters'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
