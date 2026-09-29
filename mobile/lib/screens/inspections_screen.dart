@@ -155,16 +155,19 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                 const SizedBox(height: 10),
 
                 // Quick tabs: ALL, FAIL, PASS, PENDING
-                Row(
-                  children: [
-                    _tabChip('ALL', 'ALL', service.inspections.length),
-                    const SizedBox(width: 6),
-                    _tabChip('FAIL', 'FAIL', service.inspections.where((i) => i.finalStatus == InspectionStatus.fail).length, color: AppColors.qaFail),
-                    const SizedBox(width: 6),
-                    _tabChip('PASS', 'PASS', service.inspections.where((i) => i.finalStatus == InspectionStatus.pass).length, color: AppColors.qaPass),
-                    const SizedBox(width: 6),
-                    _tabChip('PENDING', 'PENDING', service.inspections.where((i) => i.reviewStatus == 'UNREVIEWED' || i.reviewStatus == 'PENDING').length, color: AppColors.qaWarning),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _tabChip('ALL', 'ALL', service.inspections.length),
+                      const SizedBox(width: 6),
+                      _tabChip('FAIL', 'FAIL', service.inspections.where((i) => i.finalStatus == InspectionStatus.fail).length, color: AppColors.qaFail),
+                      const SizedBox(width: 6),
+                      _tabChip('PASS', 'PASS', service.inspections.where((i) => i.finalStatus == InspectionStatus.pass).length, color: AppColors.qaPass),
+                      const SizedBox(width: 6),
+                      _tabChip('PENDING', 'PENDING', service.inspections.where((i) => i.reviewStatus == 'UNREVIEWED' || i.reviewStatus == 'PENDING').length, color: AppColors.qaWarning),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -466,10 +469,17 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                         // Metadata tags: Station, Batch, Time
                         Row(
                           children: [
-                            _smallTag(primary.stationId),
-                            const SizedBox(width: 6),
-                            _smallTag(primary.batchNumber),
-                            const Spacer(),
+                            Flexible(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(child: _smallTag(primary.stationId)),
+                                  const SizedBox(width: 6),
+                                  Flexible(child: _smallTag(primary.batchNumber)),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Text(
                               timeago.format(primary.capturedAt),
                               style: AppTypography.bodySmall.copyWith(fontSize: 10),
@@ -724,6 +734,8 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AppTypography.mono.copyWith(fontSize: 9, color: AppColors.textSecondary),
       ),
     );

@@ -54,6 +54,8 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
           children: [
             Text(
               inspection.id,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.mono.copyWith(fontSize: 14, fontWeight: FontWeight.w700),
             ),
             Text(
