@@ -129,14 +129,17 @@ class SettingsScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Token Expiration Period', style: AppTypography.heading3.copyWith(fontSize: 13)),
-                          const SizedBox(height: 2),
-                          Text('Automatic logout upon inactivity', style: AppTypography.bodySmall),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Token Expiration Period', style: AppTypography.heading3.copyWith(fontSize: 13)),
+                            const SizedBox(height: 2),
+                            Text('Automatic logout upon inactivity', style: AppTypography.bodySmall),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       DropdownButton<int>(
                         value: auth.sessionTimeout.inHours,
                         items: const [
@@ -157,9 +160,11 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       const Icon(Icons.security, size: 16, color: AppColors.qaPass),
                       const SizedBox(width: 8),
-                      Text(
-                        'Hashed credential storage: SHA-256 with workspace salt',
-                        style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textSecondary),
+                      Expanded(
+                        child: Text(
+                          'Hashed credential storage: SHA-256 with workspace salt',
+                          style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textSecondary),
+                        ),
                       ),
                     ],
                   ),
@@ -192,11 +197,15 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        supabase.isInitialized ? 'Connected Directly to Supabase' : 'Connecting...',
-                        style: AppTypography.mono.copyWith(fontSize: 11, fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Text(
+                          supabase.isInitialized ? 'Connected Directly to Supabase' : 'Connecting...',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.mono.copyWith(fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Text('18ms latency', style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textMuted)),
                     ],
                   ),
@@ -261,7 +270,7 @@ class SettingsScreen extends StatelessWidget {
       child: GestureDetector(
         onTap: () => auth.demoLogin(role),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
           decoration: BoxDecoration(
             color: isSel ? color : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(6),
@@ -270,6 +279,9 @@ class SettingsScreen extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: AppTypography.mono.copyWith(
               fontSize: 10,
               fontWeight: FontWeight.w700,

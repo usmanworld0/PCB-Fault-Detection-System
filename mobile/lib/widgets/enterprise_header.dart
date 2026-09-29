@@ -55,64 +55,68 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'PCB-Vision',
-                        style: AppTypography.heading3.copyWith(
-                          color: AppColors.industrial900,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'PCB-Vision',
+                          style: AppTypography.heading3.copyWith(
+                            color: AppColors.industrial900,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      // Live Supabase status pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.qaPassBg,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppColors.qaPassBorder, width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.qaPass,
+                        const SizedBox(width: 6),
+                        // Live Supabase status pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.qaPassBg,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: AppColors.qaPassBorder, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: AppColors.qaPass,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              supabase.isInitialized ? 'SUPABASE LIVE' : 'SYNCING',
-                              style: AppTypography.mono.copyWith(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.qaPass,
+                              const SizedBox(width: 4),
+                              Text(
+                                supabase.isInitialized ? 'SUPABASE LIVE' : 'SYNCING',
+                                style: AppTypography.mono.copyWith(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.qaPass,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    title,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
+                      ],
                     ),
-                  ),
-                ],
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               // Role chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

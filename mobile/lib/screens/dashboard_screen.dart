@@ -299,16 +299,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'PASS / FAIL RATIO',
-                style: AppTypography.label.copyWith(fontSize: 10),
+              Flexible(
+                child: Text(
+                  'PASS / FAIL RATIO',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.label.copyWith(fontSize: 10),
+                ),
               ),
-              Text(
-                '${passPct.toStringAsFixed(1)}% PASS  •  ${failPct.toStringAsFixed(1)}% FAIL',
-                style: AppTypography.mono.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '${passPct.toStringAsFixed(1)}% PASS  •  ${failPct.toStringAsFixed(1)}% FAIL',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.mono.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -335,12 +344,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statusBadge('PASS COUNT', stats.passCount.toString(), AppColors.qaPass),
-              _statusBadge('FAIL COUNT', stats.failCount.toString(), AppColors.qaFail),
-              _statusBadge('PENDING QA', stats.pendingReviews.toString(), AppColors.qaWarning),
-              _statusBadge('ACTIVE ALERTS', stats.activeAlerts.toString(), AppColors.qaInfo),
+              Expanded(child: _statusBadge('PASS COUNT', stats.passCount.toString(), AppColors.qaPass)),
+              Expanded(child: _statusBadge('FAIL COUNT', stats.failCount.toString(), AppColors.qaFail)),
+              Expanded(child: _statusBadge('PENDING QA', stats.pendingReviews.toString(), AppColors.qaWarning)),
+              Expanded(child: _statusBadge('ACTIVE ALERTS', stats.activeAlerts.toString(), AppColors.qaInfo)),
             ],
           ),
         ],
@@ -352,16 +360,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.bodySmall.copyWith(fontSize: 9)),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodySmall.copyWith(fontSize: 9),
+        ),
         const SizedBox(height: 2),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 4),
-            Text(
-              value,
-              style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.mono.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),

@@ -347,7 +347,7 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
       child: GestureDetector(
         onTap: () => setState(() => _viewMode = mode),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 7),
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 2),
           decoration: BoxDecoration(
             color: isSel ? AppColors.industrial600 : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(6),
@@ -357,15 +357,20 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 13, color: isSel ? Colors.white : AppColors.textSecondary),
               const SizedBox(width: 4),
-              Text(
-                title,
-                style: AppTypography.mono.copyWith(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isSel ? Colors.white : AppColors.textSecondary,
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.mono.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: isSel ? Colors.white : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -681,85 +686,105 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _severityColor(d.severity).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            d.defectClass.toUpperCase(),
-                            style: AppTypography.mono.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: _severityColor(d.severity),
-                            ),
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _severityColor(d.severity).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  d.defectClass.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.mono.copyWith(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: _severityColor(d.severity),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  '${(d.confidence * 100).toStringAsFixed(1)}% confidence',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '${(d.confidence * 100).toStringAsFixed(1)}% confidence',
-                          style: AppTypography.mono.copyWith(fontSize: 11, color: AppColors.textSecondary),
-                        ),
-                        const Spacer(),
                         _statusPill(d.status ?? 'DETECTED'),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Bounding Box: [${d.boxX1.toStringAsFixed(2)}, ${d.boxY1.toStringAsFixed(2)}] to [${d.boxX2.toStringAsFixed(2)}, ${d.boxY2.toStringAsFixed(2)}]',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textMuted),
                     ),
 
                     // Actions if Quality Engineer
                     if (auth.canReview) ...[
                       const Divider(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          _defectActionButton(
-                            label: 'Reclassify',
-                            icon: Icons.edit_note,
-                            color: AppColors.industrial600,
-                            onTap: () => _openAuditDialog(
-                              context: context,
-                              inspection: inspection,
-                              auth: auth,
-                              service: service,
-                              defaultDecision: ReviewDecision.reclassify,
-                              defect: d,
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Wrap(
+                          alignment: WrapAlignment.end,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _defectActionButton(
+                              label: 'Reclassify',
+                              icon: Icons.edit_note,
+                              color: AppColors.industrial600,
+                              onTap: () => _openAuditDialog(
+                                context: context,
+                                inspection: inspection,
+                                auth: auth,
+                                service: service,
+                                defaultDecision: ReviewDecision.reclassify,
+                                defect: d,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _defectActionButton(
-                            label: 'Reject False Pos',
-                            icon: Icons.close,
-                            color: AppColors.qaFail,
-                            onTap: () => _openAuditDialog(
-                              context: context,
-                              inspection: inspection,
-                              auth: auth,
-                              service: service,
-                              defaultDecision: ReviewDecision.overridePass,
-                              defect: d,
+                            _defectActionButton(
+                              label: 'Reject False Pos',
+                              icon: Icons.close,
+                              color: AppColors.qaFail,
+                              onTap: () => _openAuditDialog(
+                                context: context,
+                                inspection: inspection,
+                                auth: auth,
+                                service: service,
+                                defaultDecision: ReviewDecision.overridePass,
+                                defect: d,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _defectActionButton(
-                            label: 'Accept Defect',
-                            icon: Icons.check,
-                            color: AppColors.qaPass,
-                            onTap: () => _openAuditDialog(
-                              context: context,
-                              inspection: inspection,
-                              auth: auth,
-                              service: service,
-                              defaultDecision: ReviewDecision.confirm,
-                              defect: d,
+                            _defectActionButton(
+                              label: 'Accept Defect',
+                              icon: Icons.check,
+                              color: AppColors.qaPass,
+                              onTap: () => _openAuditDialog(
+                                context: context,
+                                inspection: inspection,
+                                auth: auth,
+                                service: service,
+                                defaultDecision: ReviewDecision.confirm,
+                                defect: d,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ],
@@ -868,14 +893,19 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          rev.reviewDecision,
-                          style: AppTypography.mono.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: rev.reviewDecision.contains('PASS') ? AppColors.qaPass : AppColors.qaFail,
+                        Expanded(
+                          child: Text(
+                            rev.reviewDecision,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.mono.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: rev.reviewDecision.contains('PASS') ? AppColors.qaPass : AppColors.qaFail,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           timeago.format(rev.createdAt),
                           style: AppTypography.bodySmall.copyWith(fontSize: 10),
@@ -890,6 +920,8 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Auditor: ${rev.reviewerEmail}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.mono.copyWith(fontSize: 10, color: AppColors.textMuted),
                     ),
                   ],

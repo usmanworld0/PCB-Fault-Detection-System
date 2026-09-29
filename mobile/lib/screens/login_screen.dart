@@ -360,6 +360,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: AppTypography.mono.copyWith(
             fontSize: 11,
             fontWeight: FontWeight.w700,
