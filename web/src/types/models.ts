@@ -14,6 +14,7 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  avatar_url?: string | null;
 }
 
 export interface Defect {
@@ -54,6 +55,7 @@ export interface InspectionListItem {
   final_status?: InspectionStatus;
   operator_email?: string;
   operator_role?: string;
+  reviewer_email?: string;
   pcb_id?: string;
   image_index?: number;
 }

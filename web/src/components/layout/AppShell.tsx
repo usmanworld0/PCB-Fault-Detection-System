@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Layers } from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
@@ -12,7 +11,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { user, role, isLoading, isAuthenticated } = useAuth();
+  const { role, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -48,12 +47,12 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-surface-50 text-surface-900 font-sans">
+    <div className="flex h-screen overflow-hidden bg-[#F8F9FA] text-[#2D3748] font-sans antialiased">
       {/* Mobile Drawer Backdrop */}
       {isMobileSidebarOpen && (
         <div
           onClick={() => setIsMobileSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-surface-950/60 backdrop-blur-xs lg:hidden animate-fade-in"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden animate-fade-in"
           aria-hidden="true"
         />
       )}
@@ -66,8 +65,8 @@ export function AppShell({ children }: AppShellProps) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onToggleSidebar={() => setIsMobileSidebarOpen((prev) => !prev)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6 bg-surface-50">
-          <div className="max-w-7xl mx-auto space-y-5">{children}</div>
+        <main className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6 pt-2 bg-[#F8F9FA]">
+          <div className="max-w-[1600px] mx-auto w-full">{children}</div>
         </main>
       </div>
     </div>

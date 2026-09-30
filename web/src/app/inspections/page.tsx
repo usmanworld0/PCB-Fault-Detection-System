@@ -231,60 +231,60 @@ export default function InspectionsPage() {
     <AppShell>
       <div className="space-y-5">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-surface-900">
+            <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
               Inspection History
             </h1>
-            <p className="text-xs text-surface-500 mt-1">
-              View and filter all PCB inspection records.
+            <p className="text-xs font-semibold text-[#A0AEC0] mt-0.5">
+              Real-time records and automated optical defect inspection logs
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={exportCurrentCsv}
               disabled={items.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-surface-500" />
-              <span>Export CSV</span>
+              <Download className="w-3.5 h-3.5 text-[#4FD1C5]" />
+              <span>EXPORT CSV</span>
             </button>
             <button
               onClick={fetchInspections}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-[#4FD1C5] ${loading ? "animate-spin" : ""}`} />
+              <span>REFRESH</span>
             </button>
           </div>
         </div>
 
         {/* Filter Toolbar */}
-        <div className="bg-white border border-surface-200 rounded-lg p-4 shadow-sm space-y-3">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-2.5">
+        <div className="bg-white border border-gray-200/70 rounded-[15px] p-5 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] space-y-4">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-surface-400" />
+              <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#A0AEC0]" />
               <input
                 type="text"
                 placeholder="Search by PCB ID, Inspection ID, station, or model..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-surface-50 border border-surface-200 rounded text-xs text-surface-900 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white font-mono"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#F8F9FA] border border-gray-200/80 rounded-[12px] text-xs text-[#2D3748] placeholder:text-[#A0AEC0] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] focus:bg-white transition-all"
               />
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded text-xs font-semibold shadow-xs transition-colors"
+              className="px-5 py-2.5 bg-[#4FD1C5] hover:bg-[#319795] text-white rounded-[12px] text-xs font-bold uppercase tracking-wider shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-all"
             >
               Search
             </button>
           </form>
 
           {/* Secondary Filter Dropdowns */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-surface-100">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
             <div>
-              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                 Filter by PCB ID
               </label>
               <input
@@ -295,12 +295,12 @@ export default function InspectionsPage() {
                   setPcbIdFilter(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 placeholder:text-surface-400 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs text-[#2D3748] placeholder:text-[#A0AEC0] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                 Disposition
               </label>
               <select
@@ -309,7 +309,7 @@ export default function InspectionsPage() {
                   setStatus(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs font-medium text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
               >
                 <option value="">All Dispositions</option>
                 <option value="PASS">PASS</option>
@@ -318,7 +318,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                 Defect Category
               </label>
               <select
@@ -327,7 +327,7 @@ export default function InspectionsPage() {
                   setDefectClass(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs font-medium text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
               >
                 <option value="">All Categories</option>
                 {Object.entries(DEFECT_LABELS).map(([k, label]) => (
@@ -339,7 +339,7 @@ export default function InspectionsPage() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-semibold text-surface-500 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                 Model Architecture
               </label>
               <select
@@ -348,7 +348,7 @@ export default function InspectionsPage() {
                   setModel(e.target.value);
                   setOffset(0);
                 }}
-                className="w-full px-2.5 py-1.5 bg-white border border-surface-200 rounded text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-brand-500 font-mono"
+                className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs font-medium text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
               >
                 <option value="">All Models</option>
                 <option value="yolov8s">YOLOv8s</option>
@@ -361,7 +361,7 @@ export default function InspectionsPage() {
             <div className="flex items-end">
               <button
                 onClick={handleResetFilters}
-                className="w-full py-1.5 px-3 rounded text-xs font-semibold text-surface-600 hover:text-surface-900 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
+                className="w-full py-2 px-3 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#718096] hover:text-[#2D3748] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors"
               >
                 Reset Filters
               </button>
@@ -370,13 +370,14 @@ export default function InspectionsPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
+        {/* Data Table */}
+        <div className="bg-white border border-gray-200/70 rounded-[15px] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] overflow-hidden">
           {error ? (
             <div className="p-6">
               <ErrorState message={error} onRetry={fetchInspections} />
             </div>
           ) : loading ? (
-            <div className="p-4">
+            <div className="p-6">
               <TableSkeleton rows={8} cols={7} />
             </div>
           ) : items.length === 0 ? (
@@ -392,109 +393,109 @@ export default function InspectionsPage() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                      <th className="py-3 px-3.5 font-semibold">PCB Unique ID</th>
-                      <th className="py-3 px-3.5 font-semibold">Sub-Inspections</th>
-                      <th className="py-3 px-3.5 font-semibold">Captured At</th>
-                      <th className="py-3 px-3.5 font-semibold">Station</th>
-                      <th className="py-3 px-3.5 font-semibold">Operator</th>
-                      <th className="py-3 px-3.5 font-semibold">AI Model</th>
-                      <th className="py-3 px-3.5 font-semibold">Overall Disposition</th>
-                      <th className="py-3 px-3.5 font-semibold">Total Defects</th>
-                      <th className="py-3 px-3.5 font-semibold text-right">Actions</th>
+                    <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
+                      <th className="py-3.5 px-4 font-bold">PCB Unique ID</th>
+                      <th className="py-3.5 px-4 font-bold">Sub-Inspections</th>
+                      <th className="py-3.5 px-4 font-bold">Captured At</th>
+                      <th className="py-3.5 px-4 font-bold">Station</th>
+                      <th className="py-3.5 px-4 font-bold">Operator</th>
+                      <th className="py-3.5 px-4 font-bold">AI Model</th>
+                      <th className="py-3.5 px-4 font-bold">Overall Disposition</th>
+                      <th className="py-3.5 px-4 font-bold">Total Defects</th>
+                      <th className="py-3.5 px-4 font-bold text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-100">
+                  <tbody className="divide-y divide-gray-100">
                     {groupedItems.map((group) => {
                       const isExpanded = expandedKeys.has(group.key);
                       return (
                         <React.Fragment key={group.key}>
                           <tr
-                            className={`hover:bg-industrial-50/40 transition-colors ${
-                              isExpanded ? "bg-industrial-50/30" : ""
+                            className={`hover:bg-gray-50/60 transition-colors ${
+                              isExpanded ? "bg-teal-50/20" : ""
                             }`}
                           >
-                            <td className="py-3 px-3.5 font-mono text-[11px]">
+                            <td className="py-3.5 px-4">
                               {group.pcb_id ? (
-                                <span className="font-bold text-surface-900 bg-surface-100 border border-surface-300 px-2.5 py-1 rounded text-xs shadow-2xs font-mono inline-flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full bg-industrial-600"></span>
+                                <span className="font-bold text-[#2D3748] bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-[8px] text-xs shadow-2xs inline-flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
                                   {group.pcb_id}
                                 </span>
                               ) : (
-                                <span className="text-surface-600 font-mono text-[11px] font-medium">
-                                  {group.primary_id.slice(0, 8)} <span className="text-surface-400 italic text-[10px]">(Single frame)</span>
+                                <span className="text-[#718096] text-xs font-semibold">
+                                  {group.primary_id.slice(0, 8)} <span className="text-[#A0AEC0] italic text-[10px]">(Single frame)</span>
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 px-3.5 font-mono text-[11px]">
+                            <td className="py-3.5 px-4">
                               <button
                                 type="button"
                                 onClick={() => toggleExpand(group.key)}
-                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold text-industrial-700 bg-industrial-50 hover:bg-industrial-100 border border-industrial-200 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-xs font-bold text-[#2D3748] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors cursor-pointer"
                                 title="Click to view all sub-inspections"
                               >
-                                <Layers className="w-3 h-3 text-industrial-600" />
+                                <Layers className="w-3.5 h-3.5 text-[#4FD1C5]" />
                                 <span>{group.sub_count} {group.sub_count === 1 ? "Sub-Image" : "Sub-Images"}</span>
                                 {isExpanded ? (
-                                  <ChevronUp className="w-3 h-3 text-industrial-500" />
+                                  <ChevronUp className="w-3 h-3 text-[#A0AEC0]" />
                                 ) : (
-                                  <ChevronDown className="w-3 h-3 text-industrial-500" />
+                                  <ChevronDown className="w-3 h-3 text-[#A0AEC0]" />
                                 )}
                               </button>
                             </td>
-                            <td className="py-3 px-3.5 text-surface-700">
-                              <div className="font-mono text-[11px]">{formatDate(group.latest_captured_at)}</div>
-                              <div className="text-[10px] text-surface-400 font-mono">{formatTimeAgo(group.latest_captured_at)}</div>
+                            <td className="py-3.5 px-4">
+                              <div className="text-xs font-bold text-[#2D3748]">{formatDate(group.latest_captured_at)}</div>
+                              <div className="text-[10px] text-[#A0AEC0] font-semibold">{formatTimeAgo(group.latest_captured_at)}</div>
                             </td>
-                            <td className="py-3 px-3.5">
-                              <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                            <td className="py-3.5 px-4">
+                              <span className="text-xs font-bold text-[#2D3748] px-2 py-0.5 rounded-[8px] bg-gray-50 border border-gray-200/70">
                                 {group.station_id || "STATION-01"}
                               </span>
                             </td>
-                            <td className="py-3 px-3.5">
+                            <td className="py-3.5 px-4">
                               {group.operator_email ? (
                                 <div className="flex flex-col">
-                                  <span className="font-mono text-[11px] text-surface-900 font-medium truncate max-w-[130px]" title={group.operator_email}>
+                                  <span className="text-xs text-[#2D3748] font-bold truncate max-w-[130px]" title={group.operator_email}>
                                     {group.operator_email}
                                   </span>
-                                  <span className="text-[9px] font-mono uppercase text-industrial-700 font-semibold">
+                                  <span className="text-[10px] uppercase text-[#319795] font-bold tracking-wider">
                                     {group.operator_role || "ENGINEER"}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="font-mono text-[11px] text-surface-400">Station-01</span>
+                                <span className="text-xs text-[#A0AEC0]">Station-01</span>
                               )}
                             </td>
-                            <td className="py-3 px-3.5 font-mono text-[11px] text-surface-600">
+                            <td className="py-3.5 px-4 text-xs font-bold text-[#2D3748]">
                               {group.model}
                             </td>
-                            <td className="py-3 px-3.5">
+                            <td className="py-3.5 px-4">
                               <StatusBadge status={group.overall_status} size="sm" />
                             </td>
-                            <td className="py-3 px-3.5 font-mono text-[11px]">
+                            <td className="py-3.5 px-4">
                               {group.total_defects > 0 ? (
-                                <span className="font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                <span className="font-bold text-xs text-[#E53E3E] bg-[#FFF5F5] px-2 py-0.5 rounded-[8px]">
                                   {group.total_defects} defect{group.total_defects === 1 ? "" : "s"}
                                 </span>
                               ) : (
-                                <span className="font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">0 defects</span>
+                                <span className="font-bold text-xs text-[#319795] bg-[#E6FFFA] px-2 py-0.5 rounded-[8px]">0 defects</span>
                               )}
                             </td>
-                            <td className="py-3 px-3.5 text-right">
-                              <div className="inline-flex items-center gap-1.5 justify-end">
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="inline-flex items-center gap-2 justify-end">
                                 <button
                                   type="button"
                                   onClick={() => toggleExpand(group.key)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold text-industrial-700 hover:text-industrial-900 bg-industrial-50 hover:bg-industrial-100 border border-industrial-200 shadow-2xs transition-colors"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-[8px] text-xs font-bold text-[#2D3748] hover:bg-gray-100 bg-gray-50 border border-gray-200/80 transition-colors"
                                   title="View all sub-inspections"
                                 >
-                                  <Eye className="w-3.5 h-3.5 text-industrial-600" />
-                                  <span>{isExpanded ? "Hide Sub-Images" : "View Sub-Images"}</span>
+                                  <Eye className="w-3.5 h-3.5 text-[#4FD1C5]" />
+                                  <span>{isExpanded ? "Hide" : "Inspect"}</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => router.push(`/inspections/${group.primary_id}`)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-2xs transition-colors"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-[#4FD1C5] hover:bg-[#319795] shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors"
                                   title="Open Workstation"
                                 >
                                   <span>Workstation</span>
@@ -509,7 +510,7 @@ export default function InspectionsPage() {
                                           : { type: "single", id: group.primary_id }
                                       )
                                     }
-                                    className="p-1.5 rounded-md text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                                    className="p-1.5 rounded-[8px] text-[#A0AEC0] hover:text-[#E53E3E] hover:bg-rose-50 transition-colors"
                                     title={group.pcb_id ? `Delete PCB group (${group.sub_count} scans)` : "Delete inspection"}
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -521,20 +522,20 @@ export default function InspectionsPage() {
 
                           {/* Sub-Inspections Expanded View */}
                           {isExpanded && (
-                            <tr className="bg-surface-50/70 border-b border-surface-200">
+                            <tr className="bg-[#F8F9FA]/70 border-b border-gray-100">
                               <td colSpan={9} className="p-3 pl-8">
-                                <div className="bg-white border border-surface-200 rounded-lg p-3.5 shadow-xs space-y-3">
-                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-surface-100 pb-2">
+                                <div className="bg-white border border-gray-200/70 rounded-[12px] p-4 shadow-xs space-y-3">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-2">
                                     <div className="flex items-center gap-2">
-                                      <Layers className="w-4 h-4 text-industrial-600" />
-                                      <span className="text-xs font-bold text-surface-900">
-                                        Sub-Inspections for PCB: <span className="font-mono text-industrial-600">{group.pcb_id || group.primary_id.slice(0, 8)}</span>
+                                      <Layers className="w-4 h-4 text-[#4FD1C5]" />
+                                      <span className="text-xs font-bold text-[#2D3748]">
+                                        Sub-Inspections for PCB: <span className="text-[#319795]">{group.pcb_id || group.primary_id.slice(0, 8)}</span>
                                       </span>
-                                      <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-[#E6FFFA] text-[#319795]">
                                         {group.sub_count} Scans
                                       </span>
                                     </div>
-                                    <span className="text-[11px] text-surface-500 font-mono">
+                                    <span className="text-xs text-[#A0AEC0] font-semibold">
                                       Click any sub-inspection below to open in Workstation:
                                     </span>
                                   </div>
@@ -546,16 +547,16 @@ export default function InspectionsPage() {
                                         <div
                                           key={sub.id}
                                           onClick={() => router.push(`/inspections/${sub.id}`)}
-                                          className="group p-2.5 bg-surface-50 hover:bg-white border border-surface-200 hover:border-industrial-400 hover:shadow-xs rounded-lg cursor-pointer transition-all flex flex-col justify-between"
+                                          className="group p-3 bg-white hover:bg-teal-50/20 border border-gray-200/80 hover:border-teal-300 hover:shadow-xs rounded-[12px] cursor-pointer transition-all flex flex-col justify-between"
                                         >
                                           <div>
-                                            <div className="relative aspect-4/3 w-full bg-surface-900 rounded overflow-hidden mb-2 border border-surface-200">
+                                            <div className="relative aspect-4/3 w-full bg-[#1A202C] rounded-[8px] overflow-hidden mb-2 border border-gray-200">
                                               <img
                                                 src={sub.annotated_url || sub.image_url}
                                                 alt={`Sub-Image #${sub.image_index ?? 1}`}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                               />
-                                              <div className="absolute top-1 left-1 bg-surface-950/80 backdrop-blur-xs text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                                              <div className="absolute top-1 left-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider">
                                                 Sub-Img #{sub.image_index ?? 1}
                                               </div>
                                               <div className="absolute top-1 right-1">
@@ -564,17 +565,17 @@ export default function InspectionsPage() {
                                                 </span>
                                               </div>
                                             </div>
-                                            <div className="flex items-center justify-between text-[11px] font-mono font-bold text-surface-900">
+                                            <div className="flex items-center justify-between text-xs font-bold text-[#2D3748]">
                                               <span className="truncate">{sub.source ? sub.source.slice(0, 16) : `UID: ${sub.id.slice(0, 8)}`}</span>
                                               <span className={sub.defect_count > 0 ? "text-rose-600 font-semibold" : "text-emerald-600"}>
                                                 {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"}
                                               </span>
                                             </div>
-                                            <div className="text-[10px] font-mono text-surface-500 mt-0.5">
+                                            <div className="text-[10px] font-semibold text-[#A0AEC0] uppercase tracking-wider mt-0.5">
                                               {formatDate(sub.captured_at)}
                                             </div>
                                           </div>
-                                          <div className="pt-2 mt-2 border-t border-surface-100 flex items-center justify-between text-industrial-600 group-hover:text-industrial-800 text-[10px] font-semibold">
+                                          <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between text-[#4FD1C5] group-hover:text-[#319795] text-[10px] font-bold uppercase tracking-wider">
                                             <span>Inspect in Workstation</span>
                                             <div className="flex items-center gap-1">
                                               {isAdmin && (
@@ -584,7 +585,7 @@ export default function InspectionsPage() {
                                                     e.stopPropagation();
                                                     setDeleteTarget({ type: "single", id: sub.id });
                                                   }}
-                                                  className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                                                  className="p-1 rounded-[6px] text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
                                                   title="Delete this sub-inspection"
                                                 >
                                                   <Trash2 className="w-3.5 h-3.5" />
@@ -609,37 +610,37 @@ export default function InspectionsPage() {
               </div>
 
               {/* Mobile Card List View */}
-              <div className="md:hidden divide-y divide-surface-200">
+              <div className="md:hidden divide-y divide-gray-100 font-sans">
                 {groupedItems.map((group) => {
                   const isExpanded = expandedKeys.has(group.key);
                   return (
                     <div
                       key={group.key}
-                      className="p-4 hover:bg-surface-50/80 active:bg-surface-100 transition-colors space-y-3"
+                      className="p-4 hover:bg-teal-50/10 active:bg-teal-50/20 transition-colors space-y-3"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           {group.pcb_id ? (
-                            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-surface-100 text-surface-900 border border-surface-300 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-industrial-600"></span>
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-[6px] bg-gray-100 text-[#2D3748] border border-gray-200 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
                               PCB: {group.pcb_id}
                             </span>
                           ) : (
-                            <span className="font-mono text-xs font-bold text-industrial-600">
+                            <span className="font-bold text-xs text-[#2D3748]">
                               #{group.primary_id.slice(0, 8)}
                             </span>
                           )}
-                          <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-industrial-50 text-industrial-700 border border-industrial-200">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-teal-50 text-[#4FD1C5] border border-teal-100">
                             {group.sub_count} Sub-Images
                           </span>
                         </div>
                         <StatusBadge status={group.overall_status} size="sm" />
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-surface-600">
+                      <div className="flex items-center justify-between text-xs text-[#718096]">
                         <div className="font-mono text-[11px]">
                           <span>{formatDate(group.latest_captured_at)}</span>
-                          <span className="text-surface-400 ml-1.5">({formatTimeAgo(group.latest_captured_at)})</span>
+                          <span className="text-[#A0AEC0] ml-1.5 font-semibold">({formatTimeAgo(group.latest_captured_at)})</span>
                         </div>
                         <div className="font-mono text-[11px]">
                           {group.total_defects > 0 ? (
@@ -656,9 +657,9 @@ export default function InspectionsPage() {
                         <button
                           type="button"
                           onClick={() => toggleExpand(group.key)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-industrial-700 bg-industrial-50 hover:bg-industrial-100 px-2 py-1 rounded border border-industrial-200 transition-colors"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#4FD1C5] bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-[6px] border border-teal-200 transition-colors"
                         >
-                          <Eye className="w-3 h-3 text-industrial-600" />
+                          <Eye className="w-3 h-3 text-[#4FD1C5]" />
                           <span>{isExpanded ? "Hide Sub-Images" : `View Sub-Images (${group.sub_count})`}</span>
                         </button>
                         <div className="flex items-center gap-2">
@@ -680,7 +681,7 @@ export default function InspectionsPage() {
                                     : { type: "single", id: group.primary_id }
                                 )
                               }
-                              className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
+                              className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
                               title="Delete inspection"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -691,23 +692,23 @@ export default function InspectionsPage() {
 
                       {/* Expanded sub-inspections list on mobile */}
                       {isExpanded && (
-                        <div className="pt-2 border-t border-surface-200 space-y-2">
+                        <div className="pt-2 border-t border-gray-100 space-y-2">
                           {group.sub_inspections.map((sub) => {
                             const isFail = (sub.final_status || sub.status) === "FAIL";
                             return (
                               <div
                                 key={sub.id}
                                 onClick={() => router.push(`/inspections/${sub.id}`)}
-                                className="flex items-center gap-3 p-2 bg-surface-50 border border-surface-200 rounded-lg cursor-pointer hover:bg-industrial-50/50"
+                                className="flex items-center gap-3 p-2.5 bg-gray-50/50 border border-gray-200/80 rounded-[10px] cursor-pointer hover:bg-teal-50/20"
                               >
                                 <img
                                   src={sub.annotated_url || sub.image_url}
                                   alt={`Img #${sub.image_index ?? 1}`}
-                                  className="w-12 h-12 object-cover rounded border border-surface-200 shrink-0"
+                                  className="w-12 h-12 object-cover rounded-[8px] border border-gray-200 shrink-0"
                                 />
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center justify-between">
-                                    <span className="font-mono text-xs font-bold text-surface-900">
+                                    <span className="font-bold text-xs text-[#2D3748]">
                                       Sub-Image #{sub.image_index ?? 1}
                                     </span>
                                     <div className="flex items-center gap-1.5">
@@ -719,7 +720,7 @@ export default function InspectionsPage() {
                                             e.stopPropagation();
                                             setDeleteTarget({ type: "single", id: sub.id });
                                           }}
-                                          className="p-1 rounded text-surface-400 hover:text-rose-600 hover:bg-rose-50"
+                                          className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50"
                                           title="Delete sub-inspection"
                                         >
                                           <Trash2 className="w-3 h-3" />
@@ -727,7 +728,7 @@ export default function InspectionsPage() {
                                       )}
                                     </div>
                                   </div>
-                                  <div className="text-[10px] font-mono text-surface-500 mt-0.5">
+                                  <div className="text-[10px] font-semibold text-[#A0AEC0] uppercase tracking-wider mt-0.5">
                                     {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"} • {formatTimeAgo(sub.captured_at)}
                                   </div>
                                 </div>
@@ -742,25 +743,25 @@ export default function InspectionsPage() {
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-surface-200 bg-surface-50 text-xs text-surface-600">
-                <div className="font-mono text-[11px]">
-                  Showing <span className="font-semibold text-surface-900">{groupedItems.length}</span> PCB units (<span className="font-semibold text-surface-900">{total}</span> total scan images)
+              <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-[#F8F9FA]/50 text-xs text-[#718096]">
+                <div className="text-xs font-semibold text-[#718096]">
+                  Showing <span className="font-bold text-[#2D3748]">{groupedItems.length}</span> PCB units (<span className="font-bold text-[#2D3748]">{total}</span> total scan images)
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setOffset(Math.max(0, offset - limit))}
                     disabled={offset === 0}
-                    className="p-1 rounded border border-surface-200 bg-white text-surface-600 hover:text-surface-900 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs transition-colors"
+                    className="p-1.5 rounded-[8px] border border-gray-200/80 bg-white text-[#2D3748] hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="px-2 font-mono text-[11px]">
+                  <span className="px-2 text-xs font-bold text-[#2D3748]">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button
                     onClick={() => setOffset(offset + limit)}
                     disabled={offset + limit >= total}
-                    className="p-1 rounded border border-surface-200 bg-white text-surface-600 hover:text-surface-900 disabled:opacity-30 disabled:cursor-not-allowed shadow-xs transition-colors"
+                    className="p-1.5 rounded-[8px] border border-gray-200/80 bg-white text-[#2D3748] hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -773,23 +774,23 @@ export default function InspectionsPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-950/50 backdrop-blur-xs">
-          <div className="bg-white rounded-xl border border-surface-200 shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs font-sans">
+          <div className="bg-white rounded-[15px] border border-gray-200/70 shadow-xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-surface-900">
+                <h3 className="text-base font-bold text-[#2D3748]">
                   {deleteTarget.type === "pcb"
                     ? "Delete PCB Inspection Group?"
                     : "Delete Inspection Record?"}
                 </h3>
-                <p className="text-sm text-surface-600 leading-relaxed">
+                <p className="text-sm text-[#718096] leading-relaxed font-medium">
                   {deleteTarget.type === "pcb" ? (
                     <>
                       Are you sure you want to permanently delete PCB{" "}
-                      <span className="font-mono font-bold text-surface-900">
+                      <span className="font-bold text-[#2D3748]">
                         {deleteTarget.pcbId}
                       </span>{" "}
                       and all{" "}
@@ -801,7 +802,7 @@ export default function InspectionsPage() {
                   ) : (
                     <>
                       Are you sure you want to permanently delete inspection{" "}
-                      <span className="font-mono font-bold text-surface-900">
+                      <span className="font-bold text-[#2D3748]">
                         #{deleteTarget.id.slice(0, 8)}
                       </span>{" "}
                       and its associated defect data?
@@ -815,12 +816,12 @@ export default function InspectionsPage() {
               Warning: This action is permanent and cannot be undone.
             </p>
 
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-surface-100">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-gray-100">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 rounded-[8px] text-xs font-bold uppercase tracking-wider text-[#718096] bg-gray-100 hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -828,7 +829,7 @@ export default function InspectionsPage() {
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-xs font-bold uppercase tracking-wider text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
               >
                 {isDeleting ? (
                   <>

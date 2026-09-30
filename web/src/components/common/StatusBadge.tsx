@@ -15,12 +15,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-emerald-300 bg-emerald-50 text-emerald-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#E6FFFA] text-[#319795]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#319795] inline-block" />
         PASS
       </span>
     );
@@ -30,12 +30,12 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-rose-300 bg-rose-50 text-rose-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#FFF5F5] text-[#E53E3E]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 inline-block" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#E53E3E] inline-block" />
         FAIL
       </span>
     );
@@ -45,8 +45,8 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium rounded border border-amber-300 bg-amber-50 text-amber-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#FFFAF0] text-[#DD6B20]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -60,8 +60,8 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium rounded border border-sky-300 bg-sky-50 text-sky-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#EBF8FF] text-[#3182CE]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -75,8 +75,8 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium rounded border border-indigo-300 bg-indigo-50 text-indigo-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#FAF5FF] text-[#805AD5]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -89,8 +89,8 @@ export function StatusBadge({ status, className, size = "md" }: StatusBadgeProps
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono font-medium rounded border border-surface-200 bg-surface-100 text-surface-600",
-        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+        "inline-flex items-center gap-1 font-bold uppercase tracking-wider rounded-[8px] bg-[#EDF2F7] text-[#4A5568]",
+        size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
         className
       )}
     >

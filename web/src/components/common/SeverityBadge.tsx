@@ -15,8 +15,8 @@ export function SeverityBadge({ severity, className, size = "md" }: SeverityBadg
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-rose-300 bg-rose-50 text-rose-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#FFF5F5] text-[#E53E3E]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -30,8 +30,8 @@ export function SeverityBadge({ severity, className, size = "md" }: SeverityBadg
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium rounded border border-amber-300 bg-amber-50 text-amber-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#FFFAF0] text-[#DD6B20]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -44,8 +44,8 @@ export function SeverityBadge({ severity, className, size = "md" }: SeverityBadg
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono font-medium rounded border border-sky-300 bg-sky-50 text-sky-800",
-        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+        "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#EBF8FF] text-[#3182CE]",
+        size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
         className
       )}
     >

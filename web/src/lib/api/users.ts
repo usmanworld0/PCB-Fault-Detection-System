@@ -4,17 +4,43 @@ import { UserCreatePayload, UserUpdatePayload } from "@/types/api";
 import { User } from "@/types/models";
 
 export async function getUsers(): Promise<User[]> {
+  let users: User[] = [];
   try {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    let res: any = await supabase
       .from("users")
-      .select("id, email, role, is_active, created_at")
+      .select("id, email, role, is_active, created_at, avatar_url")
       .order("created_at", { ascending: false });
-    if (error) throw error;
-    return data || [];
+
+    if (res.error) {
+      res = await supabase
+        .from("users")
+        .select("id, email, role, is_active, created_at")
+        .order("created_at", { ascending: false });
+    }
+    users = (res.data || []) as User[];
   } catch {
-    return apiFetch<User[]>("/users");
+    try {
+      users = await apiFetch<User[]>("/users");
+    } catch {
+      users = [];
+    }
   }
+
+  // Populate avatar_url from localStorage if available
+  if (typeof window !== "undefined") {
+    users = users.map((u) => {
+      const cached =
+        localStorage.getItem(`pcb_avatar_${u.id}`) ||
+        localStorage.getItem(`pcb_avatar_${u.email}`);
+      return {
+        ...u,
+        avatar_url: u.avatar_url || cached || null,
+      };
+    });
+  }
+
+  return users;
 }
 
 import { checkPasswordStrength } from "@/lib/utils/password";
@@ -92,6 +118,9 @@ export async function createUser(payload: UserCreatePayload): Promise<User> {
 }
 
 export async function updateUser(userId: string, payload: UserUpdatePayload): Promise<User> {
+  if (payload.avatar_url && typeof window !== "undefined") {
+    localStorage.setItem(`pcb_avatar_${userId}`, payload.avatar_url);
+  }
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase

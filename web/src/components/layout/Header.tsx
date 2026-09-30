@@ -3,9 +3,16 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronRight, HardDrive, Shield, User, RefreshCw, Menu } from "lucide-react";
+import {
+  Bell,
+  Search,
+  Settings,
+  User as UserIcon,
+  Menu,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { getNotifications } from "@/lib/api/notifications";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -15,6 +22,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   const pathname = usePathname();
   const { user, role } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -36,90 +44,103 @@ export function Header({ onToggleSidebar }: HeaderProps) {
     };
   }, []);
 
-  const getBreadcrumbs = (path: string) => {
-    if (path.startsWith("/dashboard")) return ["Operations", "QA Dashboard"];
-    if (path.startsWith("/inspections/")) return ["Quality Control", "Inspections", "Inspection Detail"];
-    if (path.startsWith("/inspections")) return ["Quality Control", "Inspection History"];
-    if (path.startsWith("/models")) return ["Analytics & Metrics", "Model Registry"];
-    if (path.startsWith("/reports")) return ["Analytics & Metrics", "Quality Reports"];
-    if (path.startsWith("/notifications")) return ["Operations", "Station Alerts"];
-    if (path.startsWith("/users")) return ["System Administration", "Operator Directory"];
-    if (path.startsWith("/profile")) return ["User Account", "Profile & Security"];
-    return ["PCB-Vision", "Manufacturing QA"];
+  const getPageTitle = (path: string) => {
+    if (path.startsWith("/dashboard")) return { category: "Pages", title: "Dashboard" };
+    if (path.startsWith("/inspections/")) return { category: "Pages", title: "Inspection Detail" };
+    if (path.startsWith("/inspections")) return { category: "Pages", title: "Inspections" };
+    if (path.startsWith("/models")) return { category: "Pages", title: "Model Registry" };
+    if (path.startsWith("/reports")) return { category: "Pages", title: "Reports" };
+    if (path.startsWith("/notifications")) return { category: "Pages", title: "Station Alerts" };
+    if (path.startsWith("/users")) return { category: "Pages", title: "Users" };
+    if (path.startsWith("/profile")) return { category: "Pages", title: "Profile" };
+    return { category: "Pages", title: "Dashboard" };
   };
 
-  const crumbs = getBreadcrumbs(pathname);
+  const { category, title } = getPageTitle(pathname);
 
   return (
-    <header className="h-14 flex-shrink-0 flex items-center justify-between px-3.5 sm:px-6 border-b border-surface-200 bg-surface-0 shadow-xs z-20">
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        {/* Mobile Sidebar Hamburger Toggle */}
-        <button
-          onClick={onToggleSidebar}
-          aria-label="Open Navigation Menu"
-          className="lg:hidden p-2 rounded-md text-surface-600 hover:text-surface-900 hover:bg-surface-100 transition-colors focus:outline-none focus:ring-1 focus:ring-industrial-500"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+    <header className="sticky top-0 z-30 pt-3 pb-2 px-3 sm:px-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[68px] px-4 sm:px-5 py-2.5 rounded-[16px] bg-white/80 backdrop-blur-[21px] border border-white/80 shadow-[0px_7px_23px_rgba(0,0,0,0.05)] transition-all">
+        {/* Left Side: Breadcrumb & Title */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onToggleSidebar}
+            aria-label="Open Navigation Menu"
+            className="lg:hidden p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-1.5 text-xs text-surface-500 font-mono truncate">
-          <div className="hidden sm:flex items-center gap-1.5">
-            {crumbs.slice(0, -1).map((crumb, idx) => (
-              <React.Fragment key={crumb}>
-                {idx > 0 && <ChevronRight className="w-3.5 h-3.5 text-surface-300 shrink-0" />}
-                <span className="hover:text-surface-700 transition-colors truncate">
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-            {crumbs.length > 1 && <ChevronRight className="w-3.5 h-3.5 text-surface-300 shrink-0" />}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1 text-[11px] text-[#A0AEC0] font-normal">
+              <span>{category}</span>
+              <span>/</span>
+              <span className="text-[#2D3748] font-medium">{title}</span>
+            </div>
+            <h2 className="text-sm sm:text-base font-bold text-[#2D3748] leading-tight">
+              {title}
+            </h2>
           </div>
-          <span className="font-semibold text-surface-900 font-sans text-xs sm:text-sm tracking-tight truncate">
-            {crumbs[crumbs.length - 1]}
-          </span>
-        </div>
-      </div>
-
-      {/* Right Controls & Telemetry */}
-      <div className="flex items-center gap-3">
-        {/* System Online Badge */}
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded border border-emerald-200 bg-emerald-50/60 text-emerald-800 text-2xs font-mono font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-          <span>ONLINE</span>
         </div>
 
-        {/* Notifications Icon Button */}
-        <Link
-          href="/notifications"
-          className="relative p-1.5 rounded border border-surface-200 text-surface-600 hover:text-surface-900 hover:bg-surface-50 transition-colors"
-          title="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-2xs font-mono font-bold text-white shadow-xs">
-              {unreadCount > 9 ? "9+" : unreadCount}
+        {/* Right Side: Search, User, Settings, Bell */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+          {/* Search Box (Exact Purity UI SearchBar style) */}
+          <div className="relative flex items-center w-full sm:w-48 md:w-56">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+              <Search className="w-3.5 h-3.5" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Type here..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs text-[#2D3748] bg-white border border-gray-200 rounded-[15px] focus:outline-none focus:border-[#4FD1C5] focus:ring-1 focus:ring-[#4FD1C5] transition-all placeholder:text-[#A0AEC0]"
+            />
+          </div>
+
+          {/* User Sign In / Profile Button */}
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-[12px] text-xs font-bold text-[#718096] hover:text-[#2D3748] hover:bg-gray-50 transition-colors"
+          >
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt="Profile"
+                className="w-5 h-5 rounded-full object-cover border border-[#4FD1C5]/50 shadow-2xs"
+              />
+            ) : (
+              <UserIcon className="w-4 h-4 text-[#718096]" />
+            )}
+            <span className="hidden md:inline">
+              {user?.email ? user.email.split("@")[0] : "Sign In"}
             </span>
-          )}
-        </Link>
+          </Link>
 
-        {/* User Profile Link */}
-        <Link
-          href="/profile"
-          className="flex items-center gap-2 pl-2 border-l border-surface-200 hover:opacity-80 transition-opacity"
-        >
-          <div className="w-7 h-7 rounded bg-surface-100 border border-surface-200 flex items-center justify-center text-surface-700 text-xs font-mono font-semibold">
-            {user?.email?.charAt(0).toUpperCase() || "A"}
-          </div>
-          <div className="hidden md:block text-left text-xs">
-            <div className="font-medium text-surface-900 truncate max-w-[120px] font-mono leading-tight">
-              {user?.email || "Operator"}
-            </div>
-            <div className="text-2xs text-surface-400 font-mono capitalize leading-tight">
-              {role || "viewer"}
-            </div>
-          </div>
-        </Link>
+          {/* Settings Icon */}
+          <Link
+            href="/profile"
+            className="p-2 rounded-lg text-gray-400 hover:text-[#2D3748] hover:bg-gray-50 transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </Link>
+
+          {/* Notification Bell */}
+          <Link
+            href="/notifications"
+            className="relative p-2 rounded-lg text-gray-400 hover:text-[#2D3748] hover:bg-gray-50 transition-colors"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E53E3E] text-[10px] font-bold text-white shadow-xs">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
     </header>
   );

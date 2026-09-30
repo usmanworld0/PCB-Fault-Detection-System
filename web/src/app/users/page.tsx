@@ -126,87 +126,87 @@ export default function UsersPage() {
     <AppShell>
       <div className="space-y-5 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+              <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 User Directory
               </h1>
             </div>
-            <p className="text-xs text-surface-500 mt-1">
+            <p className="text-xs font-semibold text-[#A0AEC0] mt-0.5">
               Manage user accounts and assigned roles.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider bg-[#4FD1C5] hover:bg-[#319795] text-white shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>Create User</span>
             </button>
             <button
               onClick={fetchUsersList}
-              className="p-1.5 rounded bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
+              className="p-2 rounded-[10px] bg-white hover:bg-gray-50 text-[#2D3748] border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[#4FD1C5] ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
 
         {/* Create User Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/60 backdrop-blur-xs p-4 animate-fade-in">
-            <div className="w-full max-w-md rounded-2xl border border-surface-200 bg-white p-6 sm:p-7 shadow-2xl animate-fade-in">
-              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-surface-200">
-                <h3 className="text-base font-bold text-surface-900">Create New User Account</h3>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-[15px] border border-gray-200/70 bg-white p-6 sm:p-7 shadow-2xl animate-fade-in">
+              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-gray-100">
+                <h3 className="text-base font-bold text-[#2D3748]">Create New User Account</h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-1.5 rounded-lg text-surface-400 hover:text-surface-700 hover:bg-surface-100 transition-colors"
+                  className="p-1.5 rounded-lg text-[#A0AEC0] hover:text-[#2D3748] hover:bg-gray-100 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {formError && (
-                <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                <div className="mb-4 p-3 rounded-[10px] bg-red-50 border border-red-200 text-[#E53E3E] text-xs font-medium">
                   {formError}
                 </div>
               )}
 
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-surface-700 mb-1.5">Email Address</label>
+                  <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Email Address</label>
                   <input
                     type="email"
                     required
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="engineer@manufacturing.org"
-                    className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 transition-all font-mono"
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200/80 rounded-[10px] text-xs text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-surface-700 mb-1.5">Temporary Password</label>
+                  <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Temporary Password</label>
                   <input
                     type="password"
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 transition-all font-mono"
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200/80 rounded-[10px] text-xs text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] transition-all"
                   />
                   <PasswordStrengthMeter password={newPassword} />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-surface-700 mb-1.5">Assign System Role</label>
+                  <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Assign System Role</label>
                   <select
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value as UserRole)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-xs sm:text-sm text-surface-800 focus:outline-none focus:ring-2 focus:ring-industrial-500/20 focus:border-industrial-500 transition-all font-mono"
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200/80 rounded-[10px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] transition-all"
                   >
                     <option value="admin">ADMIN (Full Access)</option>
                     <option value="engineer">QUALITY ENGINEER (Review & Inspect)</option>
@@ -214,18 +214,18 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-surface-200">
+                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
+                    className="px-4 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#718096] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 rounded-lg text-xs font-semibold bg-industrial-900 hover:bg-industrial-800 text-white shadow-xs transition-colors disabled:opacity-50"
+                    className="px-5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider bg-[#4FD1C5] hover:bg-[#319795] text-white shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors disabled:opacity-50"
                   >
                     {submitting ? "Creating..." : "Create Account"}
                   </button>
@@ -237,28 +237,28 @@ export default function UsersPage() {
 
         {/* Delete Confirmation Modal */}
         {userToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-950/60 backdrop-blur-xs p-4 animate-fade-in">
-            <div className="w-full max-w-md rounded-2xl border border-surface-200 bg-white p-6 shadow-2xl animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-[15px] border border-gray-200/70 bg-white p-6 shadow-2xl animate-fade-in">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-[10px] bg-rose-50 flex items-center justify-center text-[#E53E3E] shrink-0 mt-0.5">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div className="space-y-1.5 flex-1">
-                  <h3 className="text-base font-bold text-surface-900">Delete User Account</h3>
-                  <p className="text-xs text-surface-500 leading-relaxed">
+                  <h3 className="text-base font-bold text-[#2D3748]">Delete User Account</h3>
+                  <p className="text-xs text-[#718096] leading-relaxed">
                     Are you sure you want to permanently delete user account{" "}
-                    <span className="font-mono font-bold text-surface-900">{userToDelete.email}</span>?
+                    <span className="font-bold text-[#2D3748]">{userToDelete.email}</span>?
                     This action will remove their record and credentials from the system. This cannot be undone.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-5 mt-4 border-t border-surface-200">
+              <div className="flex items-center justify-end gap-2.5 pt-4 mt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setUserToDelete(null)}
                   disabled={isDeleting}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-surface-700 bg-surface-100 hover:bg-surface-200 border border-surface-200 transition-colors"
+                  className="px-4 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#718096] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors"
                 >
                   Cancel
                 </button>
@@ -266,7 +266,7 @@ export default function UsersPage() {
                   type="button"
                   onClick={handleDeleteUser}
                   disabled={isDeleting}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider bg-[#E53E3E] hover:bg-rose-700 text-white shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
                   {isDeleting ? "Deleting..." : "Delete Account"}
                 </button>
@@ -276,15 +276,15 @@ export default function UsersPage() {
         )}
 
         {/* Users Table */}
-        <div className="bg-white border border-surface-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="bg-white border border-gray-200/70 rounded-[15px] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] overflow-hidden">
           {error ? (
             <div className="p-6">
               <ErrorState message={error} onRetry={fetchUsersList} />
             </div>
           ) : loading ? (
-            <div className="p-4 space-y-3">
+            <div className="p-6 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                <Skeleton key={i} className="h-12 w-full rounded-[10px]" />
               ))}
             </div>
           ) : (
@@ -293,51 +293,69 @@ export default function UsersPage() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                      <th className="py-3 px-4 font-semibold">User Email</th>
-                      <th className="py-3 px-4 font-semibold">Assigned Role</th>
-                      <th className="py-3 px-4 font-semibold">Account Status</th>
-                      <th className="py-3 px-4 font-semibold">Registration Date</th>
-                      <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                    <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
+                      <th className="py-3.5 px-4 font-bold">User Email</th>
+                      <th className="py-3.5 px-4 font-bold">Assigned Role</th>
+                      <th className="py-3.5 px-4 font-bold">Account Status</th>
+                      <th className="py-3.5 px-4 font-bold">Registration Date</th>
+                      <th className="py-3.5 px-4 font-bold text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-100">
+                  <tbody className="divide-y divide-gray-100">
                     {users.map((u) => (
-                      <tr key={u.id} className="hover:bg-industrial-50/30 transition-colors">
-                        <td className="py-3 px-4 font-mono font-medium text-surface-900">{u.email}</td>
-                        <td className="py-3 px-4">
+                      <tr key={u.id} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-3">
+                            {u.avatar_url ? (
+                              <img
+                                src={u.avatar_url}
+                                alt={u.email}
+                                className="w-8 h-8 rounded-full object-cover border border-[#4FD1C5]/30 shadow-2xs shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-teal-50 border border-teal-100 text-[#4FD1C5] font-bold text-xs flex items-center justify-center shrink-0">
+                                {u.email.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-xs text-[#2D3748] truncate">{u.email}</span>
+                              <span className="text-[10px] text-[#A0AEC0] font-semibold">UID: {u.id.slice(0, 8)}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
                           <select
                             value={u.role}
                             onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                            className="px-2.5 py-1.5 bg-white border border-surface-200 rounded-md text-xs text-surface-800 focus:outline-none focus:ring-1 focus:ring-industrial-500 font-mono"
+                            className="px-2.5 py-1.5 bg-white border border-gray-200/80 rounded-[8px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5]"
                           >
                             <option value="admin">ADMIN</option>
                             <option value="engineer">QUALITY ENGINEER</option>
                             <option value="viewer">VIEWER</option>
                           </select>
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4">
                           {u.is_active ? (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 text-[11px]">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#319795] bg-[#E6FFFA] px-2 py-0.5 rounded-[8px] text-[10px]">
+                              <CheckCircle2 className="w-3 h-3 text-[#319795]" />
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-md border border-rose-200 text-[11px]">
-                              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                            <span className="inline-flex items-center gap-1.5 font-bold uppercase tracking-wider text-[#E53E3E] bg-[#FFF5F5] px-2 py-0.5 rounded-[8px] text-[10px]">
+                              <XCircle className="w-3 h-3 text-[#E53E3E]" />
                               Deactivated
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-surface-500 font-mono text-[11px]">{formatDate(u.created_at)}</td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3.5 px-4 text-[#A0AEC0] font-semibold">{formatDate(u.created_at)}</td>
+                        <td className="py-3.5 px-4 text-right">
                           <div className="inline-flex items-center gap-2 justify-end">
                             <button
                               onClick={() => handleToggleStatus(u)}
-                              className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition-colors ${
+                              className={`px-3 py-1.5 rounded-[8px] text-xs font-bold border transition-colors ${
                                 u.is_active
-                                  ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                                  : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                  ? "bg-[#FFF5F5] text-[#E53E3E] border-red-200 hover:bg-red-100"
+                                  : "bg-[#E6FFFA] text-[#319795] border-teal-200 hover:bg-teal-100"
                               }`}
                             >
                               {u.is_active ? "Deactivate" : "Activate"}
@@ -350,7 +368,7 @@ export default function UsersPage() {
                                   ? "Cannot delete your active account"
                                   : "Delete user account"
                               }
-                              className="p-1.5 rounded-md text-surface-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-surface-400 cursor-pointer disabled:cursor-not-allowed"
+                              className="p-1.5 rounded-[8px] text-[#A0AEC0] hover:text-[#E53E3E] hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#A0AEC0] cursor-pointer disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -363,20 +381,33 @@ export default function UsersPage() {
               </div>
 
               {/* Mobile Card List */}
-              <div className="md:hidden divide-y divide-surface-200">
+              <div className="md:hidden divide-y divide-gray-100 font-sans">
                 {users.map((u) => (
                   <div key={u.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-bold text-xs text-surface-900 truncate">
-                        {u.email}
-                      </span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {u.avatar_url ? (
+                          <img
+                            src={u.avatar_url}
+                            alt={u.email}
+                            className="w-7 h-7 rounded-full object-cover border border-[#4FD1C5]/30 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-teal-50 border border-teal-100 text-[#4FD1C5] font-bold text-xs flex items-center justify-center shrink-0">
+                            {u.email.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="font-bold text-xs text-[#2D3748] truncate">
+                          {u.email}
+                        </span>
+                      </div>
                       {u.is_active ? (
-                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-[6px] border border-emerald-200 text-[10px] uppercase tracking-wider">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[10px]">
+                        <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-[6px] border border-rose-200 text-[10px] uppercase tracking-wider">
                           <XCircle className="w-3 h-3 text-rose-600" />
                           Deactivated
                         </span>
@@ -385,11 +416,11 @@ export default function UsersPage() {
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-[10px] text-surface-400 uppercase font-mono block mb-1">Role</span>
+                        <span className="text-[10px] text-[#A0AEC0] uppercase font-bold tracking-wider block mb-1">Role</span>
                         <select
                           value={u.role}
                           onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                          className="w-full px-2 py-1 bg-white border border-surface-200 rounded text-xs text-surface-800 font-mono"
+                          className="w-full px-2 py-1 bg-white border border-gray-200/80 rounded-[8px] text-xs text-[#2D3748] font-bold focus:outline-none focus:ring-1 focus:ring-[#4FD1C5]"
                         >
                           <option value="admin">ADMIN</option>
                           <option value="engineer">ENGINEER</option>
@@ -397,8 +428,8 @@ export default function UsersPage() {
                         </select>
                       </div>
                       <div>
-                        <span className="text-[10px] text-surface-400 uppercase font-mono block mb-1">Registered</span>
-                        <span className="text-surface-600 font-mono text-[11px] block pt-1">
+                        <span className="text-[10px] text-[#A0AEC0] uppercase font-bold tracking-wider block mb-1">Registered</span>
+                        <span className="text-[#718096] font-medium text-xs block pt-1">
                           {formatDate(u.created_at)}
                         </span>
                       </div>

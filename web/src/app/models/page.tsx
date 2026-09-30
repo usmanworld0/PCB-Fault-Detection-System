@@ -38,26 +38,26 @@ export default function ModelsPage() {
     <AppShell>
       <div className="space-y-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+              <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 Model Registry & Benchmark Telemetry
               </h1>
-              <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[8px] bg-gray-100 text-[#2D3748]">
                 EVALUATION BENCHMARK
               </span>
             </div>
-            <p className="text-xs text-surface-500 mt-1">
+            <p className="text-xs font-semibold text-[#A0AEC0] mt-0.5">
               Accuracy scores and inference latency for detection models.
             </p>
           </div>
           <button
             onClick={fetchModels}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-[#4FD1C5] ${loading ? "animate-spin" : ""}`} />
+            <span>REFRESH</span>
           </button>
         </div>
 
@@ -67,10 +67,10 @@ export default function ModelsPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-lg" />
+                <Skeleton key={i} className="h-32 w-full rounded-[15px]" />
               ))}
             </div>
-            <Skeleton className="h-80 w-full rounded-lg" />
+            <Skeleton className="h-80 w-full rounded-[15px]" />
           </div>
         ) : models.length === 0 ? (
           <EmptyState
@@ -88,27 +88,27 @@ export default function ModelsPage() {
                   <div
                     key={m.id}
                     onClick={() => setSelectedModel(m)}
-                    className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                    className={`cursor-pointer rounded-[15px] border p-5 transition-all ${
                       isSelected
-                        ? "bg-white border-brand-500 ring-2 ring-brand-500/20 shadow-sm"
-                        : "bg-white border-surface-200 hover:border-surface-300 shadow-xs"
+                        ? "bg-white border-[#4FD1C5] ring-2 ring-[#4FD1C5]/30 shadow-md"
+                        : "bg-white border-gray-200/70 hover:border-gray-300 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-xs font-bold text-surface-900 uppercase">{m.name}</span>
-                      <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-surface-100 text-surface-700 border border-surface-200">
+                      <span className="text-xs font-bold text-[#2D3748] uppercase tracking-wider">{m.name}</span>
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-[8px] bg-[#E6FFFA] text-[#319795]">
                         {m.arch}
                       </span>
                     </div>
                     <div className="mt-3 flex items-baseline justify-between">
-                      <span className="text-xs text-surface-500">mAP@50:</span>
-                      <span className="text-lg font-bold text-brand-700 font-mono">
+                      <span className="text-xs font-semibold text-[#A0AEC0]">mAP@50:</span>
+                      <span className="text-xl font-bold text-[#2D3748]">
                         {m.map50 ? `${(m.map50 * 100).toFixed(1)}%` : "—"}
                       </span>
                     </div>
                     <div className="mt-1 flex items-baseline justify-between text-xs">
-                      <span className="text-surface-500">Inference:</span>
-                      <span className="font-mono text-surface-800 font-medium">
+                      <span className="text-xs font-semibold text-[#A0AEC0]">Inference:</span>
+                      <span className="text-xs font-bold text-[#319795]">
                         {m.cpu_ms ? `${m.cpu_ms.toFixed(1)} ms` : "—"}
                       </span>
                     </div>
@@ -118,11 +118,11 @@ export default function ModelsPage() {
             </div>
 
             {/* Detailed Benchmark Comparison Table */}
-            <div className="bg-white border border-surface-200 rounded-lg shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-surface-200 flex items-center justify-between">
+            <div className="bg-white border border-gray-200/70 rounded-[15px] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] overflow-hidden">
+              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-900 tracking-tight">Model Benchmarks</h3>
-                  <p className="text-xs text-surface-500 mt-0.5">
+                  <h3 className="text-sm font-bold text-[#2D3748] tracking-tight">Model Benchmarks</h3>
+                  <p className="text-xs text-[#A0AEC0] font-semibold mt-0.5">
                     Performance comparison across detection models.
                   </p>
                 </div>
@@ -130,46 +130,46 @@ export default function ModelsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-surface-50 border-b border-surface-200 text-[10px] font-mono uppercase tracking-wider text-surface-500">
-                      <th className="py-2.5 px-3 font-semibold">Model Name</th>
-                      <th className="py-2.5 px-3 font-semibold">Architecture</th>
-                      <th className="py-2.5 px-3 font-semibold">Dataset</th>
-                      <th className="py-2.5 px-3 font-semibold">mAP@50</th>
-                      <th className="py-2.5 px-3 font-semibold">mAP@50:95</th>
-                      <th className="py-2.5 px-3 font-semibold">Precision</th>
-                      <th className="py-2.5 px-3 font-semibold">Recall</th>
-                      <th className="py-2.5 px-3 font-semibold">F1 Score</th>
-                      <th className="py-2.5 px-3 font-semibold">Latency (ms)</th>
+                    <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
+                      <th className="py-3.5 px-4 font-bold">Model Name</th>
+                      <th className="py-3.5 px-4 font-bold">Architecture</th>
+                      <th className="py-3.5 px-4 font-bold">Dataset</th>
+                      <th className="py-3.5 px-4 font-bold">mAP@50</th>
+                      <th className="py-3.5 px-4 font-bold">mAP@50:95</th>
+                      <th className="py-3.5 px-4 font-bold">Precision</th>
+                      <th className="py-3.5 px-4 font-bold">Recall</th>
+                      <th className="py-3.5 px-4 font-bold">F1 Score</th>
+                      <th className="py-3.5 px-4 font-bold">Latency (ms)</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-100">
+                  <tbody className="divide-y divide-gray-100">
                     {models.map((m) => (
                       <tr
                         key={m.id}
                         onClick={() => setSelectedModel(m)}
                         className={`cursor-pointer transition-colors ${
-                          selectedModel?.id === m.id ? "bg-brand-50/60" : "hover:bg-surface-50/80"
+                          selectedModel?.id === m.id ? "bg-teal-50/30" : "hover:bg-gray-50/60"
                         }`}
                       >
-                        <td className="py-2.5 px-3 font-mono font-semibold text-surface-900">{m.name}</td>
-                        <td className="py-2.5 px-3 text-surface-700">{m.arch}</td>
-                        <td className="py-2.5 px-3 font-mono text-surface-500">{m.dataset || "DeepPCB"}</td>
-                        <td className="py-2.5 px-3 font-bold text-brand-700 font-mono">
+                        <td className="py-3.5 px-4 font-bold text-[#2D3748]">{m.name}</td>
+                        <td className="py-3.5 px-4 text-[#718096] font-medium">{m.arch}</td>
+                        <td className="py-3.5 px-4 text-[#718096]">{m.dataset || "DeepPCB"}</td>
+                        <td className="py-3.5 px-4 font-bold text-[#2D3748]">
                           {m.map50 ? `${(m.map50 * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3.5 px-4 text-[#718096] font-semibold">
                           {m.map50_95 ? `${(m.map50_95 * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3.5 px-4 text-[#718096] font-semibold">
                           {m.precision ? `${(m.precision * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3.5 px-4 text-[#718096] font-semibold">
                           {m.recall ? `${(m.recall * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 text-surface-700 font-mono">
+                        <td className="py-3.5 px-4 text-[#718096] font-semibold">
                           {m.f1 ? `${(m.f1 * 100).toFixed(1)}%` : "—"}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-emerald-700 font-semibold">
+                        <td className="py-3.5 px-4 text-[#319795] font-bold">
                           {m.cpu_ms ? `${m.cpu_ms.toFixed(1)} ms` : "—"}
                         </td>
                       </tr>
@@ -181,28 +181,28 @@ export default function ModelsPage() {
 
             {/* Selected Model Per-Class Metrics Details */}
             {selectedModel && selectedModel.metrics_json?.per_class_map50_95 && (
-              <div className="bg-white border border-surface-200 rounded-lg p-5 shadow-sm">
+              <div className="bg-white border border-gray-200/70 rounded-[15px] p-5 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]">
                 <div className="mb-4">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-surface-900">
+                    <h3 className="text-sm font-bold text-[#2D3748]">
                       Per-Class Accuracy Breakdown: {selectedModel.name}
                     </h3>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[8px] bg-gray-100 text-[#2D3748]">
                       mAP@50:95
                     </span>
                   </div>
-                  <p className="text-xs text-surface-500 mt-0.5">
+                  <p className="text-xs text-[#A0AEC0] font-semibold mt-0.5">
                     Granular detection fidelity across the individual PCB defect categories
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   {Object.entries(selectedModel.metrics_json.per_class_map50_95).map(
                     ([cls, score]: [string, any]) => (
-                      <div key={cls} className="p-3 rounded border border-surface-200 bg-surface-50">
-                        <div className="text-[10px] font-mono uppercase font-semibold text-surface-500">
+                      <div key={cls} className="p-3.5 rounded-[12px] border border-gray-200/70 bg-[#F8F9FA]">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-[#A0AEC0]">
                           {DEFECT_LABELS[cls.toLowerCase()] || cls}
                         </div>
-                        <div className="mt-1 text-base font-bold text-brand-700 font-mono">
+                        <div className="mt-1 text-base font-bold text-[#2D3748]">
                           {(Number(score) * 100).toFixed(1)}%
                         </div>
                       </div>

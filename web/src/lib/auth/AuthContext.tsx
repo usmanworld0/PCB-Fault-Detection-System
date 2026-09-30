@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, UserRole } from "@/types/models";
 import { getStoredToken, setStoredToken } from "@/lib/api/client";
-import { getMe, login as apiLogin, logout as apiLogout } from "@/lib/api/auth";
+import { getMe, login as apiLogin, logout as apiLogout, updateUserAvatar } from "@/lib/api/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateAvatar: (avatarUrl: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
   };
 
+  const updateAvatar = async (avatarUrl: string) => {
+    setUser((prev) => (prev ? { ...prev, avatar_url: avatarUrl } : prev));
+    await updateUserAvatar(avatarUrl);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -77,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         refreshUser,
+        updateAvatar,
       }}
     >
       {children}

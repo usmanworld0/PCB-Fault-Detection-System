@@ -18,8 +18,8 @@ export function RoleBadge({ role, className, size = "md" }: RoleBadgeProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-semibold rounded border border-industrial-300 bg-industrial-50 text-industrial-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#E6FFFA] text-[#319795]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -33,8 +33,8 @@ export function RoleBadge({ role, className, size = "md" }: RoleBadgeProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 font-mono font-medium rounded border border-indigo-300 bg-indigo-50 text-indigo-800",
-          size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+          "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#EBF8FF] text-[#3182CE]",
+          size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -47,8 +47,8 @@ export function RoleBadge({ role, className, size = "md" }: RoleBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono font-medium rounded border border-surface-200 bg-surface-100 text-surface-700",
-        size === "sm" ? "px-1.5 py-0.5 text-2xs" : "px-2 py-0.5 text-xs",
+        "inline-flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-[8px] bg-[#EDF2F7] text-[#4A5568]",
+        size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs",
         className
       )}
     >

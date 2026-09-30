@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     role: UserRole
     is_active: bool = True
+    avatar_url: str | None = None
     created_at: datetime
 
 
@@ -39,6 +40,7 @@ class UserAdminView(BaseModel):
     email: EmailStr
     role: UserRole
     is_active: bool
+    avatar_url: str | None = None
     created_at: datetime
 
 
@@ -46,11 +48,13 @@ class UserCreateAdmin(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
     role: UserRole = UserRole.viewer
+    avatar_url: str | None = None
 
 
 class UserUpdateAdmin(BaseModel):
     role: UserRole | None = None
     is_active: bool | None = None
+    avatar_url: str | None = None
 
 
 class DefectResponse(BaseModel):

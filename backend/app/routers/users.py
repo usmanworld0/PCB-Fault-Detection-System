@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..auth import hash_password, require_role
+from ..auth import get_current_user, hash_password, require_role
 from ..db import get_db
 from ..models import AuditLog, User, UserRole
 from ..schemas import UserAdminView, UserCreateAdmin, UserUpdateAdmin
@@ -19,6 +19,19 @@ def list_users(
 ):
     users = db.scalars(select(User).order_by(User.created_at.desc())).all()
     return users
+
+
+@router.put("/me/avatar", response_model=UserAdminView)
+def update_my_avatar(
+    payload: UserUpdateAdmin,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload.avatar_url is not None:
+        current_user.avatar_url = payload.avatar_url
+        db.commit()
+        db.refresh(current_user)
+    return current_user
 
 
 @router.post("", response_model=UserAdminView, status_code=status.HTTP_201_CREATED)
@@ -36,6 +49,7 @@ def create_user(
         password_hash=hash_password(payload.password),
         role=payload.role,
         is_active=True,
+        avatar_url=payload.avatar_url,
     )
     db.add(user)
     db.flush()
@@ -75,6 +89,10 @@ def update_user(
     if payload.is_active is not None and payload.is_active != user.is_active:
         user.is_active = payload.is_active
         changes.append(f"status to {'Active' if payload.is_active else 'Deactivated'}")
+
+    if payload.avatar_url is not None and payload.avatar_url != user.avatar_url:
+        user.avatar_url = payload.avatar_url
+        changes.append("profile avatar updated")
 
     if changes:
         action = "ROLE_CHANGED" if payload.role is not None else "USER_UPDATED"

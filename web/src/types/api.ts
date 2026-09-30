@@ -58,9 +58,11 @@ export interface UserCreatePayload {
   email: string;
   password: string;
   role: UserRole;
+  avatar_url?: string | null;
 }
 
 export interface UserUpdatePayload {
   role?: UserRole;
   is_active?: boolean;
+  avatar_url?: string | null;
 }

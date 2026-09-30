@@ -75,38 +75,38 @@ export default function NotificationsPage() {
     <AppShell>
       <div className="space-y-5 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-surface-900">
+              <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 Notifications
               </h1>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white font-mono">
+                <span className="px-2 py-0.5 rounded-[8px] text-[10px] font-bold uppercase tracking-wider bg-[#FFF5F5] text-[#E53E3E]">
                   {unreadCount} UNREAD
                 </span>
               )}
             </div>
-            <p className="text-xs text-surface-500 mt-1">
-              Alerts, defect flags, and system events.
+            <p className="text-xs font-semibold text-[#A0AEC0] mt-0.5">
+              Alerts, defect flags, and real-time station events.
             </p>
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
               >
-                <CheckCheck className="w-3.5 h-3.5 text-surface-500" />
+                <CheckCheck className="w-3.5 h-3.5 text-[#4FD1C5]" />
                 <span>Mark All as Read</span>
               </button>
             )}
             <button
               onClick={fetchNotifs}
-              className="p-1.5 rounded bg-white hover:bg-surface-50 text-surface-700 border border-surface-200 shadow-xs transition-colors"
+              className="p-2 rounded-[10px] bg-white hover:bg-gray-50 text-[#2D3748] border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
               title="Refresh"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-surface-500 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-[#4FD1C5] ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
         </div>
@@ -115,18 +115,20 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFilterUnread(false)}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
-              !filterUnread ? "bg-white text-surface-900 border border-surface-300 shadow-xs" : "text-surface-600 hover:text-surface-900"
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-bold transition-all ${
+              !filterUnread
+                ? "bg-white text-[#2D3748] border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]"
+                : "text-[#A0AEC0] hover:text-[#2D3748]"
             }`}
           >
             All Notifications
           </button>
           <button
             onClick={() => setFilterUnread(true)}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+            className={`px-3.5 py-2 rounded-[10px] text-xs font-bold transition-all ${
               filterUnread
-                ? "bg-white text-surface-900 border border-surface-300 shadow-xs"
-                : "text-surface-600 hover:text-surface-900"
+                ? "bg-white text-[#2D3748] border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]"
+                : "text-[#A0AEC0] hover:text-[#2D3748]"
             }`}
           >
             Unread Alarms ({unreadCount})
@@ -134,13 +136,13 @@ export default function NotificationsPage() {
         </div>
 
         {/* Notifications List */}
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {error ? (
             <ErrorState message={error} onRetry={fetchNotifs} />
           ) : loading ? (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-lg" />
+                <Skeleton key={i} className="h-20 w-full rounded-[15px]" />
               ))}
             </div>
           ) : notifications.length === 0 ? (
@@ -153,43 +155,43 @@ export default function NotificationsPage() {
             notifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`p-4 rounded-lg border transition-colors ${
+                className={`p-5 rounded-[15px] border transition-all ${
                   notif.is_read
-                    ? "bg-white border-surface-200"
-                    : "bg-brand-50/20 border-brand-200 shadow-xs"
+                    ? "bg-white border-gray-200/70 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]"
+                    : "bg-white border-[#4FD1C5] ring-1 ring-[#4FD1C5]/30 shadow-md"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div
-                      className={`p-2 rounded mt-0.5 shrink-0 ${
+                      className={`p-2.5 rounded-[10px] mt-0.5 shrink-0 ${
                         notif.severity === "Critical"
-                          ? "bg-red-50 text-red-600 border border-red-200"
-                          : "bg-brand-50 text-brand-600 border border-brand-200"
+                          ? "bg-rose-50 text-[#E53E3E]"
+                          : "bg-[#E6FFFA] text-[#319795]"
                       }`}
                     >
                       <Bell className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-surface-900">{notif.title}</span>
+                        <span className="text-xs font-bold text-[#2D3748]">{notif.title}</span>
                         <SeverityBadge severity={notif.severity} />
-                        <span className="text-[10px] uppercase font-mono font-semibold px-1.5 py-0.5 rounded bg-surface-100 text-surface-600 border border-surface-200">
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-[8px] bg-gray-100 text-[#2D3748]">
                           {notif.category}
                         </span>
                       </div>
-                      <p className="text-xs text-surface-600 mt-1 leading-relaxed">{notif.message}</p>
+                      <p className="text-xs text-[#718096] mt-1 leading-relaxed">{notif.message}</p>
                       <div className="flex items-center gap-4 mt-2">
-                        <span className="text-[11px] text-surface-400 font-mono">
+                        <span className="text-[10px] text-[#A0AEC0] font-semibold">
                           {formatDate(notif.created_at)} ({formatTimeAgo(notif.created_at)})
                         </span>
                         {notif.inspection_id && (
                           <Link
                             href={`/inspections/${notif.inspection_id}`}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-[#4FD1C5] hover:text-[#319795] transition-colors"
                           >
                             <span>Inspect Board</span>
-                            <ArrowRight className="w-3 h-3" />
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         )}
                       </div>
@@ -199,9 +201,9 @@ export default function NotificationsPage() {
                   {!notif.is_read && (
                     <button
                       onClick={() => handleMarkRead(notif.id)}
-                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors shrink-0"
+                      className="text-[10px] font-bold uppercase tracking-wider text-[#319795] hover:text-[#4FD1C5] px-2.5 py-1 rounded-[8px] hover:bg-[#E6FFFA] transition-colors shrink-0"
                     >
-                      Mark read
+                      Mark Read
                     </button>
                   )}
                 </div>

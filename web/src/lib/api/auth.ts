@@ -74,16 +74,39 @@ export async function getMe(): Promise<User> {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (!error && user && user.email) {
       let role = (user.app_metadata?.role || user.user_metadata?.role) as UserRole;
-      if (!role) {
-        const { data: row } = await supabase.from("users").select("role").eq("email", user.email).single();
-        role = (row?.role || "engineer") as UserRole;
+      let avatarUrl = (user.user_metadata?.avatar_url || user.user_metadata?.picture) as string | undefined;
+
+      // Check database row
+      try {
+        const { data: row } = await supabase
+          .from("users")
+          .select("role, avatar_url")
+          .eq("email", user.email)
+          .single();
+        if (row) {
+          if (!role && row.role) role = row.role as UserRole;
+          if (row.avatar_url) avatarUrl = row.avatar_url;
+        }
+      } catch {
+        // Ignored if table not accessible
       }
+
+      // Check localStorage for offline/cached avatar
+      if (!avatarUrl && typeof window !== "undefined") {
+        avatarUrl =
+          localStorage.getItem(`pcb_avatar_${user.id}`) ||
+          localStorage.getItem(`pcb_avatar_${user.email}`) ||
+          localStorage.getItem("pcb_current_avatar") ||
+          undefined;
+      }
+
       return {
         id: user.id,
         email: user.email,
         role: role || "engineer",
         is_active: true,
         created_at: user.created_at,
+        avatar_url: avatarUrl || null,
       };
     }
   } catch {
@@ -101,17 +124,29 @@ export async function getMe(): Promise<User> {
         if (payload.exp && Date.now() > payload.exp) {
           throw new Error("Session expired");
         }
+        const localAvatar = typeof window !== "undefined"
+          ? (localStorage.getItem(`pcb_avatar_${payload.id}`) ||
+             localStorage.getItem(`pcb_avatar_${payload.email}`) ||
+             localStorage.getItem("pcb_current_avatar") || null)
+          : null;
         return {
           id: payload.id,
           email: payload.email,
           role: payload.role,
           is_active: true,
           created_at: new Date().toISOString(),
+          avatar_url: localAvatar,
         };
       } catch {
         throw new Error("Invalid session");
       }
     }
+
+    const defaultAvatar = typeof window !== "undefined"
+      ? (localStorage.getItem("pcb_avatar_admin-001") ||
+         localStorage.getItem("pcb_avatar_admin@example.com") ||
+         localStorage.getItem("pcb_current_avatar") || null)
+      : null;
 
     return {
       id: "admin-001",
@@ -119,6 +154,7 @@ export async function getMe(): Promise<User> {
       role: "admin",
       is_active: true,
       created_at: new Date().toISOString(),
+      avatar_url: defaultAvatar,
     };
   }
 }
@@ -186,4 +222,47 @@ export async function updateUserPassword(newPassword: string): Promise<void> {
     throw new Error(error.message || "Failed to update password.");
   }
 }
+
+/**
+ * Updates the user's profile picture across Supabase Auth user_metadata,
+ * public.users table, and browser cache.
+ */
+export async function updateUserAvatar(avatarUrl: string): Promise<string> {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("pcb_current_avatar", avatarUrl);
+  }
+
+  const supabase = getSupabase();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`pcb_avatar_${user.id}`, avatarUrl);
+        if (user.email) {
+          localStorage.setItem(`pcb_avatar_${user.email}`, avatarUrl);
+        }
+      }
+
+      // Update Supabase Auth user_metadata
+      await supabase.auth.updateUser({
+        data: { avatar_url: avatarUrl },
+      });
+
+      // Attempt updating public.users table as well
+      try {
+        await supabase
+          .from("users")
+          .update({ avatar_url: avatarUrl })
+          .eq("id", user.id);
+      } catch {
+        // Ignored if column doesn't exist
+      }
+    }
+  } catch (err) {
+    console.warn("Could not sync avatar to Supabase metadata:", err);
+  }
+
+  return avatarUrl;
+}
+
 

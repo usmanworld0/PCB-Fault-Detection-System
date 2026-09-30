@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
 
 export const metadata: Metadata = {
-  title: "PCB-Vision — Quality Inspection & Manufacturing QA",
+  title: "PCB-Vision",
   description: "Enterprise Automated PCB Fault Detection, Manufacturing QA & Defect Analytics Platform",
   icons: {
     icon: "/favicon.png",
@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-surface-50 text-surface-900 antialiased min-h-screen font-sans selection:bg-industrial-100 selection:text-industrial-900">
+      <body className="bg-[#F8F9FA] text-[#2D3748] antialiased min-h-screen font-sans selection:bg-[#4FD1C5]/20 selection:text-[#319795]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
