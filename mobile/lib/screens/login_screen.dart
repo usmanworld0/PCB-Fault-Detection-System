@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
-import '../services/supabase_service.dart';
-import '../models/models.dart';
 import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,8 +11,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'lead.engineer@pcb-vision.ai');
-  final _passwordController = TextEditingController(text: 'changeme');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _error;
 
@@ -150,8 +148,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-
     return Scaffold(
       backgroundColor: AppColors.bgApp,
       body: Center(
@@ -173,14 +169,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.industrial900.withValues(alpha: 0.25),
+                          color: AppColors.industrial900.withValues(
+                            alpha: 0.25,
+                          ),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: const Center(
-                      child: Icon(Icons.memory, color: AppColors.industrial200, size: 28),
+                      child: Icon(
+                        Icons.memory,
+                        color: AppColors.industrial200,
+                        size: 28,
+                      ),
                     ),
                   ),
                 ),
@@ -239,7 +241,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: Text(
                             _error!,
-                            style: AppTypography.bodySmall.copyWith(color: AppColors.qaFail),
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.qaFail,
+                            ),
                           ),
                         ),
 
@@ -295,75 +299,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text('Sign In to Industrial Console'),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // Quick Demo Roles
-                Text(
-                  'ONE-TAP ROLE TESTING (RBAC)',
-                  style: AppTypography.label.copyWith(fontSize: 10),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _demoRoleButton(
-                      label: 'Quality Eng',
-                      role: UserRole.engineer,
-                      auth: auth,
-                      color: AppColors.industrial600,
-                    ),
-                    const SizedBox(width: 8),
-                    _demoRoleButton(
-                      label: 'Sys Admin',
-                      role: UserRole.admin,
-                      auth: auth,
-                      color: const Color(0xFFB45309),
-                    ),
-                    const SizedBox(width: 8),
-                    _demoRoleButton(
-                      label: 'Auditor',
-                      role: UserRole.viewer,
-                      auth: auth,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _demoRoleButton({
-    required String label,
-    required UserRole role,
-    required AuthProvider auth,
-    required Color color,
-  }) {
-    return Expanded(
-      child: OutlinedButton(
-        onPressed: () async {
-          await auth.demoLogin(role);
-        },
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          side: BorderSide(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.mono.copyWith(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: color,
           ),
         ),
       ),

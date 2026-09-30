@@ -7,19 +7,19 @@ class AppColors {
   AppColors._();
 
   // ─── Background & Surface ──────────────────────────────────
-  static const bgApp = Color(0xFFF8FAFC);         // surface-50
-  static const bgSurface = Color(0xFFFFFFFF);      // white
-  static const bgMuted = Color(0xFFF1F5F9);        // surface-100
+  static const bgApp = Color(0xFFF8FAFC); // surface-50
+  static const bgSurface = Color(0xFFFFFFFF); // white
+  static const bgMuted = Color(0xFFF1F5F9); // surface-100
 
   // ─── Text ──────────────────────────────────────────────────
-  static const textPrimary = Color(0xFF0F172A);    // surface-900
-  static const textSecondary = Color(0xFF475569);  // surface-600
-  static const textMuted = Color(0xFF94A3B8);      // surface-400
-  static const textStrong = Color(0xFF1E293B);     // surface-800
+  static const textPrimary = Color(0xFF0F172A); // surface-900
+  static const textSecondary = Color(0xFF475569); // surface-600
+  static const textMuted = Color(0xFF94A3B8); // surface-400
+  static const textStrong = Color(0xFF1E293B); // surface-800
 
   // ─── Borders ───────────────────────────────────────────────
-  static const borderSubtle = Color(0xFFE2E8F0);  // surface-200
-  static const borderStrong = Color(0xFFCBD5E1);  // surface-300
+  static const borderSubtle = Color(0xFFE2E8F0); // surface-200
+  static const borderStrong = Color(0xFFCBD5E1); // surface-300
 
   // ─── Industrial Blue ───────────────────────────────────────
   static const industrial50 = Color(0xFFF0F7FC);
@@ -56,9 +56,9 @@ class AppColors {
   static const qaReviewBorder = Color(0xFFC7D2FE);
 
   // ─── Sidebar / Navigation ─────────────────────────────────
-  static const sidebarBg = Color(0xFF103F5A);       // industrial-900
-  static const sidebarActive = Color(0xFF1587BE);   // industrial-500
-  static const sidebarText = Color(0xFFBADCF0);     // industrial-200
+  static const sidebarBg = Color(0xFF103F5A); // industrial-900
+  static const sidebarActive = Color(0xFF1587BE); // industrial-500
+  static const sidebarText = Color(0xFFBADCF0); // industrial-200
   static const sidebarTextActive = Colors.white;
 }
 
@@ -98,6 +98,9 @@ class AppTypography {
     fontWeight: FontWeight.w400,
     color: AppColors.textMuted,
   );
+
+  static TextStyle get bodySmallReadable =>
+      bodySmall.copyWith(color: AppColors.textSecondary);
 
   static TextStyle label = GoogleFonts.inter(
     fontSize: 11,
@@ -188,12 +191,12 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(color: AppColors.industrial500, width: 1.5),
+        borderSide: const BorderSide(
+          color: AppColors.industrial500,
+          width: 1.5,
+        ),
       ),
-      hintStyle: GoogleFonts.inter(
-        fontSize: 13,
-        color: AppColors.textMuted,
-      ),
+      hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
       labelStyle: GoogleFonts.inter(
         fontSize: 13,
         color: AppColors.textSecondary,
@@ -206,10 +209,7 @@ ThemeData buildAppTheme() {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        textStyle: GoogleFonts.inter(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -218,10 +218,7 @@ ThemeData buildAppTheme() {
         side: const BorderSide(color: AppColors.borderSubtle),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        textStyle: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
       ),
     ),
     chipTheme: ChipThemeData(
@@ -238,8 +235,14 @@ ThemeData buildAppTheme() {
       unselectedItemColor: AppColors.textMuted,
       type: BottomNavigationBarType.fixed,
       elevation: 0,
-      selectedLabelStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600),
-      unselectedLabelStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w400),
+      selectedLabelStyle: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelStyle: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+      ),
     ),
   );
 }

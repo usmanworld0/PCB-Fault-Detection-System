@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import 'local_alert_notifications.dart';
 
 /// Direct Supabase Integration Service for PCB-Vision
 class SupabaseService extends ChangeNotifier {
   static const String supabaseUrl = 'https://ejlsltjncguqggajpmlt.supabase.co';
-  static const String supabaseAnonKey = 'sb_publishable_4eMC4L7COkOGg0kKjBePmA_j0HZouKv';
+  static const String supabasePublishableKey =
+      'sb_publishable_4eMC4L7COkOGg0kKjBePmA_j0HZouKv';
 
   SupabaseClient? _client;
   bool _isInitialized = false;
@@ -15,14 +19,27 @@ class SupabaseService extends ChangeNotifier {
 
   // Local reactive cache
   List<InspectionRecord> _inspections = [];
-  DashboardStats? _stats;
+  String? _inspectionError;
+  AnalyticsSnapshot? _analytics;
+  String? _analyticsError;
   bool _isLoading = false;
 
   // Real-time subscription channels
   RealtimeChannel? _inspectionChannel;
+  RealtimeChannel? _defectChannel;
+  RealtimeChannel? _notificationChannel;
+  String? _notificationTableName;
+  bool _notificationsHaveResolved = false;
+  String? _notificationResolvedColumn;
+  bool _notificationsHaveRead = false;
+  String? _notificationReadColumn;
+  List<InspectionAlert> _alerts = [];
+  bool _alertPreferencesSynced = false;
+  StreamSubscription<AuthState>? _authSubscription;
+  String? _activeAuthUserId;
 
   // Active filters
-  String _filterTimeframe = '30d'; // 'today', '7d', '30d', 'all'
+  String _filterTimeframe = 'all'; // 'today', '7d', '30d', 'all'
   String? _filterBatch;
   String? _filterDefectType;
   String? _filterStation;
@@ -40,7 +57,12 @@ class SupabaseService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get initError => _initError;
   List<InspectionRecord> get inspections => _filteredInspections();
-  DashboardStats? get stats => _stats;
+  List<InspectionRecord> get allInspections => List.unmodifiable(_inspections);
+  String? get inspectionError => _inspectionError;
+  List<InspectionAlert> get alerts => List.unmodifiable(_alerts);
+  bool get alertPreferencesSynced => _alertPreferencesSynced;
+  AnalyticsSnapshot? get analytics => _analytics;
+  String? get analyticsError => _analyticsError;
   String get filterTimeframe => _filterTimeframe;
   String? get filterBatch => _filterBatch;
   String? get filterDefectType => _filterDefectType;
@@ -51,7 +73,8 @@ class SupabaseService extends ChangeNotifier {
   int get batchTotal => _batchTotal;
   int get batchCurrent => _batchCurrent;
   String get batchCurrentName => _batchCurrentName;
-  double get batchProgress => _batchTotal > 0 ? (_batchCurrent / _batchTotal) : 0.0;
+  double get batchProgress =>
+      _batchTotal > 0 ? (_batchCurrent / _batchTotal) : 0.0;
 
   SupabaseService() {
     _initSupabase();
@@ -60,39 +83,61 @@ class SupabaseService extends ChangeNotifier {
   Future<void> _initSupabase() async {
     _isConnecting = true;
     notifyListeners();
-
     try {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseAnonKey,
-        realtimeClientOptions: const RealtimeClientOptions(
-          eventsPerSecond: 10,
-        ),
-      );
       _client = Supabase.instance.client;
       _isInitialized = true;
-      _setupRealtimeSubscriptions();
-    } catch (e) {
-      debugPrint('Supabase direct initialization note: $e');
-      // If already initialized or offline, try to get existing instance
-      try {
-        _client = Supabase.instance.client;
-        _isInitialized = true;
-        _setupRealtimeSubscriptions();
-      } catch (_) {
-        _initError = e.toString();
+      _authSubscription = _client!.auth.onAuthStateChange.listen(
+        _handleAuthState,
+      );
+      final session = _client!.auth.currentSession;
+      if (session != null) {
+        _activateAuthenticatedSession(session.user.id);
       }
+    } catch (e) {
+      _initError = e.toString();
+      debugPrint('Supabase client initialization failed: $e');
     } finally {
       _isConnecting = false;
-      await fetchInspections();
-      await fetchStats();
       notifyListeners();
     }
   }
 
+  void _handleAuthState(AuthState state) {
+    final userId = state.session?.user.id;
+    if (userId == null) {
+      _activeAuthUserId = null;
+      _inspectionChannel?.unsubscribe();
+      _inspectionChannel = null;
+      _defectChannel?.unsubscribe();
+      _defectChannel = null;
+      _inspectionChannel = null;
+      _notificationChannel?.unsubscribe();
+      _notificationChannel = null;
+      _inspections = [];
+      _inspectionError = null;
+      _alerts = [];
+      _analytics = null;
+      _analyticsError = null;
+      notifyListeners();
+      return;
+    }
+    _activateAuthenticatedSession(userId);
+  }
+
+  void _activateAuthenticatedSession(String userId) {
+    if (_activeAuthUserId == userId) return;
+    _activeAuthUserId = userId;
+    unawaited(_setupRealtimeSubscriptions());
+    _requestLocalAlertPermission();
+    fetchInspections();
+    fetchStats();
+  }
+
   /// Real-time subscription to inspection table updates
-  void _setupRealtimeSubscriptions() {
-    if (_client == null) return;
+  Future<void> _setupRealtimeSubscriptions() async {
+    if (_client?.auth.currentSession == null || _inspectionChannel != null) {
+      return;
+    }
 
     try {
       _inspectionChannel = _client!
@@ -108,14 +153,104 @@ class SupabaseService extends ChangeNotifier {
             },
           )
           .subscribe();
+      _defectChannel = _client!
+          .channel('public:defects')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'defects',
+            callback: (payload) {
+              debugPrint('Real-time defect event: ${payload.eventType}');
+              fetchInspections();
+              fetchStats();
+            },
+          )
+          .subscribe();
+      final notificationTable = await _resolveNotificationTable();
+      _notificationChannel = _client!
+          .channel('public:$notificationTable')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: notificationTable,
+            callback: (payload) {
+              if (payload.eventType == PostgresChangeEvent.insert) {
+                unawaited(_handleNewNotification(payload.newRecord));
+              } else {
+                unawaited(fetchAlerts());
+              }
+            },
+          )
+          .subscribe();
     } catch (e) {
       debugPrint('Error setting up realtime subscriptions: $e');
+    }
+  }
+
+  Future<String> _resolveNotificationTable() async {
+    if (_notificationTableName != null) return _notificationTableName!;
+    if (_client == null) throw StateError('Supabase is not connected.');
+    Object? lastError;
+    for (final table in ['notifs', 'notifications']) {
+      try {
+        await _client!.from(table).select('*').limit(1);
+        _notificationTableName = table;
+        return table;
+      } catch (error) {
+        lastError = error;
+        if (!_isMissingNotificationTable(error)) rethrow;
+      }
+    }
+    throw StateError(
+      'Neither public.notifs nor public.notifications is available: $lastError',
+    );
+  }
+
+  bool _isMissingNotificationTable(Object error) {
+    if (error is! PostgrestException) return false;
+    return error.code == '42P01' || error.code == 'PGRST205';
+  }
+
+  Future<void> _handleNewNotification(Map<String, dynamic> row) async {
+    try {
+      final refreshed = await fetchAlerts();
+      final alertId = (row['id'] ?? row['notification_id'] ?? row['notif_id'])
+          ?.toString();
+      InspectionAlert? alert;
+      for (final item in refreshed) {
+        if (item.id == alertId) alert = item;
+      }
+      if (alert == null || alert.isRead || alert.isResolved) return;
+      final preferences = await loadAlertPreferences();
+      if (!preferences.inAppEnabled) return;
+      final inspection = alert.inspection;
+      final critical = alert.severity.toLowerCase() == 'critical';
+      await LocalAlertNotifications.show(
+        title: alert.title,
+        message: alert.message,
+        inspectionId: critical ? inspection?.id : null,
+        annotatedImageUrl: critical ? inspection?.annotatedUrl : null,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Handling a new real-time alert failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  Future<void> _requestLocalAlertPermission() async {
+    try {
+      await LocalAlertNotifications.requestPermission();
+    } catch (e) {
+      debugPrint('Notification permission request failed: $e');
     }
   }
 
   @override
   void dispose() {
     _inspectionChannel?.unsubscribe();
+    _defectChannel?.unsubscribe();
+    _notificationChannel?.unsubscribe();
+    _authSubscription?.cancel();
     super.dispose();
   }
 
@@ -132,17 +267,15 @@ class SupabaseService extends ChangeNotifier {
     _filterDefectType = defectType;
     _filterStation = station;
     _filterStatus = status;
-    _recalculateStats();
     notifyListeners();
   }
 
   void resetFilters() {
-    _filterTimeframe = '30d';
+    _filterTimeframe = 'all';
     _filterBatch = null;
     _filterDefectType = null;
     _filterStation = null;
     _filterStatus = null;
-    _recalculateStats();
     notifyListeners();
   }
 
@@ -151,14 +284,21 @@ class SupabaseService extends ChangeNotifier {
       if (_filterStatus != null && item.finalStatus != _filterStatus) {
         return false;
       }
-      if (_filterBatch != null && _filterBatch != 'All' && item.batchNumber != _filterBatch) {
+      if (_filterBatch != null &&
+          _filterBatch != 'All' &&
+          item.batchNumber != _filterBatch) {
         return false;
       }
-      if (_filterStation != null && _filterStation != 'All' && item.stationId != _filterStation) {
+      if (_filterStation != null &&
+          _filterStation != 'All' &&
+          item.stationId != _filterStation) {
         return false;
       }
       if (_filterDefectType != null && _filterDefectType != 'All') {
-        final hasDefect = item.defects.any((d) => d.defectClass.toLowerCase() == _filterDefectType!.toLowerCase());
+        final hasDefect = item.defects.any(
+          (d) =>
+              d.defectClass.toLowerCase() == _filterDefectType!.toLowerCase(),
+        );
         if (!hasDefect) return false;
       }
       if (_filterTimeframe != 'all') {
@@ -174,168 +314,501 @@ class SupabaseService extends ChangeNotifier {
 
   /// Fetch inspections from Supabase directly
   Future<void> fetchInspections() async {
+    if (_client?.auth.currentSession == null) {
+      _inspections = [];
+      _inspectionError = null;
+      notifyListeners();
+      return;
+    }
     _isLoading = true;
+    _inspectionError = null;
     notifyListeners();
 
     try {
       if (_client != null) {
-        final response = await _client!
-            .from('inspections')
-            .select('*, defects(*), reviews(*)')
-            .order('captured_at', ascending: false)
-            .limit(50);
-
-        if (response.isNotEmpty) {
-          _inspections = (response as List<dynamic>)
-              .map((row) => InspectionRecord.fromJson(row as Map<String, dynamic>))
-              .toList();
-        } else {
-          _inspections = _generateEnterpriseFactoryData();
+        const pageSize = 1000;
+        final records = <InspectionRecord>[];
+        var offset = 0;
+        while (true) {
+          final page = await _client!
+              .from('inspections')
+              .select('*, defects(*)')
+              .order('captured_at', ascending: false)
+              .order('id')
+              .range(offset, offset + pageSize - 1);
+          records.addAll(
+            page.map(
+              (row) =>
+                  InspectionRecord.fromJson(Map<String, dynamic>.from(row)),
+            ),
+          );
+          if (page.length < pageSize) break;
+          offset += pageSize;
         }
+        _inspections = records;
+        _inspectionError = null;
       } else {
-        _inspections = _generateEnterpriseFactoryData();
+        _inspections = [];
       }
     } catch (e) {
-      debugPrint('Supabase fetch query note: $e, using verified enterprise dataset');
-      _inspections = _generateEnterpriseFactoryData();
+      debugPrint('Supabase fetch query failed: $e');
+      _inspections = [];
+      _inspectionError = e.toString();
     } finally {
       _isLoading = false;
-      _recalculateStats();
       notifyListeners();
     }
   }
 
   /// Fetch dashboard stats and metrics
   Future<void> fetchStats() async {
-    _recalculateStats();
+    if (_client?.auth.currentSession == null) {
+      _analytics = null;
+      _analyticsError = null;
+      notifyListeners();
+      return;
+    }
+    try {
+      if (_client == null) throw StateError('Supabase is not connected.');
+      final now = DateTime.now().toUtc();
+      final today = DateTime.utc(now.year, now.month, now.day);
+      final firstDay = today.subtract(const Duration(days: 29));
+      final trendStart = firstDay.toIso8601String();
+      final trendEnd = today.add(const Duration(days: 1)).toIso8601String();
+      final results = await Future.wait<Object>([
+        _client!.from('inspections').count(CountOption.exact),
+        _client!
+            .from('inspections')
+            .count(CountOption.exact)
+            .eq('status', 'PASS'),
+        _client!
+            .from('inspections')
+            .count(CountOption.exact)
+            .eq('status', 'FAIL'),
+        _client!.from('defects').count(CountOption.exact),
+        _readAnalyticsRows('defects', 'class, severity', orderBy: 'id'),
+        _readAnalyticsRows(
+          'inspections',
+          'captured_at, defects(id)',
+          orderBy: 'captured_at',
+          thenOrderBy: 'id',
+          capturedAtFrom: trendStart,
+          capturedAtBefore: trendEnd,
+        ),
+        _readAnalyticsRows('inspections', 'pcb_id', orderBy: 'id'),
+      ]);
+
+      final classCounts = <String, int>{};
+      final severityCounts = <String, int>{};
+      for (final defect in results[4] as List<Map<String, dynamic>>) {
+        final defectClass = defect['class']?.toString().trim();
+        final severity = defect['severity']?.toString().trim();
+        if (defectClass != null && defectClass.isNotEmpty) {
+          classCounts.update(
+            defectClass,
+            (count) => count + 1,
+            ifAbsent: () => 1,
+          );
+        }
+        if (severity != null && severity.isNotEmpty) {
+          severityCounts.update(
+            severity,
+            (count) => count + 1,
+            ifAbsent: () => 1,
+          );
+        }
+      }
+
+      final dailyCounts = <DateTime, int>{};
+      final dailyDefectCounts = <DateTime, int>{};
+      for (var offset = 0; offset < 30; offset++) {
+        final date = firstDay.add(Duration(days: offset));
+        dailyCounts[date] = 0;
+        dailyDefectCounts[date] = 0;
+      }
+      for (final row in results[5] as List<Map<String, dynamic>>) {
+        final capturedAt = DateTime.tryParse(
+          row['captured_at']?.toString() ?? '',
+        );
+        if (capturedAt == null) continue;
+        final stamp = capturedAt.toUtc();
+        final date = DateTime.utc(stamp.year, stamp.month, stamp.day);
+        if (dailyCounts.containsKey(date)) {
+          dailyCounts[date] = dailyCounts[date]! + 1;
+          final defects = row['defects'];
+          if (defects is List) {
+            dailyDefectCounts[date] = dailyDefectCounts[date]! + defects.length;
+          }
+        }
+      }
+
+      final pcbIds = <String>{};
+      for (final row in results[6] as List<Map<String, dynamic>>) {
+        final pcbId = row['pcb_id']?.toString().trim();
+        if (pcbId != null && pcbId.isNotEmpty) pcbIds.add(pcbId);
+      }
+      _analytics = AnalyticsSnapshot(
+        totalInspections: results[0] as int,
+        passCount: results[1] as int,
+        failCount: results[2] as int,
+        totalDefects: results[3] as int,
+        distinctPcbCount: pcbIds.length,
+        inspectionsLast30Days: dailyCounts.values.fold(
+          0,
+          (sum, count) => sum + count,
+        ),
+        defectsByClass: classCounts,
+        defectsBySeverity: severityCounts,
+        trend: dailyCounts.entries
+            .map(
+              (entry) => AnalyticsTrendPoint(
+                date: entry.key,
+                inspections: entry.value,
+                defects: dailyDefectCounts[entry.key] ?? 0,
+              ),
+            )
+            .toList(),
+      );
+      _analyticsError = null;
+    } catch (e, stackTrace) {
+      _analytics = null;
+      _analyticsError = e.toString();
+      debugPrint('Supabase analytics queries failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
     notifyListeners();
   }
 
-  void _recalculateStats() {
-    final activeList = _filteredInspections();
-    final total = activeList.length;
-    final passCount = activeList.where((i) => i.finalStatus == InspectionStatus.pass).length;
-    final failCount = total - passCount;
-    final yieldRate = total > 0 ? (passCount / total) * 100 : 98.4;
-    final defectRate = total > 0 ? (failCount / total) * 100 : 1.6;
+  Future<List<Map<String, dynamic>>> _readAnalyticsRows(
+    String table,
+    String columns, {
+    required String orderBy,
+    String? thenOrderBy,
+    String? capturedAtFrom,
+    String? capturedAtBefore,
+  }) async {
+    const pageSize = 1000;
+    final allRows = <Map<String, dynamic>>[];
+    var offset = 0;
+    while (true) {
+      dynamic query = _client!.from(table).select(columns);
+      if (capturedAtFrom != null) {
+        query = query.gte('captured_at', capturedAtFrom);
+      }
+      if (capturedAtBefore != null) {
+        query = query.lt('captured_at', capturedAtBefore);
+      }
+      query = query.order(orderBy);
+      if (thenOrderBy != null) query = query.order(thenOrderBy);
+      final page =
+          await query.range(offset, offset + pageSize - 1) as List<dynamic>;
+      allRows.addAll(page.map((row) => Map<String, dynamic>.from(row as Map)));
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
+    return allRows;
+  }
 
-    final Map<String, int> defectsByClass = {
-      'open': 0,
-      'short': 0,
-      'mousebite': 0,
-      'spur': 0,
-      'copper': 0,
-      'pinhole': 0,
-    };
+  Future<List<ModelSummary>> fetchModels() async {
+    if (_client?.auth.currentSession == null) {
+      throw StateError('Sign in before loading models.');
+    }
+    final rows = await _client!
+        .from('models')
+        .select('name, arch, map50, map50_95, precision, recall, f1, cpu_ms')
+        .order('name');
+    return rows
+        .map((row) => ModelSummary.fromJson(Map<String, dynamic>.from(row)))
+        .toList();
+  }
 
-    final Map<String, int> defectsBySeverity = {
-      'Minor': 0,
-      'Moderate': 0,
-      'Critical': 0,
-    };
+  Future<List<InspectionAlert>> fetchAlerts({int? criticalThreshold}) async {
+    if (_client?.auth.currentSession == null) {
+      throw StateError('Sign in before loading alerts.');
+    }
+    final table = await _resolveNotificationTable();
+    final rows = (await _client!.from(table).select('*').limit(500)).toList();
+    rows.sort((left, right) {
+      final leftRow = Map<String, dynamic>.from(left as Map);
+      final rightRow = Map<String, dynamic>.from(right as Map);
+      final leftDate = _notificationCreatedAt(leftRow);
+      final rightDate = _notificationCreatedAt(rightRow);
+      return rightDate.compareTo(leftDate);
+    });
+    _notificationsHaveResolved = false;
+    _notificationsHaveRead = false;
+    if (rows.isNotEmpty) {
+      final first = Map<String, dynamic>.from(rows.first as Map);
+      _notificationResolvedColumn = first.containsKey('resolved')
+          ? 'resolved'
+          : (first.containsKey('is_resolved') ? 'is_resolved' : null);
+      _notificationsHaveResolved = _notificationResolvedColumn != null;
+      _notificationReadColumn = first.containsKey('is_read')
+          ? 'is_read'
+          : (first.containsKey('read')
+                ? 'read'
+                : (first.containsKey('is_seen')
+                      ? 'is_seen'
+                      : (first.containsKey('seen') ? 'seen' : null)));
+      _notificationsHaveRead = _notificationReadColumn != null;
+    }
+    final localResolved = await _loadLocalResolvedAlertIds();
+    final localRead = await _loadLocalReadAlertIds();
 
-    int totalDefects = 0;
-    int criticalDefects = 0;
-    final List<DefectHeatmapPoint> heatmapPoints = [];
-    final List<double> confidences = [];
-
-    for (final insp in activeList) {
-      for (final d in insp.defects) {
-        totalDefects++;
-        confidences.add(d.confidence);
-
-        final cls = d.defectClass.toLowerCase();
-        defectsByClass[cls] = (defectsByClass[cls] ?? 0) + 1;
-
-        final sevStr = d.severity.value;
-        defectsBySeverity[sevStr] = (defectsBySeverity[sevStr] ?? 0) + 1;
-        if (d.severity == SeverityLevel.critical) criticalDefects++;
-
-        // Heatmap coordinate (normalized center of bounding box)
-        final centerX = (d.boxX1 + d.boxX2) / 2.0;
-        final centerY = (d.boxY1 + d.boxY2) / 2.0;
-        heatmapPoints.add(DefectHeatmapPoint(
-          normX: centerX.clamp(0.05, 0.95),
-          normY: centerY.clamp(0.05, 0.95),
-          weight: d.severity == SeverityLevel.critical ? 1.0 : (d.severity == SeverityLevel.moderate ? 0.6 : 0.3),
-          defectClass: d.defectClass,
-          severity: d.severity,
-        ));
+    final ids = rows
+        .map((row) {
+          final item = Map<String, dynamic>.from(row as Map);
+          return (item['inspection_id'] ?? item['inspectionId'])?.toString();
+        })
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    final Map<String, InspectionRecord> inspectionsById = {};
+    if (ids.isNotEmpty) {
+      final inspectionRows = await _client!
+          .from('inspections')
+          .select('*, defects(*)')
+          .inFilter('id', ids);
+      for (final row in inspectionRows) {
+        final inspection = InspectionRecord.fromJson(
+          Map<String, dynamic>.from(row),
+        );
+        inspectionsById[inspection.id] = inspection;
       }
     }
 
-    // Daily trend (last 7 days)
-    final List<TrendPoint> daily = [];
-    final now = DateTime.now();
-    for (int i = 6; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      final label = '${date.month}/${date.day}';
-      final dayInsps = activeList.where((ins) =>
-          ins.capturedAt.year == date.year &&
-          ins.capturedAt.month == date.month &&
-          ins.capturedAt.day == date.day).toList();
-      final insCount = dayInsps.isEmpty ? (12 + (i * 3) % 9) : dayInsps.length;
-      final defCount = dayInsps.isEmpty ? ((i % 3 == 0) ? 2 : 0) : dayInsps.fold(0, (sum, it) => sum + it.defects.length);
-      final rate = insCount > 0 ? (defCount / insCount) * 100 : 0.0;
-      daily.add(TrendPoint(label: label, inspections: insCount, defects: defCount, defectRate: rate));
+    final alerts = <InspectionAlert>[];
+    for (final rawRow in rows) {
+      final row = Map<String, dynamic>.from(rawRow as Map);
+      final rawId = row['id'] ?? row['notification_id'] ?? row['notif_id'];
+      final alertId = rawId?.toString() ?? '';
+      final id = (row['inspection_id'] ?? row['inspectionId'])?.toString();
+      final inspection = id == null ? null : inspectionsById[id];
+      if (criticalThreshold != null && inspection != null) {
+        final criticalCount = inspection.defects
+            .where((d) => d.severity == SeverityLevel.critical)
+            .length;
+        if (criticalCount < criticalThreshold) continue;
+      }
+      final isRead =
+          row['is_read'] == true ||
+          row['read'] == true ||
+          row['is_seen'] == true ||
+          row['seen'] == true ||
+          localRead.contains(alertId);
+      alerts.add(
+        InspectionAlert(
+          id: alertId,
+          title:
+              (row['title'] ?? row['subject'] ?? row['type'])?.toString() ??
+              'Inspection alert',
+          message:
+              (row['message'] ??
+                      row['body'] ??
+                      row['description'] ??
+                      row['details'])
+                  ?.toString() ??
+              '',
+          severity:
+              (row['severity'] ?? row['level'] ?? row['priority'])
+                  ?.toString() ??
+              'Info',
+          createdAt: _notificationCreatedAt(row),
+          isResolved:
+              row['resolved'] == true ||
+              row['is_resolved'] == true ||
+              localResolved.contains(alertId),
+          isRead: isRead,
+          inspection: inspection,
+        ),
+      );
     }
+    alerts.sort((a, b) {
+      if (a.isRead != b.isRead) return a.isRead ? 1 : -1;
+      return b.createdAt.compareTo(a.createdAt);
+    });
+    _alerts = alerts;
+    notifyListeners();
+    return alerts;
+  }
 
-    // Weekly trend (last 4 weeks)
-    final List<TrendPoint> weekly = [
-      TrendPoint(label: 'Wk 35', inspections: 240, defects: 6, defectRate: 2.5),
-      TrendPoint(label: 'Wk 36', inspections: 285, defects: 5, defectRate: 1.7),
-      TrendPoint(label: 'Wk 37', inspections: 310, defects: 4, defectRate: 1.2),
-      TrendPoint(label: 'Wk 38', inspections: 295, defects: 3, defectRate: 1.0),
-    ];
+  DateTime _notificationCreatedAt(Map<String, dynamic> row) =>
+      DateTime.tryParse(
+        (row['created_at'] ?? row['timestamp'] ?? row['inserted_at'])
+                ?.toString() ??
+            '',
+      ) ??
+      DateTime.fromMillisecondsSinceEpoch(0);
 
-    // Monthly trend (last 6 months)
-    final List<TrendPoint> monthly = [
-      TrendPoint(label: 'Apr', inspections: 1120, defects: 32, defectRate: 2.8),
-      TrendPoint(label: 'May', inspections: 1250, defects: 28, defectRate: 2.2),
-      TrendPoint(label: 'Jun', inspections: 1310, defects: 22, defectRate: 1.6),
-      TrendPoint(label: 'Jul', inspections: 1400, defects: 19, defectRate: 1.3),
-      TrendPoint(label: 'Aug', inspections: 1480, defects: 18, defectRate: 1.2),
-      TrendPoint(label: 'Sep', inspections: 1540, defects: 15, defectRate: 0.9),
-    ];
-
-    // Confidence distribution histogram bins
-    final List<ConfidenceBin> confidenceBins = [
-      ConfidenceBin(rangeLabel: '50-60%', count: 3, percentage: 7.5),
-      ConfidenceBin(rangeLabel: '60-70%', count: 6, percentage: 15.0),
-      ConfidenceBin(rangeLabel: '70-80%', count: 11, percentage: 27.5),
-      ConfidenceBin(rangeLabel: '80-90%', count: 14, percentage: 35.0),
-      ConfidenceBin(rangeLabel: '90-100%', count: 6, percentage: 15.0),
-    ];
-
-    final modelMetrics = ModelPerformanceMetrics(
-      map50: 0.942,
-      map50_95: 0.786,
-      precision: 0.958,
-      recall: 0.931,
-      f1Score: 0.944,
-      inferenceLatencyMs: 14.8,
-      activeModel: 'YOLOv8s-PCB-v2.4',
+  Future<void> resolveAlert(String alertId) async {
+    if (_client?.auth.currentSession == null) {
+      throw StateError('Sign in before resolving alerts.');
+    }
+    final resolvedIds = await _loadLocalResolvedAlertIds();
+    resolvedIds.add(alertId);
+    final userId = _client!.auth.currentUser!.id;
+    const storage = FlutterSecureStorage();
+    await storage.write(
+      key: 'resolved_alert_ids_$userId',
+      value: jsonEncode(resolvedIds.toList()),
     );
+    try {
+      final table = await _resolveNotificationTable();
+      if (_notificationsHaveResolved) {
+        await _client!
+            .from(table)
+            .update({_notificationResolvedColumn!: true})
+            .eq('id', alertId);
+      }
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Could not update notification state in Supabase; device state was saved: $error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    _alerts = _alerts
+        .map(
+          (alert) => alert.id == alertId
+              ? InspectionAlert(
+                  id: alert.id,
+                  title: alert.title,
+                  message: alert.message,
+                  severity: alert.severity,
+                  createdAt: alert.createdAt,
+                  isResolved: true,
+                  isRead: alert.isRead,
+                  inspection: alert.inspection,
+                )
+              : alert,
+        )
+        .toList();
+    notifyListeners();
+  }
 
-    _stats = DashboardStats(
-      totalInspections: total > 0 ? total : 1420,
-      passCount: total > 0 ? passCount : 1385,
-      failCount: total > 0 ? failCount : 35,
-      yieldRate: total > 0 ? yieldRate : 97.5,
-      defectRate: total > 0 ? defectRate : 2.5,
-      totalDefects: totalDefects > 0 ? totalDefects : 42,
-      criticalDefects: criticalDefects > 0 ? criticalDefects : 5,
-      pendingReviews: activeList.where((i) => i.reviewStatus == 'UNREVIEWED' || i.reviewStatus == 'PENDING').length,
-      activeAlerts: 2,
-      defectsByClass: defectsByClass,
-      defectsBySeverity: defectsBySeverity,
-      trendDaily: daily,
-      trendWeekly: weekly,
-      trendMonthly: monthly,
-      heatmapPoints: heatmapPoints.isNotEmpty ? heatmapPoints : _generateSeedHeatmap(),
-      confidenceDistribution: confidenceBins,
-      modelMetrics: modelMetrics,
+  Future<void> markAlertRead(String alertId) async {
+    if (_client?.auth.currentSession == null) {
+      throw StateError('Sign in before updating alerts.');
+    }
+    final readIds = await _loadLocalReadAlertIds();
+    readIds.add(alertId);
+    final userId = _client!.auth.currentUser!.id;
+    const storage = FlutterSecureStorage();
+    await storage.write(
+      key: 'read_alert_ids_$userId',
+      value: jsonEncode(readIds.toList()),
     );
+    try {
+      final table = await _resolveNotificationTable();
+      if (_notificationsHaveRead) {
+        await _client!
+            .from(table)
+            .update({_notificationReadColumn!: true})
+            .eq('id', alertId);
+      }
+    } catch (error) {
+      debugPrint('Could not persist alert read state to Supabase: $error');
+    }
+    _alerts = _alerts
+        .map(
+          (alert) => alert.id == alertId
+              ? InspectionAlert(
+                  id: alert.id,
+                  title: alert.title,
+                  message: alert.message,
+                  severity: alert.severity,
+                  createdAt: alert.createdAt,
+                  isResolved: alert.isResolved,
+                  isRead: true,
+                  inspection: alert.inspection,
+                )
+              : alert,
+        )
+        .toList();
+    notifyListeners();
+  }
+
+  Future<Set<String>> _loadLocalAlertIds(String prefix) async {
+    final userId = _client?.auth.currentUser?.id;
+    if (userId == null) return <String>{};
+    const storage = FlutterSecureStorage();
+    final saved = await storage.read(key: '${prefix}_alert_ids_$userId');
+    if (saved == null || saved.isEmpty) return <String>{};
+    try {
+      return (jsonDecode(saved) as List<dynamic>)
+          .map((id) => id.toString())
+          .toSet();
+    } catch (error) {
+      debugPrint('Could not read local alert history: $error');
+      return <String>{};
+    }
+  }
+
+  Future<Set<String>> _loadLocalResolvedAlertIds() =>
+      _loadLocalAlertIds('resolved');
+
+  Future<Set<String>> _loadLocalReadAlertIds() => _loadLocalAlertIds('read');
+
+  Future<int> loadCriticalAlertThreshold() async {
+    return (await loadAlertPreferences()).defectCountThreshold;
+  }
+
+  Future<void> saveCriticalAlertThreshold(int threshold) async {
+    final preferences = await loadAlertPreferences();
+    await saveAlertPreferences(
+      preferences.copyWith(
+        defectCountThreshold: threshold.clamp(1, 20).toInt(),
+      ),
+    );
+  }
+
+  Future<AlertPreferences> loadAlertPreferences() async {
+    final userId = _client?.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in to load alert preferences.');
+    try {
+      final row = await _client!
+          .from('notification_preferences')
+          .select(
+            'defect_count_threshold, defect_rate_threshold, in_app_enabled, email_enabled, sms_enabled',
+          )
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (row != null) return AlertPreferences.fromJson(row);
+    } catch (error) {
+      debugPrint('Could not load Supabase alert preferences: $error');
+    }
+    const storage = FlutterSecureStorage();
+    final saved = await storage.read(key: 'alert_preferences_$userId');
+    if (saved != null) {
+      try {
+        return AlertPreferences.fromJson(jsonDecode(saved));
+      } catch (error) {
+        debugPrint('Could not read saved alert preferences: $error');
+      }
+    }
+    return const AlertPreferences();
+  }
+
+  Future<void> saveAlertPreferences(AlertPreferences preferences) async {
+    final userId = _client?.auth.currentUser?.id;
+    if (userId == null) throw StateError('Sign in to save alert preferences.');
+    final payload = preferences.toJson(userId);
+    const storage = FlutterSecureStorage();
+    await storage.write(
+      key: 'alert_preferences_$userId',
+      value: jsonEncode(payload),
+    );
+    try {
+      await _client!
+          .from('notification_preferences')
+          .upsert(payload, onConflict: 'user_id');
+      _alertPreferencesSynced = true;
+    } catch (error) {
+      _alertPreferencesSynced = false;
+      debugPrint(
+        'Supabase alert preferences are not available; saved for this device and user: $error',
+      );
+    }
   }
 
   /// Submit an audit review for an inspection (Accept, Reject, Reclassify)
@@ -366,7 +839,7 @@ class SupabaseService extends ChangeNotifier {
     );
 
     // 1. Try updating Supabase directly
-    if (_client != null) {
+    if (_client?.auth.currentSession != null) {
       try {
         await _client!.from('reviews').insert({
           'inspection_id': inspectionId,
@@ -378,10 +851,15 @@ class SupabaseService extends ChangeNotifier {
           'notes': notes,
         });
 
-        await _client!.from('inspections').update({
-          'review_status': decision == ReviewDecision.confirm ? 'confirmed' : 'overridden',
-          'final_status': finalStatus.value,
-        }).eq('id', inspectionId);
+        await _client!
+            .from('inspections')
+            .update({
+              'review_status': decision == ReviewDecision.confirm
+                  ? 'confirmed'
+                  : 'overridden',
+              'final_status': finalStatus.value,
+            })
+            .eq('id', inspectionId);
 
         // Also record audit log in Supabase
         await _client!.from('audit_logs').insert({
@@ -389,7 +867,8 @@ class SupabaseService extends ChangeNotifier {
           'entity': 'inspections',
           'entity_id': inspectionId,
           'user_email': reviewerEmail,
-          'description': 'Decision: ${decision.label} - Justification: $justification',
+          'description':
+              'Decision: ${decision.label} - Justification: $justification',
         });
       } catch (e) {
         debugPrint('Supabase direct review submission note: $e');
@@ -402,7 +881,9 @@ class SupabaseService extends ChangeNotifier {
       final old = _inspections[index];
       List<DefectItem> updatedDefects = old.defects;
 
-      if (decision == ReviewDecision.reclassify && newDefectClass != null && defectId != null) {
+      if (decision == ReviewDecision.reclassify &&
+          newDefectClass != null &&
+          defectId != null) {
         updatedDefects = old.defects.map((d) {
           if (d.id == defectId) {
             return d.copyWith(
@@ -413,20 +894,26 @@ class SupabaseService extends ChangeNotifier {
           return d;
         }).toList();
       } else if (decision == ReviewDecision.overridePass) {
-        updatedDefects = old.defects.map((d) => d.copyWith(status: 'rejected_false_positive')).toList();
+        updatedDefects = old.defects
+            .map((d) => d.copyWith(status: 'rejected_false_positive'))
+            .toList();
       } else {
-        updatedDefects = old.defects.map((d) => d.copyWith(status: 'confirmed_defect')).toList();
+        updatedDefects = old.defects
+            .map((d) => d.copyWith(status: 'confirmed_defect'))
+            .toList();
       }
 
-      final updatedReviews = List<ReviewRecord>.from(old.reviews)..insert(0, review);
+      final updatedReviews = List<ReviewRecord>.from(old.reviews)
+        ..insert(0, review);
       _inspections[index] = old.copyWith(
         finalStatus: finalStatus,
-        reviewStatus: decision == ReviewDecision.confirm ? 'CONFIRMED' : 'OVERRIDDEN',
+        reviewStatus: decision == ReviewDecision.confirm
+            ? 'CONFIRMED'
+            : 'OVERRIDDEN',
         defects: updatedDefects,
         reviews: updatedReviews,
       );
 
-      _recalculateStats();
       notifyListeners();
     }
 
@@ -455,9 +942,8 @@ class SupabaseService extends ChangeNotifier {
         source: boardNames[i],
         model: 'yolov8s-pcb-v2.4',
         status: hasDefect ? InspectionStatus.fail : InspectionStatus.pass,
-        imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+        imageUrl: '',
+        annotatedUrl: '',
         stationId: 'STATION-01',
         batchNumber: 'BATCH-2026-LIVE',
         reviewStatus: hasDefect ? 'UNREVIEWED' : 'CONFIRMED',
@@ -466,14 +952,16 @@ class SupabaseService extends ChangeNotifier {
             ? [
                 DefectItem(
                   id: 'def_b_$i',
-                  defectClass: i % 4 == 0 ? 'mousebite' : (i % 3 == 0 ? 'spur' : 'short'),
+                  defectClass: i % 4 == 0
+                      ? 'mousebite'
+                      : (i % 3 == 0 ? 'spur' : 'short'),
                   confidence: 0.92,
                   severity: SeverityLevel.moderate,
                   boxX1: 0.25 + (i * 0.1) % 0.4,
                   boxY1: 0.30 + (i * 0.1) % 0.3,
                   boxX2: 0.40 + (i * 0.1) % 0.4,
                   boxY2: 0.45 + (i * 0.1) % 0.3,
-                )
+                ),
               ]
             : [],
         reviews: [],
@@ -482,7 +970,7 @@ class SupabaseService extends ChangeNotifier {
       _inspections.insert(0, newRecord);
 
       // Store in Supabase if online
-      if (_client != null) {
+      if (_client?.auth.currentSession != null) {
         try {
           await _client!.from('inspections').insert({
             'source': newRecord.source,
@@ -499,232 +987,10 @@ class SupabaseService extends ChangeNotifier {
     _batchTotal = 0;
     _batchCurrent = 0;
     _batchCurrentName = '';
-    _recalculateStats();
     notifyListeners();
   }
 
   /// Generate seed heatmap points
-  List<DefectHeatmapPoint> _generateSeedHeatmap() {
-    return [
-      DefectHeatmapPoint(normX: 0.32, normY: 0.28, weight: 1.0, defectClass: 'short', severity: SeverityLevel.critical),
-      DefectHeatmapPoint(normX: 0.34, normY: 0.30, weight: 0.9, defectClass: 'short', severity: SeverityLevel.critical),
-      DefectHeatmapPoint(normX: 0.68, normY: 0.45, weight: 0.7, defectClass: 'open', severity: SeverityLevel.moderate),
-      DefectHeatmapPoint(normX: 0.18, normY: 0.72, weight: 0.5, defectClass: 'mousebite', severity: SeverityLevel.minor),
-      DefectHeatmapPoint(normX: 0.82, normY: 0.22, weight: 0.8, defectClass: 'spur', severity: SeverityLevel.moderate),
-      DefectHeatmapPoint(normX: 0.50, normY: 0.85, weight: 0.4, defectClass: 'copper', severity: SeverityLevel.minor),
-      DefectHeatmapPoint(normX: 0.45, normY: 0.60, weight: 0.6, defectClass: 'pinhole', severity: SeverityLevel.minor),
-      DefectHeatmapPoint(normX: 0.25, normY: 0.52, weight: 0.75, defectClass: 'short', severity: SeverityLevel.moderate),
-      DefectHeatmapPoint(normX: 0.60, normY: 0.78, weight: 0.85, defectClass: 'open', severity: SeverityLevel.critical),
-    ];
-  }
-
   /// High-fidelity enterprise PCB factory inspection data
-  List<InspectionRecord> _generateEnterpriseFactoryData() {
-    final now = DateTime.now();
-
-    return [
-      InspectionRecord(
-        id: 'INSP-2026-0891',
-        capturedAt: now.subtract(const Duration(minutes: 8)),
-        source: 'CAM_ST01_BOARD_A9821.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.fail,
-        imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-01',
-        batchNumber: 'BATCH-2026-A1',
-        reviewStatus: 'UNREVIEWED',
-        finalStatus: InspectionStatus.fail,
-        defects: [
-          DefectItem(
-            id: 'DEF-01-A',
-            defectClass: 'short',
-            confidence: 0.942,
-            severity: SeverityLevel.critical,
-            boxX1: 0.28,
-            boxY1: 0.24,
-            boxX2: 0.42,
-            boxY2: 0.38,
-          ),
-          DefectItem(
-            id: 'DEF-01-B',
-            defectClass: 'spur',
-            confidence: 0.885,
-            severity: SeverityLevel.moderate,
-            boxX1: 0.64,
-            boxY1: 0.48,
-            boxX2: 0.74,
-            boxY2: 0.58,
-          ),
-        ],
-        reviews: [],
-        pcbId: 'PCB-2026-A9821',
-        imageIndex: 1,
-      ),
-      InspectionRecord(
-        id: 'INSP-2026-0890',
-        capturedAt: now.subtract(const Duration(minutes: 24)),
-        source: 'CAM_ST02_BOARD_B1042.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.fail,
-        imageUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-02',
-        batchNumber: 'BATCH-2026-A1',
-        reviewStatus: 'CONFIRMED',
-        finalStatus: InspectionStatus.fail,
-        defects: [
-          DefectItem(
-            id: 'DEF-02-A',
-            defectClass: 'open',
-            confidence: 0.961,
-            severity: SeverityLevel.critical,
-            boxX1: 0.45,
-            boxY1: 0.32,
-            boxX2: 0.58,
-            boxY2: 0.44,
-          ),
-        ],
-        reviews: [
-          ReviewRecord(
-            id: 'REV-0890-1',
-            inspectionId: 'INSP-2026-0890',
-            automatedResult: 'FAIL',
-            reviewDecision: 'CONFIRM',
-            finalResult: 'FAIL',
-            reviewerEmail: 'lead.engineer@pcb-vision.ai',
-            justification: 'Confirmed broken copper trace between Pad 12 and Capacitor C4.',
-            createdAt: now.subtract(const Duration(minutes: 15)),
-          ),
-        ],
-        pcbId: 'PCB-2026-B1042',
-        imageIndex: 1,
-      ),
-      InspectionRecord(
-        id: 'INSP-2026-0889',
-        capturedAt: now.subtract(const Duration(minutes: 42)),
-        source: 'CAM_ST01_BOARD_C4910.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.pass,
-        imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-01',
-        batchNumber: 'BATCH-2026-B2',
-        reviewStatus: 'CONFIRMED',
-        finalStatus: InspectionStatus.pass,
-        defects: [],
-        reviews: [],
-        pcbId: 'PCB-2026-C4910',
-        imageIndex: 1,
-      ),
-      InspectionRecord(
-        id: 'INSP-2026-0888',
-        capturedAt: now.subtract(const Duration(hours: 1, minutes: 12)),
-        source: 'CAM_ST03_BOARD_D8372.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.fail,
-        imageUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-03',
-        batchNumber: 'BATCH-2026-B2',
-        reviewStatus: 'OVERRIDDEN',
-        finalStatus: InspectionStatus.pass,
-        defects: [
-          DefectItem(
-            id: 'DEF-03-A',
-            defectClass: 'mousebite',
-            confidence: 0.672,
-            severity: SeverityLevel.minor,
-            boxX1: 0.15,
-            boxY1: 0.65,
-            boxX2: 0.25,
-            boxY2: 0.75,
-            status: 'rejected_false_positive',
-          ),
-        ],
-        reviews: [
-          ReviewRecord(
-            id: 'REV-0888-1',
-            inspectionId: 'INSP-2026-0888',
-            automatedResult: 'FAIL',
-            reviewDecision: 'OVERRIDE_PASS',
-            finalResult: 'PASS',
-            reviewerEmail: 'lead.engineer@pcb-vision.ai',
-            justification: 'Superficial solder mask discoloration; trace width and clearance within IPC Class 3 tolerance.',
-            createdAt: now.subtract(const Duration(minutes: 50)),
-          ),
-        ],
-        pcbId: 'PCB-2026-D8372',
-        imageIndex: 2,
-      ),
-      InspectionRecord(
-        id: 'INSP-2026-0887',
-        capturedAt: now.subtract(const Duration(hours: 2, minutes: 5)),
-        source: 'CAM_ST02_BOARD_E2301.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.pass,
-        imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-02',
-        batchNumber: 'BATCH-2026-C3',
-        reviewStatus: 'CONFIRMED',
-        finalStatus: InspectionStatus.pass,
-        defects: [],
-        reviews: [],
-        pcbId: 'PCB-2026-E2301',
-        imageIndex: 1,
-      ),
-      InspectionRecord(
-        id: 'INSP-2026-0886',
-        capturedAt: now.subtract(const Duration(hours: 3, minutes: 40)),
-        source: 'CAM_ST01_BOARD_F9012.png',
-        model: 'yolov8s-pcb-v2.4',
-        status: InspectionStatus.fail,
-        imageUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        annotatedUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        goldenReferenceUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=800&q=80',
-        stationId: 'STATION-01',
-        batchNumber: 'BATCH-2026-C3',
-        reviewStatus: 'UNREVIEWED',
-        finalStatus: InspectionStatus.fail,
-        defects: [
-          DefectItem(
-            id: 'DEF-06-A',
-            defectClass: 'pinhole',
-            confidence: 0.891,
-            severity: SeverityLevel.minor,
-            boxX1: 0.52,
-            boxY1: 0.60,
-            boxX2: 0.60,
-            boxY2: 0.68,
-          ),
-          DefectItem(
-            id: 'DEF-06-B',
-            defectClass: 'copper',
-            confidence: 0.814,
-            severity: SeverityLevel.moderate,
-            boxX1: 0.70,
-            boxY1: 0.20,
-            boxX2: 0.82,
-            boxY2: 0.32,
-          ),
-        ],
-        reviews: [],
-        pcbId: 'PCB-2026-F9012',
-        imageIndex: 1,
-      ),
-    ];
-  }
-
-  /// Request password reset via Supabase Auth GoTrue service
-  Future<void> resetPasswordForEmail(String email) async {
-    final client = _client ?? Supabase.instance.client;
-    await client.auth.resetPasswordForEmail(email.trim());
-  }
 }
 

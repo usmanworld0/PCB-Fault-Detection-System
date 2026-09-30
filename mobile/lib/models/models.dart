@@ -33,7 +33,7 @@ extension UserRoleExt on UserRole {
   bool get isReadOnly => this == UserRole.viewer;
 
   static UserRole fromString(String? role) {
-    switch (role?.toLowerCase()) {
+    switch (role?.trim().toLowerCase().replaceAll('_', ' ')) {
       case 'admin':
         return UserRole.admin;
       case 'engineer':
@@ -53,7 +53,6 @@ class UserProfile {
   final UserRole role;
   final String name;
   final String? avatarUrl;
-  final DateTime? sessionExpiresAt;
 
   UserProfile({
     required this.id,
@@ -61,33 +60,7 @@ class UserProfile {
     required this.role,
     required this.name,
     this.avatarUrl,
-    this.sessionExpiresAt,
   });
-
-  bool get isSessionExpired =>
-      sessionExpiresAt != null && DateTime.now().isAfter(sessionExpiresAt!);
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'email': email,
-        'role': role.value,
-        'name': name,
-        'avatar_url': avatarUrl,
-        'session_expires_at': sessionExpiresAt?.toIso8601String(),
-      };
-
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      id: json['id'] ?? 'user-default',
-      email: json['email'] ?? 'operator@pcb-vision.ai',
-      role: UserRoleExt.fromString(json['role']),
-      name: json['name'] ?? (json['email'] != null ? json['email'].toString().split('@').first : 'Inspector'),
-      avatarUrl: json['avatar_url'],
-      sessionExpiresAt: json['session_expires_at'] != null
-          ? DateTime.tryParse(json['session_expires_at'])
-          : null,
-    );
-  }
 }
 
 /// Inspection status enum
@@ -97,7 +70,9 @@ extension InspectionStatusExt on InspectionStatus {
   String get value => this == InspectionStatus.pass ? 'PASS' : 'FAIL';
 
   static InspectionStatus fromString(String? val) {
-    return (val?.toUpperCase() == 'PASS') ? InspectionStatus.pass : InspectionStatus.fail;
+    return (val?.toUpperCase() == 'PASS')
+        ? InspectionStatus.pass
+        : InspectionStatus.fail;
   }
 }
 
@@ -129,12 +104,7 @@ extension SeverityLevelExt on SeverityLevel {
 }
 
 /// Review decision
-enum ReviewDecision {
-  confirm,
-  overridePass,
-  overrideFail,
-  reclassify,
-}
+enum ReviewDecision { confirm, overridePass, overrideFail, reclassify }
 
 extension ReviewDecisionExt on ReviewDecision {
   String get value {
@@ -193,27 +163,37 @@ class DefectItem {
     return DefectItem(
       id: json['id']?.toString() ?? UniqueKey().toString(),
       defectClass: (json['class'] ?? json['cls'] ?? 'defect').toString(),
-      confidence: (json['confidence'] is num) ? (json['confidence'] as num).toDouble() : 0.88,
+      confidence: (json['confidence'] is num)
+          ? (json['confidence'] as num).toDouble()
+          : 0.88,
       severity: SeverityLevelExt.fromString(json['severity']?.toString()),
-      boxX1: (json['box_x1'] is num) ? (json['box_x1'] as num).toDouble() : (box != null && box.isNotEmpty ? (box[0] as num).toDouble() : 0.1),
-      boxY1: (json['box_y1'] is num) ? (json['box_y1'] as num).toDouble() : (box != null && box.length > 1 ? (box[1] as num).toDouble() : 0.1),
-      boxX2: (json['box_x2'] is num) ? (json['box_x2'] as num).toDouble() : (box != null && box.length > 2 ? (box[2] as num).toDouble() : 0.3),
-      boxY2: (json['box_y2'] is num) ? (json['box_y2'] as num).toDouble() : (box != null && box.length > 3 ? (box[3] as num).toDouble() : 0.3),
+      boxX1: (json['box_x1'] is num)
+          ? (json['box_x1'] as num).toDouble()
+          : (box != null && box.isNotEmpty ? (box[0] as num).toDouble() : 0.1),
+      boxY1: (json['box_y1'] is num)
+          ? (json['box_y1'] as num).toDouble()
+          : (box != null && box.length > 1 ? (box[1] as num).toDouble() : 0.1),
+      boxX2: (json['box_x2'] is num)
+          ? (json['box_x2'] as num).toDouble()
+          : (box != null && box.length > 2 ? (box[2] as num).toDouble() : 0.3),
+      boxY2: (json['box_y2'] is num)
+          ? (json['box_y2'] as num).toDouble()
+          : (box != null && box.length > 3 ? (box[3] as num).toDouble() : 0.3),
       status: json['status']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'class': defectClass,
-        'confidence': confidence,
-        'severity': severity.value,
-        'box_x1': boxX1,
-        'box_y1': boxY1,
-        'box_x2': boxX2,
-        'box_y2': boxY2,
-        'status': status,
-      };
+    'id': id,
+    'class': defectClass,
+    'confidence': confidence,
+    'severity': severity.value,
+    'box_x1': boxX1,
+    'box_y1': boxY1,
+    'box_x2': boxX2,
+    'box_y2': boxY2,
+    'status': status,
+  };
 
   DefectItem copyWith({
     String? defectClass,
@@ -266,7 +246,8 @@ class ReviewRecord {
       automatedResult: json['automated_result']?.toString() ?? 'FAIL',
       reviewDecision: json['review_decision']?.toString() ?? 'CONFIRM',
       finalResult: json['final_result']?.toString() ?? 'FAIL',
-      reviewerEmail: json['reviewer_email']?.toString() ?? 'reviewer@example.com',
+      reviewerEmail:
+          json['reviewer_email']?.toString() ?? 'reviewer@example.com',
       justification: json['justification']?.toString() ?? '',
       notes: json['notes']?.toString(),
       createdAt: json['created_at'] != null
@@ -276,28 +257,31 @@ class ReviewRecord {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'inspection_id': inspectionId,
-        'automated_result': automatedResult,
-        'review_decision': reviewDecision,
-        'final_result': finalResult,
-        'reviewer_email': reviewerEmail,
-        'justification': justification,
-        'notes': notes,
-        'created_at': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'inspection_id': inspectionId,
+    'automated_result': automatedResult,
+    'review_decision': reviewDecision,
+    'final_result': finalResult,
+    'reviewer_email': reviewerEmail,
+    'justification': justification,
+    'notes': notes,
+    'created_at': createdAt.toIso8601String(),
+  };
 }
 
 /// Complete inspection record
 class InspectionRecord {
   final String id;
+  final String? pcbId;
+  final int? imageIndex;
   final DateTime capturedAt;
   final String source;
   final String model;
+  final String? operatorEmail;
+  final String? operatorRole;
   final InspectionStatus status;
   final String imageUrl;
   final String annotatedUrl;
-  final String? goldenReferenceUrl;
   final String stationId;
   final String batchNumber;
   final String reviewStatus;
@@ -309,13 +293,16 @@ class InspectionRecord {
 
   InspectionRecord({
     required this.id,
+    this.pcbId,
+    this.imageIndex,
     required this.capturedAt,
     required this.source,
     required this.model,
+    this.operatorEmail,
+    this.operatorRole,
     required this.status,
     required this.imageUrl,
     required this.annotatedUrl,
-    this.goldenReferenceUrl,
     required this.stationId,
     required this.batchNumber,
     required this.reviewStatus,
@@ -327,12 +314,14 @@ class InspectionRecord {
   });
 
   factory InspectionRecord.fromJson(Map<String, dynamic> json) {
-    final defectList = (json['defects'] as List<dynamic>?)
+    final defectList =
+        (json['defects'] as List<dynamic>?)
             ?.map((d) => DefectItem.fromJson(d as Map<String, dynamic>))
             .toList() ??
         [];
 
-    final reviewList = (json['reviews'] as List<dynamic>?)
+    final reviewList =
+        (json['reviews'] as List<dynamic>?)
             ?.map((r) => ReviewRecord.fromJson(r as Map<String, dynamic>))
             .toList() ??
         [];
@@ -343,17 +332,22 @@ class InspectionRecord {
 
     return InspectionRecord(
       id: json['id']?.toString() ?? '',
+      pcbId: json['pcb_id']?.toString(),
+      imageIndex: (json['image_index'] as num?)?.toInt(),
       capturedAt: captured,
       source: json['source'] ?? json['source_image_name'] ?? 'capture.jpg',
       model: json['model'] ?? 'yolov8s-pcb',
+      operatorEmail: json['operator_email']?.toString(),
+      operatorRole: json['operator_role']?.toString(),
       status: InspectionStatusExt.fromString(json['status']?.toString()),
-      imageUrl: json['image_url'] ?? json['image_path'] ?? '',
-      annotatedUrl: json['annotated_url'] ?? json['annotated_image_path'] ?? json['image_url'] ?? '',
-      goldenReferenceUrl: json['golden_reference_url'] ?? 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+      imageUrl: json['image_url']?.toString() ?? '',
+      annotatedUrl: json['annotated_url']?.toString() ?? '',
       stationId: json['station_id'] ?? 'STATION-01',
-      batchNumber: json['batch_number'] ?? 'BATCH-2026-A1',
+      batchNumber: json['batch_number']?.toString() ?? '',
       reviewStatus: json['review_status'] ?? 'UNREVIEWED',
-      finalStatus: InspectionStatusExt.fromString(json['final_status']?.toString() ?? json['status']?.toString()),
+      finalStatus: InspectionStatusExt.fromString(
+        json['final_status']?.toString() ?? json['status']?.toString(),
+      ),
       defects: defectList,
       reviews: reviewList,
       pcbId: json['pcb_id']?.toString(),
@@ -390,13 +384,16 @@ class InspectionRecord {
   }) {
     return InspectionRecord(
       id: id,
+      pcbId: pcbId,
+      imageIndex: imageIndex,
       capturedAt: capturedAt,
       source: source,
       model: model,
+      operatorEmail: operatorEmail,
+      operatorRole: operatorRole,
       status: status,
       imageUrl: imageUrl,
       annotatedUrl: annotatedUrl,
-      goldenReferenceUrl: goldenReferenceUrl,
       stationId: stationId,
       batchNumber: batchNumber,
       reviewStatus: reviewStatus ?? this.reviewStatus,
@@ -407,6 +404,155 @@ class InspectionRecord {
       imageIndex: imageIndex ?? this.imageIndex,
     );
   }
+}
+
+/// Database-computed values for the analytics home screen.
+class AnalyticsSnapshot {
+  final int totalInspections;
+  final int passCount;
+  final int failCount;
+  final int totalDefects;
+  final int distinctPcbCount;
+  final int inspectionsLast30Days;
+  final Map<String, int> defectsByClass;
+  final Map<String, int> defectsBySeverity;
+  final List<AnalyticsTrendPoint> trend;
+
+  const AnalyticsSnapshot({
+    required this.totalInspections,
+    required this.passCount,
+    required this.failCount,
+    required this.totalDefects,
+    required this.distinctPcbCount,
+    required this.inspectionsLast30Days,
+    required this.defectsByClass,
+    required this.defectsBySeverity,
+    required this.trend,
+  });
+}
+
+class AnalyticsTrendPoint {
+  final DateTime date;
+  final int inspections;
+  final int defects;
+
+  const AnalyticsTrendPoint({
+    required this.date,
+    required this.inspections,
+    required this.defects,
+  });
+
+  factory AnalyticsTrendPoint.fromJson(Map<String, dynamic> json) =>
+      AnalyticsTrendPoint(
+        date:
+            DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+        inspections: (json['inspections'] as num? ?? 0).toInt(),
+        defects: (json['defects'] as num? ?? 0).toInt(),
+      );
+}
+
+class InspectionAlert {
+  final String id;
+  final String title;
+  final String message;
+  final String severity;
+  final DateTime createdAt;
+  final bool isResolved;
+  final bool isRead;
+  final InspectionRecord? inspection;
+
+  const InspectionAlert({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.severity,
+    required this.createdAt,
+    required this.isResolved,
+    required this.isRead,
+    required this.inspection,
+  });
+}
+
+class AlertPreferences {
+  final int defectCountThreshold;
+  final double defectRateThreshold;
+  final bool inAppEnabled;
+  final bool emailEnabled;
+  final bool smsEnabled;
+
+  const AlertPreferences({
+    this.defectCountThreshold = 1,
+    this.defectRateThreshold = 0.05,
+    this.inAppEnabled = true,
+    this.emailEnabled = false,
+    this.smsEnabled = false,
+  });
+
+  factory AlertPreferences.fromJson(Map<String, dynamic> json) =>
+      AlertPreferences(
+        defectCountThreshold:
+            (json['defect_count_threshold'] as num?)?.toInt() ?? 1,
+        defectRateThreshold:
+            (json['defect_rate_threshold'] as num?)?.toDouble() ?? 0.05,
+        inAppEnabled: true,
+        emailEnabled: json['email_enabled'] == true,
+        smsEnabled: json['sms_enabled'] == true,
+      );
+
+  Map<String, dynamic> toJson(String userId) => {
+    'user_id': userId,
+    'defect_count_threshold': defectCountThreshold,
+    'defect_rate_threshold': defectRateThreshold,
+    'in_app_enabled': true,
+    'email_enabled': emailEnabled,
+    'sms_enabled': smsEnabled,
+  };
+
+  AlertPreferences copyWith({
+    int? defectCountThreshold,
+    double? defectRateThreshold,
+    bool? emailEnabled,
+    bool? smsEnabled,
+  }) => AlertPreferences(
+    defectCountThreshold: defectCountThreshold ?? this.defectCountThreshold,
+    defectRateThreshold: defectRateThreshold ?? this.defectRateThreshold,
+    inAppEnabled: true,
+    emailEnabled: emailEnabled ?? this.emailEnabled,
+    smsEnabled: smsEnabled ?? this.smsEnabled,
+  );
+}
+
+class ModelSummary {
+  final String name;
+  final String? architecture;
+  final double? map50;
+  final double? map50_95;
+  final double? precision;
+  final double? recall;
+  final double? f1;
+  final double? inferenceTimeMs;
+
+  const ModelSummary({
+    required this.name,
+    required this.architecture,
+    required this.map50,
+    required this.map50_95,
+    required this.precision,
+    required this.recall,
+    required this.f1,
+    required this.inferenceTimeMs,
+  });
+
+  factory ModelSummary.fromJson(Map<String, dynamic> json) => ModelSummary(
+    name: json['name']?.toString() ?? 'Unnamed model',
+    architecture: (json['arch'] ?? json['architecture'])?.toString(),
+    map50: (json['map50'] as num?)?.toDouble(),
+    map50_95: ((json['map50_95'] ?? json['map50-95']) as num?)?.toDouble(),
+    precision: (json['precision'] as num?)?.toDouble(),
+    recall: (json['recall'] as num?)?.toDouble(),
+    f1: (json['f1'] as num?)?.toDouble(),
+    inferenceTimeMs: (json['cpu_ms'] as num?)?.toDouble(),
+  );
 }
 
 /// Aggregated system statistics
@@ -516,5 +662,6 @@ class ModelPerformanceMetrics {
 class UniqueKey {
   static int _counter = 0;
   @override
-  String toString() => 'item_${DateTime.now().millisecondsSinceEpoch}_${++_counter}';
+  String toString() =>
+      'item_${DateTime.now().millisecondsSinceEpoch}_${++_counter}';
 }

@@ -7,11 +7,7 @@ class PcbHeatmapView extends StatefulWidget {
   final List<DefectHeatmapPoint> points;
   final double height;
 
-  const PcbHeatmapView({
-    super.key,
-    required this.points,
-    this.height = 240,
-  });
+  const PcbHeatmapView({super.key, required this.points, this.height = 240});
 
   @override
   State<PcbHeatmapView> createState() => _PcbHeatmapViewState();
@@ -53,7 +49,8 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
                 DefectHeatmapPoint? closest;
                 double minDist = 0.12;
                 for (final p in widget.points) {
-                  final dist = (p.normX - normX).abs() + (p.normY - normY).abs();
+                  final dist =
+                      (p.normX - normX).abs() + (p.normY - normY).abs();
                   if (dist < minDist) {
                     minDist = dist;
                     closest = p;
@@ -66,7 +63,10 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
             },
             child: CustomPaint(
               size: Size.infinite,
-              painter: _PcbHeatmapPainter(points: widget.points, selectedPoint: _selectedPoint),
+              painter: _PcbHeatmapPainter(
+                points: widget.points,
+                selectedPoint: _selectedPoint,
+              ),
             ),
           ),
 
@@ -83,7 +83,11 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.blur_circular, size: 12, color: Color(0xFF34D399)),
+                  const Icon(
+                    Icons.blur_circular,
+                    size: 12,
+                    color: Color(0xFF34D399),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'DEFECT DENSITY HEATMAP — BOARD REV 2.4',
@@ -104,7 +108,10 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
               bottom: 10,
               left: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.industrial900,
                   borderRadius: BorderRadius.circular(6),
@@ -117,7 +124,8 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _selectedPoint!.severity == SeverityLevel.critical
+                        color:
+                            _selectedPoint!.severity == SeverityLevel.critical
                             ? AppColors.qaFail
                             : AppColors.qaWarning,
                         shape: BoxShape.circle,
@@ -135,7 +143,11 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
                     const SizedBox(width: 6),
                     GestureDetector(
                       onTap: () => setState(() => _selectedPoint = null),
-                      child: const Icon(Icons.close, size: 12, color: Colors.white70),
+                      child: const Icon(
+                        Icons.close,
+                        size: 12,
+                        color: Colors.white70,
+                      ),
                     ),
                   ],
                 ),
@@ -181,7 +193,10 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
         const SizedBox(width: 3),
         Text(
           label,
-          style: AppTypography.mono.copyWith(fontSize: 8, color: Colors.white70),
+          style: AppTypography.mono.copyWith(
+            fontSize: 8,
+            color: Colors.white70,
+          ),
         ),
       ],
     );
@@ -222,7 +237,11 @@ class _PcbHeatmapPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // IC package 1 (Microcontroller)
-    final ic1 = Rect.fromCenter(center: Offset(w * 0.35, h * 0.45), width: w * 0.22, height: h * 0.35);
+    final ic1 = Rect.fromCenter(
+      center: Offset(w * 0.35, h * 0.45),
+      width: w * 0.22,
+      height: h * 0.35,
+    );
     canvas.drawRect(ic1, tracePaint);
     for (double py = ic1.top + 6; py < ic1.bottom; py += 10) {
       canvas.drawCircle(Offset(ic1.left - 4, py), 1.8, padPaint);
@@ -230,12 +249,24 @@ class _PcbHeatmapPainter extends CustomPainter {
     }
 
     // IC package 2 (Power Regulator)
-    final ic2 = Rect.fromCenter(center: Offset(w * 0.75, h * 0.55), width: w * 0.16, height: h * 0.28);
+    final ic2 = Rect.fromCenter(
+      center: Offset(w * 0.75, h * 0.55),
+      width: w * 0.16,
+      height: h * 0.28,
+    );
     canvas.drawRect(ic2, tracePaint);
 
     // Traces
-    canvas.drawLine(Offset(ic1.right, ic1.top + 10), Offset(ic2.left, ic2.top + 10), tracePaint);
-    canvas.drawLine(Offset(ic1.right, ic1.top + 25), Offset(ic2.left, ic2.top + 25), tracePaint);
+    canvas.drawLine(
+      Offset(ic1.right, ic1.top + 10),
+      Offset(ic2.left, ic2.top + 10),
+      tracePaint,
+    );
+    canvas.drawLine(
+      Offset(ic1.right, ic1.top + 25),
+      Offset(ic2.left, ic2.top + 25),
+      tracePaint,
+    );
 
     // 3. Draw Heatmap density hotspots
     for (final p in points) {
@@ -288,6 +319,7 @@ class _PcbHeatmapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PcbHeatmapPainter oldDelegate) {
-    return oldDelegate.points != points || oldDelegate.selectedPoint != selectedPoint;
+    return oldDelegate.points != points ||
+        oldDelegate.selectedPoint != selectedPoint;
   }
 }

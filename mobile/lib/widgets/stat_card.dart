@@ -37,10 +37,15 @@ class StatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label.toUpperCase(),
-                style: AppTypography.label.copyWith(fontSize: 10),
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppTypography.label.copyWith(fontSize: 10),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 6),
               Container(
                 width: 28,
                 height: 28,
@@ -48,19 +53,12 @@ class StatCard extends StatelessWidget {
                   color: accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: accentColor,
-                ),
+                child: Icon(icon, size: 16, color: accentColor),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: AppTypography.statValue.copyWith(fontSize: 20),
-          ),
+          Text(value, style: AppTypography.statValue.copyWith(fontSize: 20)),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -74,7 +72,9 @@ class StatCard extends StatelessWidget {
                 Text(
                   delta!,
                   style: AppTypography.bodySmall.copyWith(
-                    color: deltaIsPositive ? AppColors.qaPass : AppColors.qaFail,
+                    color: deltaIsPositive
+                        ? AppColors.qaPass
+                        : AppColors.qaFail,
                     fontWeight: FontWeight.w600,
                     fontSize: 10,
                   ),
