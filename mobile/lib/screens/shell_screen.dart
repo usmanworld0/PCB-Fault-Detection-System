@@ -37,11 +37,11 @@ class _ShellScreenState extends State<ShellScreen> {
   }
 
   final List<String> _titles = [
-    'Enterprise Analytics Dashboard',
-    'Real-time Inspection Stream',
+    'Analytics Dashboard',
+    'Real-Time Inspection Stream',
     'YOLOv8 AI Inference Registry',
-    'Inspection Alerts',
-    'Workstation & RBAC Settings',
+    'Station Alerts',
+    'User Profile & Settings',
   ];
 
   final _screens = const [
@@ -69,15 +69,16 @@ class _ShellScreenState extends State<ShellScreen> {
           currentIndex: _index,
           onTap: (i) => setState(() => _index = i),
           backgroundColor: AppColors.bgSurface,
-          selectedItemColor: AppColors.industrial600,
+          selectedItemColor: AppColors.purityTeal,
           unselectedItemColor: AppColors.textMuted,
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          selectedLabelStyle: AppTypography.mono.copyWith(
+          selectedLabelStyle: AppTypography.label.copyWith(
             fontSize: 10,
             fontWeight: FontWeight.w700,
+            color: AppColors.purityTeal,
           ),
-          unselectedLabelStyle: AppTypography.mono.copyWith(
+          unselectedLabelStyle: AppTypography.bodySmall.copyWith(
             fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
@@ -103,9 +104,9 @@ class _ShellScreenState extends State<ShellScreen> {
               label: 'Alerts',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.tune_outlined, size: 20),
-              activeIcon: Icon(Icons.tune, size: 20),
-              label: 'Settings',
+              icon: Icon(Icons.person_outline, size: 20),
+              activeIcon: Icon(Icons.person, size: 20),
+              label: 'Profile',
             ),
           ],
         ),

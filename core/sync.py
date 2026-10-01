@@ -224,6 +224,35 @@ def sync_pending():
                         timeout=10,
                     )
 
+                    # 5b. Dispatch automated Resend email to admin on inspection failure
+                    resend_key = os.environ.get("RESEND_API_KEY", "")
+                    admin_email = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "world.usman.business@gmail.com")
+                    from_email = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
+                    if resend_key:
+                        try:
+                            requests.post(
+                                "https://api.resend.com/emails",
+                                headers={
+                                    "Authorization": f"Bearer {resend_key}",
+                                    "Content-Type": "application/json",
+                                },
+                                json={
+                                    "from": from_email,
+                                    "to": [admin_email],
+                                    "subject": f"🚨 [PCB DEFECT ALERT] Board FAIL: {source} ({defect_count} flaws)",
+                                    "html": f"""
+                                    <div style="font-family: sans-serif; padding: 20px; color: #2D3748; max-width: 500px; border: 1px solid #E2E8F0; border-radius: 12px;">
+                                      <h3 style="color: #E53E3E; margin-top: 0;">🚨 Inspection Failure Detected</h3>
+                                      <p>Automated optical inspection flagged <strong>{defect_count} defect(s)</strong> on board <strong>{source}</strong>.</p>
+                                      <p><strong>Station:</strong> {station_id}<br><strong>Model:</strong> {model_name}<br><strong>Operator:</strong> {operator_email or 'System Auto'}</p>
+                                    </div>
+                                    """,
+                                },
+                                timeout=5,
+                            )
+                        except Exception as em_err:
+                            print(f"[Resend Sync Alert Notice] {em_err}")
+
                 # 6. Mark Local SQLite Row as Synced
                 store.mark_synced(row_id)
                 sent += 1

@@ -71,14 +71,18 @@ export async function getInspections(params: InspectionListParams = {}): Promise
       total: count ?? filteredItems.length,
     };
   } catch (err) {
-    const searchParams = new URLSearchParams();
-    if (params.status) searchParams.set("status", params.status);
-    if (params.model) searchParams.set("model", params.model);
-    if (params.search) searchParams.set("search", params.search);
-    if (params.limit !== undefined) searchParams.set("limit", params.limit.toString());
-    if (params.offset !== undefined) searchParams.set("offset", params.offset.toString());
-    const q = searchParams.toString();
-    return apiFetch<InspectionListApiResponse>(`/inspections${q ? `?${q}` : ""}`);
+    try {
+      const searchParams = new URLSearchParams();
+      if (params.status) searchParams.set("status", params.status);
+      if (params.model) searchParams.set("model", params.model);
+      if (params.search) searchParams.set("search", params.search);
+      if (params.limit !== undefined) searchParams.set("limit", params.limit.toString());
+      if (params.offset !== undefined) searchParams.set("offset", params.offset.toString());
+      const q = searchParams.toString();
+      return await apiFetch<InspectionListApiResponse>(`/inspections${q ? `?${q}` : ""}`);
+    } catch {
+      return { items: [], total: 0 };
+    }
   }
 }
 

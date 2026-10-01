@@ -107,7 +107,24 @@ export async function getStats(): Promise<Stats> {
       defects_by_class: defectsByClass,
       defects_by_severity: defectsBySeverity,
     };
-  } catch {
-    return apiFetch<Stats>("/stats");
+  } catch (err) {
+    try {
+      return await apiFetch<Stats>("/stats");
+    } catch {
+      // If backend service is not running, return zeroed stats structure rather than crashing dashboard
+      return {
+        total_inspections: 0,
+        pass_count: 0,
+        fail_count: 0,
+        yield_rate: 100,
+        total_defects: 0,
+        critical_defects: 0,
+        pending_reviews: 0,
+        active_alerts: 0,
+        trend_last_30_days: [],
+        defects_by_class: {},
+        defects_by_severity: {},
+      };
+    }
   }
 }

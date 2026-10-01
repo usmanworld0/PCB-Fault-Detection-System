@@ -146,8 +146,8 @@ export default function ProfilePage() {
         {/* User Identity Card */}
         <div className="bg-white border border-gray-200/70 rounded-[15px] p-6 sm:p-7 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <div className="relative group">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="relative group shrink-0">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url}
@@ -168,8 +168,8 @@ export default function ProfilePage() {
                   <Camera className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-bold text-[#2D3748] tracking-tight">
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-lg font-bold text-[#2D3748] tracking-tight truncate">
                   {user?.email}
                 </h3>
                 <div className="flex flex-wrap items-center gap-2 mt-1.5">

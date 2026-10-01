@@ -23,7 +23,7 @@ class _PcbHeatmapViewState extends State<PcbHeatmapView> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF0F2B1D), // Dark PCB FR-4 green substrate
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(color: AppColors.borderSubtle, width: 1),
         boxShadow: [
           BoxShadow(

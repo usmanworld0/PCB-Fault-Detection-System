@@ -251,10 +251,10 @@ class _FilterSheetState extends State<FilterSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSel ? AppColors.industrial600 : AppColors.bgMuted,
-            borderRadius: BorderRadius.circular(6),
+            color: isSel ? AppColors.purityTeal : AppColors.bgMuted,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSel ? AppColors.industrial700 : AppColors.borderSubtle,
+              color: isSel ? AppColors.purityTeal : AppColors.borderSubtle,
             ),
           ),
           alignment: Alignment.center,

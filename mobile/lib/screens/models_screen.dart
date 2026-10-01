@@ -98,12 +98,12 @@ class _ModelsScreenState extends State<ModelsScreen> {
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: AppColors.bgSurface,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(15),
       border: Border.all(color: AppColors.borderSubtle),
       boxShadow: [
         BoxShadow(
-          color: AppColors.textPrimary.withValues(alpha: 0.035),
-          blurRadius: 12,
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],

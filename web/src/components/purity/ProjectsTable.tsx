@@ -59,7 +59,7 @@ export function RecentInspectionsTableCard({
       </CardHeader>
 
       <CardBody className="p-0 overflow-x-auto">
-        <table className="w-full text-left text-xs whitespace-nowrap">
+        <table className="w-full text-left text-xs whitespace-nowrap min-w-[540px]">
           <thead>
             <tr className="border-b border-gray-100">
               {captions.map((caption, idx) => (

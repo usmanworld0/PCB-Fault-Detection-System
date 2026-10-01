@@ -273,7 +273,7 @@ class ReviewRecord {
 class InspectionRecord {
   final String id;
   final String? pcbId;
-  final int? imageIndex;
+  final int imageIndex;
   final DateTime capturedAt;
   final String source;
   final String model;
@@ -288,13 +288,11 @@ class InspectionRecord {
   final InspectionStatus finalStatus;
   final List<DefectItem> defects;
   final List<ReviewRecord> reviews;
-  final String? pcbId;
-  final int imageIndex;
 
   InspectionRecord({
     required this.id,
     this.pcbId,
-    this.imageIndex,
+    this.imageIndex = 1,
     required this.capturedAt,
     required this.source,
     required this.model,
@@ -309,8 +307,6 @@ class InspectionRecord {
     required this.finalStatus,
     required this.defects,
     required this.reviews,
-    this.pcbId,
-    this.imageIndex = 1,
   });
 
   factory InspectionRecord.fromJson(Map<String, dynamic> json) {
@@ -333,7 +329,7 @@ class InspectionRecord {
     return InspectionRecord(
       id: json['id']?.toString() ?? '',
       pcbId: json['pcb_id']?.toString(),
-      imageIndex: (json['image_index'] as num?)?.toInt(),
+      imageIndex: (json['image_index'] as num?)?.toInt() ?? 1,
       capturedAt: captured,
       source: json['source'] ?? json['source_image_name'] ?? 'capture.jpg',
       model: json['model'] ?? 'yolov8s-pcb',
@@ -350,8 +346,6 @@ class InspectionRecord {
       ),
       defects: defectList,
       reviews: reviewList,
-      pcbId: json['pcb_id']?.toString(),
-      imageIndex: (json['image_index'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -363,7 +357,6 @@ class InspectionRecord {
         'status': status.value,
         'image_url': imageUrl,
         'annotated_url': annotatedUrl,
-        'golden_reference_url': goldenReferenceUrl,
         'station_id': stationId,
         'batch_number': batchNumber,
         'review_status': reviewStatus,
@@ -384,8 +377,8 @@ class InspectionRecord {
   }) {
     return InspectionRecord(
       id: id,
-      pcbId: pcbId,
-      imageIndex: imageIndex,
+      pcbId: pcbId ?? this.pcbId,
+      imageIndex: imageIndex ?? this.imageIndex,
       capturedAt: capturedAt,
       source: source,
       model: model,
@@ -400,8 +393,6 @@ class InspectionRecord {
       finalStatus: finalStatus ?? this.finalStatus,
       defects: defects ?? this.defects,
       reviews: reviews ?? this.reviews,
-      pcbId: pcbId ?? this.pcbId,
-      imageIndex: imageIndex ?? this.imageIndex,
     );
   }
 }

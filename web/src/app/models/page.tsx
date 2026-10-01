@@ -40,7 +40,7 @@ export default function ModelsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 Model Registry & Benchmark Telemetry
               </h1>
@@ -54,7 +54,7 @@ export default function ModelsPage() {
           </div>
           <button
             onClick={fetchModels}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
+            className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold text-[#2D3748] bg-white hover:bg-gray-50 border border-gray-200/80 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#4FD1C5] ${loading ? "animate-spin" : ""}`} />
             <span>REFRESH</span>
@@ -128,7 +128,7 @@ export default function ModelsPage() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[760px]">
                   <thead>
                     <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
                       <th className="py-3.5 px-4 font-bold">Model Name</th>

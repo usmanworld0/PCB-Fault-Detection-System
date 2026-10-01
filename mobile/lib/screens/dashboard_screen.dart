@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
+import '../services/auth_provider.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 
@@ -15,10 +18,12 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = context.watch<SupabaseService>();
     final analytics = service.analytics;
+    final auth = context.watch<AuthProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.bgApp,
       body: RefreshIndicator(
-        color: AppColors.industrial600,
+        color: AppColors.purityTeal,
         onRefresh: service.fetchStats,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -28,43 +33,47 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Live production summary',
+                    'Live Production Summary',
                     style: AppTypography.heading2.copyWith(fontSize: 18),
                   ),
                 ),
                 IconButton(
                   tooltip: 'Refresh analytics',
                   onPressed: service.fetchStats,
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh, color: AppColors.purityTeal),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
             if (analytics == null && service.analyticsError == null)
               const Padding(
                 padding: EdgeInsets.only(top: 100),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.purityTeal),
+                ),
               )
             else if (analytics == null)
               _errorState(service.analyticsError!, service.fetchStats)
             else ...[
               if (analytics.totalInspections == 0)
                 Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.industrial50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.industrial200),
+                    color: AppColors.purityTealLight,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: AppColors.purityTealBorder),
                   ),
-                  child: const Text(
+                  child: Text(
                     'No inspection data yet. Analytics will appear when inspections are added.',
+                    style: AppTypography.bodySmallReadable,
                   ),
                 ),
               GridView.count(
                 crossAxisCount: MediaQuery.sizeOf(context).width >= 720 ? 3 : 2,
                 childAspectRatio: 1.8,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
@@ -72,7 +81,7 @@ class DashboardScreen extends StatelessWidget {
                     'Inspections',
                     analytics.totalInspections,
                     Icons.biotech_outlined,
-                    AppColors.industrial600,
+                    AppColors.purityTeal,
                   ),
                   _metric(
                     'PASS',
@@ -96,18 +105,25 @@ class DashboardScreen extends StatelessWidget {
                     'PCB IDs',
                     analytics.distinctPcbCount,
                     Icons.memory_outlined,
-                    AppColors.industrial600,
+                    AppColors.purityTeal,
                   ),
                   _metric(
-                    'Inspections · 30 days',
+                    'Inspections · 30d',
                     analytics.inspectionsLast30Days,
                     Icons.calendar_month_outlined,
-                    AppColors.industrial600,
+                    AppColors.textSecondary,
                   ),
                 ],
               ),
               const SizedBox(height: 14),
               _passFailCard(analytics),
+              const SizedBox(height: 14),
+              // Recent Inspections & Operators Card (Synced real PFPs)
+              _recentInspectionsCard(
+                context,
+                service.inspections.take(5).toList(),
+                auth.currentUser,
+              ),
               const SizedBox(height: 14),
               _chartCard(
                 title: 'Defects by class',
@@ -131,23 +147,31 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _metric(String label, int value, IconData icon, Color color) =>
       Container(
-        padding: const EdgeInsets.all(13),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.bgSurface,
           border: Border.all(color: AppColors.borderSubtle),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.035),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 10),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,14 +182,14 @@ class DashboardScreen extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.heading2.copyWith(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     label,
                     maxLines: 1,
-                    style: AppTypography.bodySmallReadable,
+                    style: AppTypography.label.copyWith(fontSize: 10),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -174,6 +198,157 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
       );
+
+  Widget _recentInspectionsCard(
+    BuildContext context,
+    List<InspectionRecord> recent,
+    UserProfile? currentUser,
+  ) {
+    if (recent.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'RECENT INSPECTIONS & OPERATORS',
+                style: AppTypography.label,
+              ),
+              Text(
+                '${recent.length} recent',
+                style: AppTypography.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: recent.length,
+            separatorBuilder: (_, __) => const Divider(height: 16),
+            itemBuilder: (context, index) {
+              final item = recent[index];
+              final isCurrentUser = currentUser != null &&
+                  item.operatorEmail != null &&
+                  currentUser.email.toLowerCase() == item.operatorEmail!.toLowerCase();
+              final avatar = isCurrentUser ? currentUser.avatarUrl : null;
+              final opInitial = (item.operatorEmail?.isNotEmpty == true
+                      ? item.operatorEmail![0]
+                      : 'O')
+                  .toUpperCase();
+
+              return Row(
+                children: [
+                  // Real user PFP avatar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: _buildAvatar(avatar, opInitial, 30),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.pcbId?.isNotEmpty == true
+                              ? item.pcbId!
+                              : item.source,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.heading3.copyWith(fontSize: 12),
+                        ),
+                        Text(
+                          item.operatorEmail ?? 'Automated Edge Camera',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: item.status == InspectionStatus.pass
+                          ? AppColors.qaPassBg
+                          : AppColors.qaFailBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: item.status == InspectionStatus.pass
+                            ? AppColors.qaPassBorder
+                            : AppColors.qaFailBorder,
+                      ),
+                    ),
+                    child: Text(
+                      item.status == InspectionStatus.pass ? 'PASS' : 'FAIL',
+                      style: AppTypography.mono.copyWith(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: item.status == InspectionStatus.pass
+                            ? AppColors.qaPass
+                            : AppColors.qaFail,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildAvatar(String? avatar, String initial, double size) {
+    if (avatar != null && avatar.isNotEmpty) {
+      if (avatar.startsWith('data:image')) {
+        try {
+          final bytes = base64Decode(avatar.split(',').last);
+          return Image.memory(
+            bytes,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _fallback(initial, size),
+          );
+        } catch (_) {
+          return _fallback(initial, size);
+        }
+      }
+      return CachedNetworkImage(
+        imageUrl: avatar,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => _fallback(initial, size),
+        errorWidget: (_, __, ___) => _fallback(initial, size),
+      );
+    }
+    return _fallback(initial, size);
+  }
+
+  static Widget _fallback(String initial, double size) {
+    return Container(
+      width: size,
+      height: size,
+      color: AppColors.purityTealLight,
+      child: Center(
+        child: Text(
+          initial,
+          style: AppTypography.heading3.copyWith(
+            color: AppColors.purityTealDark,
+            fontSize: size * 0.45,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _passFailCard(AnalyticsSnapshot data) {
     final total = data.passCount + data.failCount;
@@ -184,11 +359,11 @@ class DashboardScreen extends StatelessWidget {
         children: [
           Text(
             'PASS / FAIL RATIO',
-            style: AppTypography.label.copyWith(color: AppColors.textSecondary),
+            style: AppTypography.label,
           ),
           const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               height: 12,
               child: Row(
@@ -210,7 +385,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 10),
           Text(
             total == 0
                 ? 'No inspections recorded'
@@ -252,7 +427,14 @@ class DashboardScreen extends StatelessWidget {
               },
             ),
           ),
-          gridData: const FlGridData(show: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) => const FlLine(
+              color: AppColors.borderSubtle,
+              strokeWidth: 0.7,
+            ),
+          ),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(
@@ -262,7 +444,7 @@ class DashboardScreen extends StatelessWidget {
               sideTitles: SideTitles(showTitles: false),
             ),
             leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
+              sideTitles: SideTitles(showTitles: true, reservedSize: 28),
             ),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
@@ -272,16 +454,14 @@ class DashboardScreen extends StatelessWidget {
                   if (index < 0 || index >= entries.length) {
                     return const SizedBox.shrink();
                   }
+                  final raw = entries[index].key;
+                  final shortened =
+                      raw.length > 7 ? '${raw.substring(0, 6)}…' : raw;
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
-                      entries[index].key,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodySmallReadable.copyWith(
-                        fontSize: 9,
-                      ),
+                      shortened,
+                      style: AppTypography.mono.copyWith(fontSize: 9),
                     ),
                   );
                 },
@@ -297,9 +477,9 @@ class DashboardScreen extends StatelessWidget {
                   barRods: [
                     BarChartRodData(
                       toY: entry.value.value.toDouble(),
-                      color: AppColors.qaWarning,
-                      width: 20,
-                      borderRadius: BorderRadius.circular(3),
+                      color: AppColors.purityTeal,
+                      width: 18,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ],
                 ),
@@ -321,8 +501,8 @@ class DashboardScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Defects by severity',
-            style: AppTypography.heading3.copyWith(fontSize: 14),
+            'DEFECTS BY SEVERITY',
+            style: AppTypography.label,
           ),
           const SizedBox(height: 12),
           Row(
@@ -330,11 +510,11 @@ class DashboardScreen extends StatelessWidget {
                 .map(
                   (level) => Expanded(
                     child: Container(
-                      margin: const EdgeInsets.only(right: 7),
-                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: level.$2.withValues(alpha: 0.09),
-                        borderRadius: BorderRadius.circular(7),
+                        color: level.$2.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,12 +524,15 @@ class DashboardScreen extends StatelessWidget {
                             style: AppTypography.heading2.copyWith(
                               color: level.$2,
                               fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             level.$1,
                             style: AppTypography.bodySmallReadable.copyWith(
                               fontSize: 10,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -389,11 +572,11 @@ class DashboardScreen extends StatelessWidget {
           spacing: 18,
           runSpacing: 6,
           children: [
-            _legendItem('Inspections', AppColors.textSecondary),
+            _legendItem('Inspections', AppColors.purityTeal),
             _legendItem('Defects', AppColors.qaWarning),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SizedBox(
           height: 205,
           child: BarChart(
@@ -449,8 +632,8 @@ class DashboardScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 5),
                         child: Text(
                           '${date.month}/${date.day}',
-                          style: AppTypography.bodySmallReadable.copyWith(
-                            fontSize: 8,
+                          style: AppTypography.mono.copyWith(
+                            fontSize: 9,
                           ),
                         ),
                       );
@@ -467,7 +650,7 @@ class DashboardScreen extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: entry.value.inspections.toDouble(),
-                          color: AppColors.textSecondary,
+                          color: AppColors.purityTeal,
                           width: 5,
                           borderRadius: BorderRadius.circular(2),
                         ),
@@ -519,15 +702,15 @@ class DashboardScreen extends StatelessWidget {
   );
 
   Widget _panel({required Widget child}) => Container(
-    padding: const EdgeInsets.all(14),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: AppColors.bgSurface,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(15),
       border: Border.all(color: AppColors.borderSubtle),
       boxShadow: [
         BoxShadow(
-          color: AppColors.textPrimary.withValues(alpha: 0.035),
-          blurRadius: 12,
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],

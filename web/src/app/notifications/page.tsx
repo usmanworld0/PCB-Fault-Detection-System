@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/notifications";
 import { Notification } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
+import { EmailAlertSettingsCard } from "@/components/purity/EmailAlertSettingsCard";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -77,7 +78,7 @@ export default function NotificationsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 Notifications
               </h1>
@@ -91,7 +92,7 @@ export default function NotificationsPage() {
               Alerts, defect flags, and real-time station events.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
@@ -111,8 +112,11 @@ export default function NotificationsPage() {
           </div>
         </div>
 
+        {/* Resend Email Notification Settings Card */}
+        <EmailAlertSettingsCard />
+
         {/* Filter Bar */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setFilterUnread(false)}
             className={`px-3.5 py-2 rounded-[10px] text-xs font-bold transition-all ${
@@ -161,8 +165,8 @@ export default function NotificationsPage() {
                     : "bg-white border-[#4FD1C5] ring-1 ring-[#4FD1C5]/30 shadow-md"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div
                       className={`p-2.5 rounded-[10px] mt-0.5 shrink-0 ${
                         notif.severity === "Critical"
@@ -172,7 +176,7 @@ export default function NotificationsPage() {
                     >
                       <Bell className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-bold text-[#2D3748]">{notif.title}</span>
                         <SeverityBadge severity={notif.severity} />
@@ -180,8 +184,8 @@ export default function NotificationsPage() {
                           {notif.category}
                         </span>
                       </div>
-                      <p className="text-xs text-[#718096] mt-1 leading-relaxed">{notif.message}</p>
-                      <div className="flex items-center gap-4 mt-2">
+                      <p className="text-xs text-[#718096] mt-1 leading-relaxed break-words">{notif.message}</p>
+                      <div className="flex items-center gap-4 mt-2 flex-wrap">
                         <span className="text-[10px] text-[#A0AEC0] font-semibold">
                           {formatDate(notif.created_at)} ({formatTimeAgo(notif.created_at)})
                         </span>
@@ -201,7 +205,7 @@ export default function NotificationsPage() {
                   {!notif.is_read && (
                     <button
                       onClick={() => handleMarkRead(notif.id)}
-                      className="text-[10px] font-bold uppercase tracking-wider text-[#319795] hover:text-[#4FD1C5] px-2.5 py-1 rounded-[8px] hover:bg-[#E6FFFA] transition-colors shrink-0"
+                      className="self-end sm:self-auto text-[10px] font-bold uppercase tracking-wider text-[#319795] hover:text-[#4FD1C5] px-2.5 py-1 rounded-[8px] hover:bg-[#E6FFFA] transition-colors shrink-0"
                     >
                       Mark Read
                     </button>

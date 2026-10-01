@@ -53,17 +53,17 @@ export default function DashboardPage() {
     try {
       setError(null);
       const [statsData, inspectionsData, notificationsData, usersData] = await Promise.all([
-        getStats(),
-        getInspections({ limit: 6 }),
-        getNotifications(false),
-        getUsers(),
+        getStats().catch(() => null),
+        getInspections({ limit: 6 }).catch(() => ({ items: [], total: 0 })),
+        getNotifications(false).catch(() => ({ items: [], total: 0, unread_count: 0 })),
+        getUsers().catch(() => []),
       ]);
       setStats(statsData);
-      setRecentInspections(inspectionsData.items);
-      setAlerts(notificationsData.items);
+      setRecentInspections(inspectionsData?.items || []);
+      setAlerts(notificationsData?.items || []);
       setUsers(usersData || []);
     } catch (err: any) {
-      setError(err.message || "Failed to load PCB Vision dashboard statistics.");
+      setError(err?.message || "Failed to load PCB Vision dashboard statistics.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -312,7 +312,7 @@ export default function DashboardPage() {
     <AppShell>
       <div className="space-y-6">
         {/* Top Header Actions (Sync / Refresh) */}
-        <div className="flex items-center justify-between pb-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-[#2D3748] tracking-tight">
               PCB Vision QA Operations
@@ -324,7 +324,7 @@ export default function DashboardPage() {
           <button
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[12px] text-xs font-bold bg-white text-[#2D3748] hover:text-[#4FD1C5] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] border border-gray-100 transition-colors disabled:opacity-50"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-[12px] text-xs font-bold bg-white text-[#2D3748] hover:text-[#4FD1C5] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] border border-gray-100 transition-colors disabled:opacity-50 shrink-0"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 text-[#4FD1C5] ${

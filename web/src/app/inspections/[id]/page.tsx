@@ -16,6 +16,8 @@ import {
   Image as ImageIcon,
   Trash2,
   RefreshCw,
+  Mail,
+  CheckCircle2,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { InspectionImageViewer } from "@/components/inspections/InspectionImageViewer";
@@ -28,6 +30,7 @@ import { InspectionDetail, InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { triggerDefectEmailAlert } from "@/lib/services/emailService";
 
 export default function InspectionDetailPage() {
   const params = useParams();
@@ -45,6 +48,40 @@ export default function InspectionDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"single" | "pcb">("single");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSentNotice, setEmailSentNotice] = useState<string | null>(null);
+
+  const handleSendEmailAlert = async () => {
+    if (!inspection) return;
+    setIsSendingEmail(true);
+    setEmailSentNotice(null);
+    try {
+      const res = await triggerDefectEmailAlert({
+        id: inspection.id,
+        pcb_id: inspection.pcb_id,
+        station_id: inspection.station_id,
+        status: inspection.final_status || inspection.status,
+        operator_email: inspection.operator_email,
+        model: inspection.model,
+        defects: inspection.defects.map((d) => ({
+          class: d.class,
+          severity: d.severity,
+          confidence: d.confidence,
+        })),
+        captured_at: inspection.captured_at,
+      });
+      if (res.skipped) {
+        setEmailSentNotice(res.message);
+      } else {
+        setEmailSentNotice("Defect alert email successfully dispatched to admin via Resend!");
+      }
+      setTimeout(() => setEmailSentNotice(null), 5000);
+    } catch (err: any) {
+      alert("Failed to send email alert: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -91,6 +128,11 @@ export default function InspectionDetailPage() {
     if (id) fetchDetail();
   }, [id]);
 
+  const isDefective = inspection && (
+    (inspection.final_status || inspection.status) === "FAIL" ||
+    (inspection.defects && inspection.defects.length > 0)
+  );
+
   return (
     <AppShell>
       <div className="space-y-5">
@@ -99,13 +141,13 @@ export default function InspectionDetailPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
-              className="p-2 rounded-[10px] bg-white border border-gray-200/80 text-[#2D3748] hover:bg-gray-50 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors"
+              className="p-2 rounded-[10px] bg-white border border-gray-200/80 text-[#2D3748] hover:bg-gray-50 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors shrink-0"
               title="Return"
             >
               <ArrowLeft className="w-4 h-4 text-[#4FD1C5]" />
             </button>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                   Inspection Workstation
                 </h1>
@@ -117,8 +159,21 @@ export default function InspectionDetailPage() {
             </div>
           </div>
 
-          {isAdmin && inspection && (
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            {isDefective && (
+              <button
+                type="button"
+                onClick={handleSendEmailAlert}
+                disabled={isSendingEmail}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#319795] bg-[#E6FFFA] hover:bg-teal-100 border border-teal-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                title="Send Resend alert email to admin"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>{isSendingEmail ? "Sending..." : "Email Alert to Admin"}</span>
+              </button>
+            )}
+
+            {isAdmin && inspection && (
               <button
                 type="button"
                 onClick={() => {
@@ -131,9 +186,17 @@ export default function InspectionDetailPage() {
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Inspection</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Email Alert Sent Confirmation */}
+        {emailSentNotice && (
+          <div className="flex items-center gap-2.5 p-3.5 rounded-[12px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium animate-fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{emailSentNotice}</span>
+          </div>
+        )}
 
         {error ? (
           <ErrorState message={error} onRetry={fetchDetail} />
@@ -309,14 +372,14 @@ export default function InspectionDetailPage() {
 
             {/* Defect Localization Telemetry Table */}
             <div className="bg-white border border-gray-200/70 rounded-[15px] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] overflow-hidden">
-              <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-bold text-[#2D3748] tracking-tight">Localized Defect Anomalies</h3>
                   <p className="text-xs text-[#A0AEC0] font-semibold mt-0.5">
                     Individual defect bounding coordinates and confidence scores evaluated by {inspection.model}
                   </p>
                 </div>
-                <span className="text-xs font-bold px-2.5 py-1 rounded-[8px] bg-gray-100 text-[#2D3748]">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-[8px] bg-gray-100 text-[#2D3748] self-start sm:self-auto shrink-0">
                   {inspection.defects.length} Localized Bounding Boxes
                 </span>
               </div>
@@ -331,7 +394,7 @@ export default function InspectionDetailPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[560px]">
                     <thead>
                       <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
                         <th className="py-3 px-4 font-bold">#</th>

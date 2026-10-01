@@ -187,23 +187,19 @@ function LoginForm() {
   // --- View: Standard Login Form ---
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Dual Partnership Logo Badge */}
+      {/* Dual Partnership Logo (Transparent, No background boxes or borders) */}
       <div className="flex items-center justify-center gap-3 mb-2">
-        <div className="w-12 h-12 rounded-[14px] bg-white border border-gray-200/90 p-1.5 shadow-sm flex items-center justify-center">
-          <img
-            src="/logo.png"
-            alt="PCB Vision Logo"
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <span className="text-base font-bold text-[#A0AEC0]">×</span>
-        <div className="w-12 h-12 rounded-[14px] bg-white border border-gray-200/90 p-1.5 shadow-sm flex items-center justify-center">
-          <img
-            src="/ncp-logo.png"
-            alt="NCP Logo"
-            className="w-full h-full object-contain"
-          />
-        </div>
+        <img
+          src="/logo.png"
+          alt="PCB Vision Logo"
+          className="w-12 h-12 object-contain"
+        />
+        <span className="text-lg font-bold text-[#A0AEC0]">×</span>
+        <img
+          src="/ncp-logo.png"
+          alt="NCP Logo"
+          className="w-12 h-12 object-contain"
+        />
       </div>
 
       <div className="text-center sm:text-left">
@@ -222,17 +218,18 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Email Field */}
+      {/* Email or Username Field */}
       <div>
         <label className="block text-xs font-bold text-[#2D3748] mb-1.5 ml-1">
-          Email
+          Email or Username
         </label>
         <input
-          type="email"
+          type="text"
           required
+          autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Your email address"
+          placeholder="admin or your email"
           className="w-full px-4 py-3 bg-white border border-gray-200 rounded-[15px] text-xs sm:text-sm text-[#2D3748] placeholder:text-[#A0AEC0] focus:outline-none focus:border-[#4FD1C5] focus:ring-1 focus:ring-[#4FD1C5] transition-all shadow-xs"
         />
       </div>
@@ -362,7 +359,7 @@ export default function LoginPage() {
               </div>
             </div>
             <h3 className="text-xl font-bold tracking-tight text-white mb-1">
-              INSPIRED BY THE FUTURE
+              PCB VISION 
             </h3>
             <p className="text-xs text-white/80 leading-relaxed max-w-sm">
               National Centre for Physics & PCB Vision collaborative industrial QA vision pipeline for defect localization.

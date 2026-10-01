@@ -8,10 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
   Layers,
   Download,
-  Eye,
   RefreshCw,
   SlidersHorizontal,
   Filter,
@@ -52,7 +50,6 @@ export default function InspectionsPage() {
   const isAdmin = role === "admin";
 
   const [items, setItems] = useState<InspectionListItem[]>([]);
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,18 +71,6 @@ export default function InspectionsPage() {
   const [pcbIdFilter, setPcbIdFilter] = useState<string>("");
   const [limit, setLimit] = useState<number>(50);
   const [offset, setOffset] = useState<number>(0);
-
-  const toggleExpand = (key: string) => {
-    setExpandedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
 
   const groupedItems: GroupedPCBItem[] = React.useMemo(() => {
     const map = new Map<string, InspectionListItem[]>();
@@ -282,7 +267,7 @@ export default function InspectionsPage() {
           </form>
 
           {/* Secondary Filter Dropdowns */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-gray-100">
             <div>
               <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                 Filter by PCB ID
@@ -391,11 +376,11 @@ export default function InspectionsPage() {
             <>
               {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[880px]">
                   <thead>
                     <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
                       <th className="py-3.5 px-4 font-bold">PCB Unique ID</th>
-                      <th className="py-3.5 px-4 font-bold">Sub-Inspections</th>
+                      <th className="py-3.5 px-4 font-bold">Images</th>
                       <th className="py-3.5 px-4 font-bold">Captured At</th>
                       <th className="py-3.5 px-4 font-bold">Station</th>
                       <th className="py-3.5 px-4 font-bold">Operator</th>
@@ -407,202 +392,95 @@ export default function InspectionsPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {groupedItems.map((group) => {
-                      const isExpanded = expandedKeys.has(group.key);
                       return (
-                        <React.Fragment key={group.key}>
-                          <tr
-                            className={`hover:bg-gray-50/60 transition-colors ${
-                              isExpanded ? "bg-teal-50/20" : ""
-                            }`}
-                          >
-                            <td className="py-3.5 px-4">
-                              {group.pcb_id ? (
-                                <span className="font-bold text-[#2D3748] bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-[8px] text-xs shadow-2xs inline-flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
-                                  {group.pcb_id}
+                        <tr
+                          key={group.key}
+                          className="hover:bg-gray-50/60 transition-colors"
+                        >
+                          <td className="py-3.5 px-4">
+                            {group.pcb_id ? (
+                              <span className="font-bold text-[#2D3748] bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-[8px] text-xs shadow-2xs inline-flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
+                                {group.pcb_id}
+                              </span>
+                            ) : (
+                              <span className="text-[#718096] text-xs font-semibold">
+                                {group.primary_id.slice(0, 8)} <span className="text-[#A0AEC0] italic text-[10px]">(Single frame)</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="text-xs font-semibold text-[#2D3748]">
+                              {group.sub_count} {group.sub_count === 1 ? "Image" : "Images"}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="text-xs font-bold text-[#2D3748]">{formatDate(group.latest_captured_at)}</div>
+                            <div className="text-[10px] text-[#A0AEC0] font-semibold">{formatTimeAgo(group.latest_captured_at)}</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="text-xs font-bold text-[#2D3748] px-2 py-0.5 rounded-[8px] bg-gray-50 border border-gray-200/70">
+                              {group.station_id || "STATION-01"}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {group.operator_email ? (
+                              <div className="flex flex-col">
+                                <span className="text-xs text-[#2D3748] font-bold truncate max-w-[130px]" title={group.operator_email}>
+                                  {group.operator_email}
                                 </span>
-                              ) : (
-                                <span className="text-[#718096] text-xs font-semibold">
-                                  {group.primary_id.slice(0, 8)} <span className="text-[#A0AEC0] italic text-[10px]">(Single frame)</span>
+                                <span className="text-[10px] uppercase text-[#319795] font-bold tracking-wider">
+                                  {group.operator_role || "ENGINEER"}
                                 </span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
+                              </div>
+                            ) : (
+                              <span className="text-xs text-[#A0AEC0]">Station-01</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-xs font-bold text-[#2D3748]">
+                            {group.model}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <StatusBadge status={group.overall_status} size="sm" />
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {group.total_defects > 0 ? (
+                              <span className="font-bold text-xs text-[#E53E3E] bg-[#FFF5F5] px-2 py-0.5 rounded-[8px]">
+                                {group.total_defects} defect{group.total_defects === 1 ? "" : "s"}
+                              </span>
+                            ) : (
+                              <span className="font-bold text-xs text-[#319795] bg-[#E6FFFA] px-2 py-0.5 rounded-[8px]">0 defects</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="inline-flex items-center gap-2 justify-end">
                               <button
                                 type="button"
-                                onClick={() => toggleExpand(group.key)}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] text-xs font-bold text-[#2D3748] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors cursor-pointer"
-                                title="Click to view all sub-inspections"
+                                onClick={() => router.push(`/inspections/${group.primary_id}`)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-[#4FD1C5] hover:bg-[#319795] shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors cursor-pointer"
+                                title="Open Workstation"
                               >
-                                <Layers className="w-3.5 h-3.5 text-[#4FD1C5]" />
-                                <span>{group.sub_count} {group.sub_count === 1 ? "Sub-Image" : "Sub-Images"}</span>
-                                {isExpanded ? (
-                                  <ChevronUp className="w-3 h-3 text-[#A0AEC0]" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3 text-[#A0AEC0]" />
-                                )}
+                                <span>Workstation</span>
                               </button>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <div className="text-xs font-bold text-[#2D3748]">{formatDate(group.latest_captured_at)}</div>
-                              <div className="text-[10px] text-[#A0AEC0] font-semibold">{formatTimeAgo(group.latest_captured_at)}</div>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className="text-xs font-bold text-[#2D3748] px-2 py-0.5 rounded-[8px] bg-gray-50 border border-gray-200/70">
-                                {group.station_id || "STATION-01"}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {group.operator_email ? (
-                                <div className="flex flex-col">
-                                  <span className="text-xs text-[#2D3748] font-bold truncate max-w-[130px]" title={group.operator_email}>
-                                    {group.operator_email}
-                                  </span>
-                                  <span className="text-[10px] uppercase text-[#319795] font-bold tracking-wider">
-                                    {group.operator_role || "ENGINEER"}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-[#A0AEC0]">Station-01</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-xs font-bold text-[#2D3748]">
-                              {group.model}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <StatusBadge status={group.overall_status} size="sm" />
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {group.total_defects > 0 ? (
-                                <span className="font-bold text-xs text-[#E53E3E] bg-[#FFF5F5] px-2 py-0.5 rounded-[8px]">
-                                  {group.total_defects} defect{group.total_defects === 1 ? "" : "s"}
-                                </span>
-                              ) : (
-                                <span className="font-bold text-xs text-[#319795] bg-[#E6FFFA] px-2 py-0.5 rounded-[8px]">0 defects</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="inline-flex items-center gap-2 justify-end">
+                              {isAdmin && (
                                 <button
                                   type="button"
-                                  onClick={() => toggleExpand(group.key)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-[8px] text-xs font-bold text-[#2D3748] hover:bg-gray-100 bg-gray-50 border border-gray-200/80 transition-colors"
-                                  title="View all sub-inspections"
+                                  onClick={() =>
+                                    setDeleteTarget(
+                                      group.pcb_id
+                                        ? { type: "pcb", id: group.primary_id, pcbId: group.pcb_id, count: group.sub_count }
+                                        : { type: "single", id: group.primary_id }
+                                    )
+                                  }
+                                  className="p-1.5 rounded-[8px] text-[#A0AEC0] hover:text-[#E53E3E] hover:bg-rose-50 transition-colors"
+                                  title={group.pcb_id ? `Delete PCB group (${group.sub_count} scans)` : "Delete inspection"}
                                 >
-                                  <Eye className="w-3.5 h-3.5 text-[#4FD1C5]" />
-                                  <span>{isExpanded ? "Hide" : "Inspect"}</span>
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => router.push(`/inspections/${group.primary_id}`)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-[#4FD1C5] hover:bg-[#319795] shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors"
-                                  title="Open Workstation"
-                                >
-                                  <span>Workstation</span>
-                                </button>
-                                {isAdmin && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setDeleteTarget(
-                                        group.pcb_id
-                                          ? { type: "pcb", id: group.primary_id, pcbId: group.pcb_id, count: group.sub_count }
-                                          : { type: "single", id: group.primary_id }
-                                      )
-                                    }
-                                    className="p-1.5 rounded-[8px] text-[#A0AEC0] hover:text-[#E53E3E] hover:bg-rose-50 transition-colors"
-                                    title={group.pcb_id ? `Delete PCB group (${group.sub_count} scans)` : "Delete inspection"}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-
-                          {/* Sub-Inspections Expanded View */}
-                          {isExpanded && (
-                            <tr className="bg-[#F8F9FA]/70 border-b border-gray-100">
-                              <td colSpan={9} className="p-3 pl-8">
-                                <div className="bg-white border border-gray-200/70 rounded-[12px] p-4 shadow-xs space-y-3">
-                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-2">
-                                    <div className="flex items-center gap-2">
-                                      <Layers className="w-4 h-4 text-[#4FD1C5]" />
-                                      <span className="text-xs font-bold text-[#2D3748]">
-                                        Sub-Inspections for PCB: <span className="text-[#319795]">{group.pcb_id || group.primary_id.slice(0, 8)}</span>
-                                      </span>
-                                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-[#E6FFFA] text-[#319795]">
-                                        {group.sub_count} Scans
-                                      </span>
-                                    </div>
-                                    <span className="text-xs text-[#A0AEC0] font-semibold">
-                                      Click any sub-inspection below to open in Workstation:
-                                    </span>
-                                  </div>
-
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    {group.sub_inspections.map((sub) => {
-                                      const isFail = (sub.final_status || sub.status) === "FAIL";
-                                      return (
-                                        <div
-                                          key={sub.id}
-                                          onClick={() => router.push(`/inspections/${sub.id}`)}
-                                          className="group p-3 bg-white hover:bg-teal-50/20 border border-gray-200/80 hover:border-teal-300 hover:shadow-xs rounded-[12px] cursor-pointer transition-all flex flex-col justify-between"
-                                        >
-                                          <div>
-                                            <div className="relative aspect-4/3 w-full bg-[#1A202C] rounded-[8px] overflow-hidden mb-2 border border-gray-200">
-                                              <img
-                                                src={sub.annotated_url || sub.image_url}
-                                                alt={`Sub-Image #${sub.image_index ?? 1}`}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                              />
-                                              <div className="absolute top-1 left-1 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[4px] uppercase tracking-wider">
-                                                Sub-Img #{sub.image_index ?? 1}
-                                              </div>
-                                              <div className="absolute top-1 right-1">
-                                                <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded text-white ${isFail ? "bg-rose-600" : "bg-emerald-600"}`}>
-                                                  {sub.final_status || sub.status}
-                                                </span>
-                                              </div>
-                                            </div>
-                                            <div className="flex items-center justify-between text-xs font-bold text-[#2D3748]">
-                                              <span className="truncate">{sub.source ? sub.source.slice(0, 16) : `UID: ${sub.id.slice(0, 8)}`}</span>
-                                              <span className={sub.defect_count > 0 ? "text-rose-600 font-semibold" : "text-emerald-600"}>
-                                                {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"}
-                                              </span>
-                                            </div>
-                                            <div className="text-[10px] font-semibold text-[#A0AEC0] uppercase tracking-wider mt-0.5">
-                                              {formatDate(sub.captured_at)}
-                                            </div>
-                                          </div>
-                                          <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between text-[#4FD1C5] group-hover:text-[#319795] text-[10px] font-bold uppercase tracking-wider">
-                                            <span>Inspect in Workstation</span>
-                                            <div className="flex items-center gap-1">
-                                              {isAdmin && (
-                                                <button
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDeleteTarget({ type: "single", id: sub.id });
-                                                  }}
-                                                  className="p-1 rounded-[6px] text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors"
-                                                  title="Delete this sub-inspection"
-                                                >
-                                                  <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                              )}
-                                              <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -612,26 +490,25 @@ export default function InspectionsPage() {
               {/* Mobile Card List View */}
               <div className="md:hidden divide-y divide-gray-100 font-sans">
                 {groupedItems.map((group) => {
-                  const isExpanded = expandedKeys.has(group.key);
                   return (
                     <div
                       key={group.key}
                       className="p-4 hover:bg-teal-50/10 active:bg-teal-50/20 transition-colors space-y-3"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
                           {group.pcb_id ? (
-                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-[6px] bg-gray-100 text-[#2D3748] border border-gray-200 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
-                              PCB: {group.pcb_id}
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-[6px] bg-gray-100 text-[#2D3748] border border-gray-200 flex items-center gap-1.5 max-w-[220px] truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5] shrink-0"></span>
+                              <span className="truncate">PCB: {group.pcb_id}</span>
                             </span>
                           ) : (
                             <span className="font-bold text-xs text-[#2D3748]">
                               #{group.primary_id.slice(0, 8)}
                             </span>
                           )}
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-teal-50 text-[#4FD1C5] border border-teal-100">
-                            {group.sub_count} Sub-Images
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-[6px] bg-teal-50 text-[#4FD1C5] border border-teal-100 shrink-0">
+                            {group.sub_count} {group.sub_count === 1 ? "Image" : "Images"}
                           </span>
                         </div>
                         <StatusBadge status={group.overall_status} size="sm" />
@@ -653,20 +530,15 @@ export default function InspectionsPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          type="button"
-                          onClick={() => toggleExpand(group.key)}
-                          className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#4FD1C5] bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-[6px] border border-teal-200 transition-colors"
-                        >
-                          <Eye className="w-3 h-3 text-[#4FD1C5]" />
-                          <span>{isExpanded ? "Hide Sub-Images" : `View Sub-Images (${group.sub_count})`}</span>
-                        </button>
+                      <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+                        <span className="text-xs font-semibold text-[#2D3748]">
+                          {group.sub_count} {group.sub_count === 1 ? "Image" : "Images"}
+                        </span>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => router.push(`/inspections/${group.primary_id}`)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-[8px] text-xs font-bold text-white bg-[#4FD1C5] hover:bg-[#319795] shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors cursor-pointer"
                           >
                             <span>Workstation</span>
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -689,61 +561,13 @@ export default function InspectionsPage() {
                           )}
                         </div>
                       </div>
-
-                      {/* Expanded sub-inspections list on mobile */}
-                      {isExpanded && (
-                        <div className="pt-2 border-t border-gray-100 space-y-2">
-                          {group.sub_inspections.map((sub) => {
-                            const isFail = (sub.final_status || sub.status) === "FAIL";
-                            return (
-                              <div
-                                key={sub.id}
-                                onClick={() => router.push(`/inspections/${sub.id}`)}
-                                className="flex items-center gap-3 p-2.5 bg-gray-50/50 border border-gray-200/80 rounded-[10px] cursor-pointer hover:bg-teal-50/20"
-                              >
-                                <img
-                                  src={sub.annotated_url || sub.image_url}
-                                  alt={`Img #${sub.image_index ?? 1}`}
-                                  className="w-12 h-12 object-cover rounded-[8px] border border-gray-200 shrink-0"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-xs text-[#2D3748]">
-                                      Sub-Image #{sub.image_index ?? 1}
-                                    </span>
-                                    <div className="flex items-center gap-1.5">
-                                      <StatusBadge status={sub.final_status || sub.status} size="sm" />
-                                      {isAdmin && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteTarget({ type: "single", id: sub.id });
-                                          }}
-                                          className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50"
-                                          title="Delete sub-inspection"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-[10px] font-semibold text-[#A0AEC0] uppercase tracking-wider mt-0.5">
-                                    {sub.defect_count} defect{sub.defect_count === 1 ? "" : "s"} • {formatTimeAgo(sub.captured_at)}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
 
               {/* Pagination Controls */}
-              <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 bg-[#F8F9FA]/50 text-xs text-[#718096]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-gray-100 bg-[#F8F9FA]/50 text-xs text-[#718096] text-center sm:text-left">
                 <div className="text-xs font-semibold text-[#718096]">
                   Showing <span className="font-bold text-[#2D3748]">{groupedItems.length}</span> PCB units (<span className="font-bold text-[#2D3748]">{total}</span> total scan images)
                 </div>

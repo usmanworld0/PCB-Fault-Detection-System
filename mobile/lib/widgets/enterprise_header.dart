@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
@@ -18,12 +20,13 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(60);
+  Size get preferredSize => const Size.fromHeight(64);
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final supabase = context.watch<SupabaseService>();
+    final user = auth.currentUser;
 
     return Container(
       decoration: const BoxDecoration(
@@ -38,23 +41,14 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              // Logo icon & app title
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.industrial900,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.memory,
-                    size: 24,
-                    color: AppColors.industrial200,
-                  ),
-                ),
+              // PCB Logo - Transparent, no container box or white effects
+              Image.asset(
+                'assets/images/pcb-fault-logo.png',
+                width: 36,
+                height: 36,
+                fit: BoxFit.contain,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,18 +58,19 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            'PCB-Vision',
+                            'PCB VISION',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.heading3.copyWith(
-                              color: AppColors.industrial900,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
-                              fontSize: 14,
+                              fontSize: 13,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                         if (MediaQuery.sizeOf(context).width >= 420) ...[
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                           // Live Supabase status pill
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -84,7 +79,7 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.qaPassBg,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: AppColors.qaPassBorder,
                                 width: 1,
@@ -103,9 +98,7 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  supabase.isInitialized
-                                      ? 'SUPABASE LIVE'
-                                      : 'SYNCING',
+                                  supabase.isInitialized ? 'LIVE' : 'SYNCING',
                                   style: AppTypography.mono.copyWith(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w700,
@@ -122,9 +115,10 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodySmallReadable.copyWith(
-                        color: AppColors.textSecondary,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textMuted,
                         fontSize: 11,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -143,15 +137,15 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                     color: auth.role == UserRole.admin
                         ? const Color(0xFFFEF3C7)
                         : (auth.role == UserRole.engineer
-                              ? AppColors.industrial50
-                              : AppColors.bgMuted),
-                    borderRadius: BorderRadius.circular(6),
+                            ? AppColors.purityTealLight
+                            : AppColors.bgMuted),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: auth.role == UserRole.admin
                           ? const Color(0xFFFDE68A)
                           : (auth.role == UserRole.engineer
-                                ? AppColors.industrial200
-                                : AppColors.borderSubtle),
+                              ? AppColors.purityTealBorder
+                              : AppColors.borderSubtle),
                     ),
                   ),
                   child: Row(
@@ -161,37 +155,98 @@ class EnterpriseHeader extends StatelessWidget implements PreferredSizeWidget {
                         auth.role == UserRole.admin
                             ? Icons.admin_panel_settings_outlined
                             : (auth.role == UserRole.engineer
-                                  ? Icons.verified_user_outlined
-                                  : Icons.visibility_outlined),
+                                ? Icons.verified_user_outlined
+                                : Icons.visibility_outlined),
                         size: 13,
                         color: auth.role == UserRole.admin
                             ? const Color(0xFFB45309)
                             : (auth.role == UserRole.engineer
-                                  ? AppColors.industrial700
-                                  : AppColors.textSecondary),
+                                ? AppColors.purityTealDark
+                                : AppColors.textSecondary),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         auth.role == UserRole.admin
                             ? 'ADMIN'
                             : (auth.role == UserRole.engineer
-                                  ? 'QA ENG'
-                                  : 'VIEWER'),
+                                ? 'QA ENG'
+                                : 'VIEWER'),
                         style: AppTypography.mono.copyWith(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: auth.role == UserRole.admin
                               ? const Color(0xFF92400E)
                               : (auth.role == UserRole.engineer
-                                    ? AppColors.industrial800
-                                    : AppColors.textSecondary),
+                                  ? AppColors.purityTealDark
+                                  : AppColors.textSecondary),
                         ),
                       ),
                     ],
                   ),
                 ),
+              const SizedBox(width: 8),
+
+              // Profile Picture (PFP) Avatar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _buildAvatar(user),
+              ),
+
               if (actions != null) ...actions!,
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(UserProfile? user) {
+    final avatar = user?.avatarUrl;
+    final initial = (user?.name.isNotEmpty == true ? user!.name[0] : 'U').toUpperCase();
+
+    if (avatar != null && avatar.isNotEmpty) {
+      if (avatar.startsWith('data:image')) {
+        try {
+          final bytes = base64Decode(avatar.split(',').last);
+          return Image.memory(
+            bytes,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _fallbackAvatar(initial),
+          );
+        } catch (_) {
+          return _fallbackAvatar(initial);
+        }
+      }
+      return CachedNetworkImage(
+        imageUrl: avatar,
+        width: 32,
+        height: 32,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => _fallbackAvatar(initial),
+        errorWidget: (_, __, ___) => _fallbackAvatar(initial),
+      );
+    }
+    return _fallbackAvatar(initial);
+  }
+
+  Widget _fallbackAvatar(String initial) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppColors.purityTealLight,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.purityTealBorder),
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: AppTypography.heading3.copyWith(
+            color: AppColors.purityTealDark,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

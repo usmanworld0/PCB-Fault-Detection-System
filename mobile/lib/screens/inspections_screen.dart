@@ -59,14 +59,6 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
             }
           }).toList();
 
-    // Group inspections by PCB ID
-    final Map<String, List<InspectionRecord>> pcbGroups = {};
-    for (final item in list) {
-      final key = (item.pcbId != null && item.pcbId!.isNotEmpty) ? 'pcb:${item.pcbId}' : 'insp:${item.id}';
-      pcbGroups.putIfAbsent(key, () => []).add(item);
-    }
-    final groupedList = pcbGroups.values.toList();
-
     return Scaffold(
       backgroundColor: AppColors.bgApp,
       body: Column(
@@ -80,10 +72,10 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final search = Container(
-                      height: 38,
+                      height: 42,
                       decoration: BoxDecoration(
                         color: AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(15),
                         border: Border.all(color: AppColors.borderSubtle),
                       ),
                       child: TextField(
@@ -113,26 +105,26 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                            vertical: 10,
+                            vertical: 12,
                           ),
                         ),
                       ),
                     );
                     final filter = InkWell(
                       onTap: () => FilterSheet.show(context),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(15),
                       child: Container(
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        height: 42,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
                           color: AppColors.bgMuted,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(15),
                           border: Border.all(color: AppColors.borderSubtle),
                         ),
                         child: const Icon(
                           Icons.tune_outlined,
                           size: 18,
-                          color: AppColors.industrial700,
+                          color: AppColors.purityTeal,
                         ),
                       ),
                     );
@@ -327,12 +319,12 @@ class _InspectionsScreenState extends State<InspectionsScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(color: AppColors.borderSubtle),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.035),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],

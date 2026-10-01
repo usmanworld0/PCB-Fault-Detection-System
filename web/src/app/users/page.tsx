@@ -38,19 +38,32 @@ export default function UsersPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // Delete Confirmation State
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, refreshUser } = useAuth();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Immediate Action Feedback State
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (text: string, type: "success" | "error" = "success") => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     setIsDeleting(true);
     try {
       await deleteUser(userToDelete.id);
+      const deletedEmail = userToDelete.email;
       setUserToDelete(null);
-      fetchUsersList();
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      showToast(`User account ${deletedEmail} was permanently deleted.`, "success");
     } catch (err: any) {
-      alert(err.message || "Failed to delete user account.");
+      showToast(err.message || "Failed to delete user account.", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -88,7 +101,7 @@ export default function UsersPage() {
 
     setSubmitting(true);
     try {
-      await createUser({
+      const created = await createUser({
         email: newEmail.trim().toLowerCase(),
         password: newPassword,
         role: newRole,
@@ -96,7 +109,8 @@ export default function UsersPage() {
       setIsModalOpen(false);
       setNewEmail("");
       setNewPassword("");
-      fetchUsersList();
+      setUsers((prev) => [created, ...prev.filter((u) => u.email !== created.email)]);
+      showToast(`Created new account for ${created.email} with role '${created.role.toUpperCase()}'.`, "success");
     } catch (err: any) {
       setFormError(err.message || "Failed to create user.");
     } finally {
@@ -105,26 +119,98 @@ export default function UsersPage() {
   };
 
   const handleToggleStatus = async (user: User) => {
+    setUpdatingUserId(user.id);
+    const newStatus = !user.is_active;
+
+    // Optimistic UI update
+    setUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, is_active: newStatus } : u))
+    );
+
     try {
-      await updateUser(user.id, { is_active: !user.is_active });
-      fetchUsersList();
+      await updateUser(user.id, { is_active: newStatus });
+      showToast(
+        `User account ${user.email} is now ${newStatus ? "ACTIVE" : "DEACTIVATED"}.`,
+        "success"
+      );
     } catch (err: any) {
-      alert(err.message || "Failed to update user status.");
+      // Revert on failure
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, is_active: user.is_active } : u))
+      );
+      showToast(err.message || "Failed to update user status.", "error");
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
   const handleRoleChange = async (userId: string, role: UserRole) => {
+    const targetUser = users.find((u) => u.id === userId);
+    const oldRole = targetUser?.role;
+
+    // 1. Immediate optimistic UI update
+    setUpdatingUserId(userId);
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, role } : u))
+    );
+
     try {
       await updateUser(userId, { role });
-      fetchUsersList();
+
+      // 2. If changing the currently logged in user, refresh session immediately
+      if (
+        currentUser?.id === userId ||
+        currentUser?.email?.toLowerCase() === targetUser?.email?.toLowerCase()
+      ) {
+        await refreshUser();
+      }
+
+      showToast(
+        `Assigned role '${role.toUpperCase()}' to ${targetUser?.email || "user"}.`,
+        "success"
+      );
     } catch (err: any) {
-      alert(err.message || "Failed to change user role.");
+      // Revert to old role on failure
+      if (oldRole) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, role: oldRole } : u))
+        );
+      }
+      showToast(err.message || "Failed to change user role.", "error");
+    } finally {
+      setUpdatingUserId(null);
     }
   };
 
   return (
     <AppShell>
       <div className="space-y-5 max-w-6xl mx-auto">
+        {/* Floating / Inline Toast Notification Banner */}
+        {toastMessage && (
+          <div
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-[12px] border text-xs font-semibold shadow-xs animate-fade-in ${
+              toastMessage.type === "success"
+                ? "bg-teal-50 border-teal-200 text-[#319795]"
+                : "bg-rose-50 border-rose-200 text-[#E53E3E]"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {toastMessage.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4 text-[#319795] shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-[#E53E3E] shrink-0" />
+              )}
+              <span>{toastMessage.text}</span>
+            </div>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="text-[#A0AEC0] hover:text-[#2D3748]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
@@ -291,7 +377,7 @@ export default function UsersPage() {
             <>
               {/* Desktop Table */}
               <div className="hidden md:block overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[650px]">
                   <thead>
                     <tr className="border-b border-gray-100 text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
                       <th className="py-3.5 px-4 font-bold">User Email</th>
@@ -324,15 +410,23 @@ export default function UsersPage() {
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                            className="px-2.5 py-1.5 bg-white border border-gray-200/80 rounded-[8px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5]"
-                          >
-                            <option value="admin">ADMIN</option>
-                            <option value="engineer">QUALITY ENGINEER</option>
-                            <option value="viewer">VIEWER</option>
-                          </select>
+                          <div className="inline-flex items-center gap-2">
+                            <select
+                              value={u.role}
+                              disabled={updatingUserId === u.id}
+                              onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                              className={`px-2.5 py-1.5 bg-white border border-gray-200/80 rounded-[8px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] cursor-pointer transition-opacity ${
+                                updatingUserId === u.id ? "opacity-60 cursor-wait" : ""
+                              }`}
+                            >
+                              <option value="admin">ADMIN</option>
+                              <option value="engineer">QUALITY ENGINEER</option>
+                              <option value="viewer">VIEWER</option>
+                            </select>
+                            {updatingUserId === u.id && (
+                              <RefreshCw className="w-3.5 h-3.5 text-[#4FD1C5] animate-spin shrink-0" />
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4">
                           {u.is_active ? (
@@ -402,12 +496,12 @@ export default function UsersPage() {
                         </span>
                       </div>
                       {u.is_active ? (
-                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-[6px] border border-emerald-200 text-[10px] uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-[6px] border border-emerald-200 text-[10px] uppercase tracking-wider shrink-0">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-[6px] border border-rose-200 text-[10px] uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-[6px] border border-rose-200 text-[10px] uppercase tracking-wider shrink-0">
                           <XCircle className="w-3 h-3 text-rose-600" />
                           Deactivated
                         </span>
@@ -417,15 +511,23 @@ export default function UsersPage() {
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-[10px] text-[#A0AEC0] uppercase font-bold tracking-wider block mb-1">Role</span>
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                          className="w-full px-2 py-1 bg-white border border-gray-200/80 rounded-[8px] text-xs text-[#2D3748] font-bold focus:outline-none focus:ring-1 focus:ring-[#4FD1C5]"
-                        >
-                          <option value="admin">ADMIN</option>
-                          <option value="engineer">ENGINEER</option>
-                          <option value="viewer">VIEWER</option>
-                        </select>
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            value={u.role}
+                            disabled={updatingUserId === u.id}
+                            onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                            className={`w-full px-2 py-1 bg-white border border-gray-200/80 rounded-[8px] text-xs text-[#2D3748] font-bold focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] ${
+                              updatingUserId === u.id ? "opacity-60 cursor-wait" : ""
+                            }`}
+                          >
+                            <option value="admin">ADMIN</option>
+                            <option value="engineer">ENGINEER</option>
+                            <option value="viewer">VIEWER</option>
+                          </select>
+                          {updatingUserId === u.id && (
+                            <RefreshCw className="w-3 h-3 text-[#4FD1C5] animate-spin shrink-0" />
+                          )}
+                        </div>
                       </div>
                       <div>
                         <span className="text-[10px] text-[#A0AEC0] uppercase font-bold tracking-wider block mb-1">Registered</span>

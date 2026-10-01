@@ -20,8 +20,16 @@ export async function getNotifications(unreadOnly = false): Promise<Notification
       unread_count: unreadCount,
     };
   } catch {
-    const query = unreadOnly ? "?unread_only=true" : "";
-    return apiFetch<NotificationListApiResponse>(`/notifications${query}`);
+    try {
+      const query = unreadOnly ? "?unread_only=true" : "";
+      return await apiFetch<NotificationListApiResponse>(`/notifications${query}`);
+    } catch {
+      return {
+        items: [],
+        total: 0,
+        unread_count: 0,
+      };
+    }
   }
 }
 

@@ -4,61 +4,90 @@ import { LoginResponse } from "@/types/api";
 import type { User, UserRole } from "@/types/models";
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const normEmail = email.trim().toLowerCase();
+  const inputEmail = email.trim().toLowerCase();
   const supabase = getSupabase();
+  const adminNotificationEmail = (
+    process.env.ADMIN_NOTIFICATION_EMAIL ||
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+    "world.usman.business@gmail.com"
+  ).toLowerCase();
 
-  // 1. Primary: Native Supabase Authentication (GoTrue / auth.users)
-  try {
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: normEmail,
-      password,
-    });
+  // Support typing "admin" as username by mapping to known admin email candidates
+  const candidateEmails =
+    inputEmail === "admin"
+      ? [adminNotificationEmail, "231560@students.au.edu.pk", "admin@example.com"]
+      : [inputEmail];
 
-    if (!authError && authData.session && authData.user) {
-      const user = authData.user;
-      let role = (user.app_metadata?.role || user.user_metadata?.role || "") as UserRole;
+  let lastAuthError: any = null;
 
-      // Fallback: lookup role in public.users if not present in Auth metadata
-      if (!role) {
-        const { data: row } = await supabase
-          .from("users")
-          .select("role")
-          .eq("email", normEmail)
-          .single();
-        role = (row?.role || "engineer") as UserRole;
+  for (const candidate of candidateEmails) {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: candidate,
+        password,
+      });
+
+      if (!authError && authData.session && authData.user) {
+        const user = authData.user;
+        const normEmail = (user.email || candidate).toLowerCase();
+
+        // 1. Authoritative check: database public.users table
+        let role: UserRole | undefined = undefined;
+        try {
+          const { data: row } = await supabase
+            .from("users")
+            .select("role")
+            .eq("email", normEmail)
+            .single();
+          if (row?.role) {
+            role = row.role as UserRole;
+          }
+        } catch {
+          // ignore table query error
+        }
+
+        // 2. Default fallback to admin for primary operator if not set in database
+        if (!role && (normEmail === adminNotificationEmail || normEmail === "admin@example.com")) {
+          role = "admin";
+        }
+
+        // 3. Metadata fallback
+        if (!role) {
+          role = (user.app_metadata?.role || user.user_metadata?.role || "engineer") as UserRole;
+        }
+
+        const token = authData.session.access_token;
+        setStoredToken(token);
+
+        return {
+          access_token: token,
+          token_type: "bearer",
+          role: role || "engineer",
+          user_id: user.id,
+          email: normEmail,
+        };
       }
 
-      const token = authData.session.access_token;
-      setStoredToken(token);
-
-      return {
-        access_token: token,
-        token_type: "bearer",
-        role: role || "engineer",
-        user_id: user.id,
-        email: normEmail,
-      };
+      if (authError) {
+        lastAuthError = authError;
+      }
+    } catch (err: any) {
+      if (err && err.message && !err.message.includes("fetch")) {
+        lastAuthError = err;
+      }
     }
-    if (authError) {
-      throw new Error(authError.message || "Invalid email or password.");
-    }
-  } catch (err: any) {
-    if (err && err.message && !err.message.includes("fetch")) {
-      throw err;
-    }
-    // Network or API fallback
   }
 
   // 2. Secondary: REST API endpoint (if backend is running)
   try {
     const data = await apiFetch<LoginResponse>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email: normEmail, password }),
+      body: JSON.stringify({ email: candidateEmails[0], password }),
     });
     setStoredToken(data.access_token);
     return data;
   } catch (apiErr: any) {
-    throw new Error("Invalid email or password.");
+    throw new Error(lastAuthError?.message || "Invalid email or password.");
   }
 }
 
@@ -68,44 +97,72 @@ export async function getMe(): Promise<User> {
     throw new Error("Not authenticated");
   }
 
+  const supabase = getSupabase();
+  const adminNotificationEmail = (
+    process.env.ADMIN_NOTIFICATION_EMAIL ||
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+    "world.usman.business@gmail.com"
+  ).toLowerCase();
+
   // 1. Primary: Native Supabase Auth session
   try {
-    const supabase = getSupabase();
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (!error && user && user.email) {
-      let role = (user.app_metadata?.role || user.user_metadata?.role) as UserRole;
-      let avatarUrl = (user.user_metadata?.avatar_url || user.user_metadata?.picture) as string | undefined;
+    let authUser: any = null;
 
-      // Check database row
+    // Check active session first
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData?.session?.user) {
+      authUser = sessionData.session.user;
+    } else {
+      const { data, error } = await supabase.auth.getUser(token);
+      if (!error && data?.user) {
+        authUser = data.user;
+      }
+    }
+
+    if (authUser && authUser.email) {
+      const normEmail = authUser.email.toLowerCase();
+      let role: UserRole | undefined = undefined;
+      let avatarUrl = (authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture) as string | undefined;
+
+      // Check database row (authoritative source)
       try {
         const { data: row } = await supabase
           .from("users")
           .select("role, avatar_url")
-          .eq("email", user.email)
+          .eq("email", normEmail)
           .single();
         if (row) {
-          if (!role && row.role) role = row.role as UserRole;
+          if (row.role) role = row.role as UserRole;
           if (row.avatar_url) avatarUrl = row.avatar_url;
         }
       } catch {
         // Ignored if table not accessible
       }
 
+      // Check configured admin email as default fallback if not set in database
+      if (!role && (normEmail === adminNotificationEmail || normEmail === "admin@example.com")) {
+        role = "admin";
+      }
+
+      if (!role) {
+        role = (authUser.app_metadata?.role || authUser.user_metadata?.role || "engineer") as UserRole;
+      }
+
       // Check localStorage for offline/cached avatar
       if (!avatarUrl && typeof window !== "undefined") {
         avatarUrl =
-          localStorage.getItem(`pcb_avatar_${user.id}`) ||
-          localStorage.getItem(`pcb_avatar_${user.email}`) ||
+          localStorage.getItem(`pcb_avatar_${authUser.id}`) ||
+          localStorage.getItem(`pcb_avatar_${normEmail}`) ||
           localStorage.getItem("pcb_current_avatar") ||
           undefined;
       }
 
       return {
-        id: user.id,
-        email: user.email,
+        id: authUser.id,
+        email: normEmail,
         role: role || "engineer",
         is_active: true,
-        created_at: user.created_at,
+        created_at: authUser.created_at,
         avatar_url: avatarUrl || null,
       };
     }
@@ -117,7 +174,7 @@ export async function getMe(): Promise<User> {
   try {
     return await apiFetch<User>("/auth/me");
   } catch {
-    // 3. Fallback: Decode session token
+    // 3. Fallback: Decode session token if locally signed session
     if (token.startsWith("pcb_session_")) {
       try {
         const payload = JSON.parse(atob(token.replace("pcb_session_", "")));
@@ -142,20 +199,9 @@ export async function getMe(): Promise<User> {
       }
     }
 
-    const defaultAvatar = typeof window !== "undefined"
-      ? (localStorage.getItem("pcb_avatar_admin-001") ||
-         localStorage.getItem("pcb_avatar_admin@example.com") ||
-         localStorage.getItem("pcb_current_avatar") || null)
-      : null;
-
-    return {
-      id: "admin-001",
-      email: "admin@example.com",
-      role: "admin",
-      is_active: true,
-      created_at: new Date().toISOString(),
-      avatar_url: defaultAvatar,
-    };
+    // Never return a broken mock admin that prevents data loading.
+    // Throw so that AuthContext clears invalid credentials and allows clean sign-in.
+    throw new Error("Session expired. Please sign in again.");
   }
 }
 

@@ -234,7 +234,7 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           decoration: BoxDecoration(
             color: AppColors.bgMuted,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(15),
             border: Border.all(color: AppColors.borderSubtle),
           ),
           clipBehavior: Clip.antiAlias,
@@ -499,7 +499,7 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.qaPassBg,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: AppColors.qaPassBorder),
               ),
               child: Row(
@@ -533,10 +533,10 @@ class _InspectionDetailScreenState extends State<InspectionDetailScreen> {
                     color: isSelected
                         ? AppColors.industrial50
                         : AppColors.bgSurface,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(15),
                     border: Border.all(
                       color: isSelected
-                          ? AppColors.industrial400
+                          ? AppColors.purityTeal
                           : AppColors.borderSubtle,
                       width: isSelected ? 1.5 : 1,
                     ),

@@ -40,7 +40,7 @@ class PCBVisionApp extends StatelessWidget {
                     backgroundColor: AppColors.bgApp,
                     body: Center(
                       child: CircularProgressIndicator(
-                        color: AppColors.industrial600,
+                        color: AppColors.purityTeal,
                       ),
                     ),
                   )

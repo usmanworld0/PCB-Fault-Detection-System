@@ -1,27 +1,39 @@
 import { getSupabase } from "@/lib/supabase";
-import { apiFetch } from "./client";
 import { UserCreatePayload, UserUpdatePayload } from "@/types/api";
 import { User } from "@/types/models";
+import { checkPasswordStrength } from "@/lib/utils/password";
 
 export async function getUsers(): Promise<User[]> {
   let users: User[] = [];
-  try {
-    const supabase = getSupabase();
-    let res: any = await supabase
-      .from("users")
-      .select("id, email, role, is_active, created_at, avatar_url")
-      .order("created_at", { ascending: false });
 
-    if (res.error) {
-      res = await supabase
-        .from("users")
-        .select("id, email, role, is_active, created_at")
-        .order("created_at", { ascending: false });
-    }
-    users = (res.data || []) as User[];
-  } catch {
+  // 1. Primary: Next.js internal API (auto-syncs auth.users with public.users)
+  if (typeof window !== "undefined") {
     try {
-      users = await apiFetch<User[]>("/users");
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        users = await res.json();
+      }
+    } catch {
+      // Fallback below
+    }
+  }
+
+  // 2. Fallback: Direct Supabase client query
+  if (users.length === 0) {
+    try {
+      const supabase = getSupabase();
+      let res: any = await supabase
+        .from("users")
+        .select("id, email, role, is_active, created_at, avatar_url")
+        .order("created_at", { ascending: false });
+
+      if (res.error) {
+        res = await supabase
+          .from("users")
+          .select("id, email, role, is_active, created_at")
+          .order("created_at", { ascending: false });
+      }
+      users = (res.data || []) as User[];
     } catch {
       users = [];
     }
@@ -43,11 +55,8 @@ export async function getUsers(): Promise<User[]> {
   return users;
 }
 
-import { checkPasswordStrength } from "@/lib/utils/password";
-
 export async function createUser(payload: UserCreatePayload): Promise<User> {
   const normEmail = payload.email.trim().toLowerCase();
-  const supabase = getSupabase();
   const password = payload.password?.trim() || "";
 
   const strength = checkPasswordStrength(password);
@@ -58,7 +67,32 @@ export async function createUser(payload: UserCreatePayload): Promise<User> {
     );
   }
 
-  // 1. Provision user in native Supabase Authentication (auth.users)
+  // 1. Primary: Server-side API provisioner (maintains matching auth ID and DB record)
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: normEmail,
+          password,
+          role: payload.role,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create user account.");
+      }
+      return data as User;
+    } catch (apiErr: any) {
+      if (apiErr?.message && !apiErr.message.includes("fetch")) {
+        throw apiErr;
+      }
+    }
+  }
+
+  // 2. Client-side fallback via Supabase client
+  const supabase = getSupabase();
   try {
     const { error: signUpError } = await supabase.auth.signUp({
       email: normEmail,
@@ -76,87 +110,77 @@ export async function createUser(payload: UserCreatePayload): Promise<User> {
     }
   }
 
-  // 2. Insert user into database table (public.users)
-  try {
-    const newId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : undefined;
-    const insertPayload: any = {
+  const { data, error } = await supabase
+    .from("users")
+    .upsert({
       email: normEmail,
       password_hash: "supabase_auth",
       role: payload.role,
       is_active: true,
       created_at: new Date().toISOString(),
-    };
-    if (newId) {
-      insertPayload.id = newId;
-    }
+    }, { onConflict: "email" })
+    .select()
+    .single();
 
-    const { data, error } = await supabase
-      .from("users")
-      .insert(insertPayload)
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === "23505") {
-        throw new Error(`An account with email '${normEmail}' already exists.`);
-      }
-      throw new Error(error.message || "Failed to create user record.");
-    }
-    if (!data) {
-      throw new Error("Failed to create user record in Supabase.");
-    }
-    return data;
-  } catch (err: any) {
-    if (err && err.message && !err.message.includes("fetch")) {
-      throw err;
-    }
-    return apiFetch<User>("/users", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+  if (error || !data) {
+    throw new Error(error?.message || "Failed to create user record.");
   }
+  return data;
 }
 
 export async function updateUser(userId: string, payload: UserUpdatePayload): Promise<User> {
   if (payload.avatar_url && typeof window !== "undefined") {
     localStorage.setItem(`pcb_avatar_${userId}`, payload.avatar_url);
   }
-  try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from("users")
-      .update(payload)
-      .eq("id", userId)
-      .select()
-      .single();
-    if (error || !data) throw error;
-    return data;
-  } catch (err: any) {
-    if (err && err.message && !err.message.includes("fetch")) {
-      throw err;
+
+  // 1. Primary: Server API route (updates database AND synchronizes Supabase Auth metadata)
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        return (await res.json()) as User;
+      }
+    } catch {
+      // Fall through to direct Supabase update
     }
-    return apiFetch<User>(`/users/${userId}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
   }
+
+  // 2. Direct Supabase update fallback
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("users")
+    .update(payload)
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error || !data) throw error || new Error("Failed to update user");
+  return data;
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  try {
-    const supabase = getSupabase();
-    const { error } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", userId);
-    if (error) throw error;
-  } catch (err: any) {
-    if (err && err.message && !err.message.includes("fetch")) {
-      throw err;
+  // 1. Primary: Server API route (removes from database AND Supabase Auth)
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) return;
+    } catch {
+      // Fall through to direct Supabase delete
     }
-    return apiFetch<void>(`/users/${userId}`, {
-      method: "DELETE",
-    });
   }
-}
 
+  // 2. Direct Supabase delete fallback
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("users")
+    .delete()
+    .eq("id", userId);
+
+  if (error) throw error;
+}

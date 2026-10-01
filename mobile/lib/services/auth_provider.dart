@@ -64,15 +64,40 @@ class AuthProvider extends ChangeNotifier {
       // App metadata is managed by trusted Supabase administrators. Do not
       // grant roles based on email text or user-editable metadata.
       final appRole = user.appMetadata['role']?.toString();
+      final avatarUrl = user.userMetadata?['avatar_url']?.toString() ??
+          user.userMetadata?['picture']?.toString();
       _currentUser = UserProfile(
         id: user.id,
         email: email,
         role: UserRoleExt.fromString(appRole),
         name: displayName.isEmpty ? 'User' : displayName,
+        avatarUrl: avatarUrl,
       );
     }
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> updateAvatar(String? newAvatarUrl) async {
+    if (_currentUser == null) return;
+    _currentUser = UserProfile(
+      id: _currentUser!.id,
+      email: _currentUser!.email,
+      role: _currentUser!.role,
+      name: _currentUser!.name,
+      avatarUrl: newAvatarUrl,
+    );
+    notifyListeners();
+
+    try {
+      await _client.auth.updateUser(
+        UserAttributes(
+          data: {'avatar_url': newAvatarUrl},
+        ),
+      );
+    } catch (e) {
+      debugPrint('Failed to sync avatar with Supabase: $e');
+    }
   }
 
   Future<bool> login({required String email, required String password}) async {

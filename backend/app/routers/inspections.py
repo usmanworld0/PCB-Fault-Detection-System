@@ -142,6 +142,23 @@ def ingest(
         )
 
         db.commit()
+
+        # Automated Resend email notification when inspection fails or has critical defects
+        if payload["status"] == "FAIL" or has_critical:
+            try:
+                from ..email_service import send_defect_email_alert
+                send_defect_email_alert(
+                    inspection_id=str(inspection_id),
+                    pcb_id=payload.get("pcb_id"),
+                    station_id=station_id,
+                    model=payload["model"],
+                    status=payload["status"],
+                    defect_count=len(defects_to_add),
+                    operator_email=operator_email or (current_user.email if current_user else None),
+                    defects=payload.get("defects", []),
+                )
+            except Exception as email_err:
+                print(f"[Email Notification Warning] {email_err}")
     except (KeyError, TypeError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail=f"Invalid defect data: {exc}")

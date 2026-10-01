@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_provider.dart';
+import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,6 +14,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _rememberMe = true;
   bool _isLoading = false;
   String? _error;
 
@@ -48,7 +51,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _showForgotPasswordDialog() async {
-    final emailTextController = TextEditingController(text: _emailController.text.trim());
+    final emailTextController =
+        TextEditingController(text: _emailController.text.trim());
     bool isSending = false;
     String? dialogError;
 
@@ -56,7 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: AppColors.bgSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           title: Text(
             'Reset Password',
             style: AppTypography.heading2.copyWith(fontSize: 18),
@@ -67,27 +74,30 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 'Enter your email address to receive a secure password recovery link via Supabase Auth.',
-                style: AppTypography.bodySmall,
+                style: AppTypography.bodySmallReadable,
               ),
               const SizedBox(height: 14),
               if (dialogError != null)
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
                     color: AppColors.qaFailBg,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.qaFailBorder),
                   ),
                   child: Text(
                     dialogError!,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.qaFail, fontSize: 11),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.qaFail,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               TextField(
                 controller: emailTextController,
                 keyboardType: TextInputType.emailAddress,
-                style: AppTypography.mono.copyWith(fontSize: 13),
+                style: AppTypography.body,
                 decoration: const InputDecoration(
                   labelText: 'Operator Email',
                   prefixIcon: Icon(Icons.email_outlined, size: 18),
@@ -98,7 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
           actions: [
             TextButton(
               onPressed: isSending ? null : () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: AppTypography.body.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: isSending
@@ -106,7 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   : () async {
                       final resetEmail = emailTextController.text.trim();
                       if (resetEmail.isEmpty) {
-                        setDialogState(() => dialogError = 'Please enter your email.');
+                        setDialogState(
+                          () => dialogError = 'Please enter your email.',
+                        );
                         return;
                       }
                       setDialogState(() {
@@ -120,8 +138,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              backgroundColor: AppColors.industrial900,
-                              content: Text('Password reset instructions sent to $resetEmail via Supabase Auth.'),
+                              backgroundColor: AppColors.textPrimary,
+                              content: Text(
+                                'Password reset instructions sent to $resetEmail.',
+                                style: AppTypography.body.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
                             ),
                           );
                         }
@@ -136,7 +159,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? const SizedBox(
                       width: 14,
                       height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Text('Send Reset Link'),
             ),
@@ -159,68 +185,75 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo & Header
-                Center(
-                  child: Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.industrial900,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.industrial900.withValues(
-                            alpha: 0.25,
-                          ),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                // Dual Partnership Brand Logos (Transparent, No background color or wrapper borders)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 52,
+                      width: 52,
+                      fit: BoxFit.contain,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.memory,
-                        color: AppColors.industrial200,
-                        size: 28,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Text(
+                        '×',
+                        style: AppTypography.heading1.copyWith(
+                          color: AppColors.textMuted,
+                          fontSize: 22,
+                        ),
                       ),
                     ),
-                  ),
+                    Image.asset(
+                      'assets/images/ncp-logo.png',
+                      height: 52,
+                      width: 52,
+                      fit: BoxFit.contain,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 Center(
                   child: Text(
-                    'PCB-Vision Enterprise',
+                    'Welcome Back',
                     style: AppTypography.heading1.copyWith(
-                      fontSize: 22,
-                      color: AppColors.industrial900,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.purityTeal,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Center(
                   child: Text(
-                    'Industrial Automated Optical Inspection & QA System',
-                    style: AppTypography.bodySmall.copyWith(fontSize: 12),
+                    'PCB Vision × National Centre for Physics (NCP)',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMuted,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: 28),
 
-                // Login Card
+                // Purity UI Login Card
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.bgSurface,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(15),
                     border: Border.all(color: AppColors.borderSubtle),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 12,
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(22),
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -228,73 +261,155 @@ class _LoginScreenState extends State<LoginScreen> {
                         'SIGN IN WITH WORKSPACE CREDENTIALS',
                         style: AppTypography.label.copyWith(fontSize: 10),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
 
                       if (_error != null)
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
                             color: AppColors.qaFailBg,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.qaFailBorder),
                           ),
-                          child: Text(
-                            _error!,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.qaFail,
-                            ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppColors.qaFail,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.qaFail,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
                       Text('Email Address', style: AppTypography.label),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       TextField(
                         controller: _emailController,
-                        style: AppTypography.mono.copyWith(fontSize: 13),
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'user@pcb-vision.ai',
-                          prefixIcon: Icon(Icons.email_outlined, size: 18),
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            size: 18,
+                            color: AppColors.textMuted,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide:
+                                const BorderSide(color: AppColors.borderSubtle),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
 
-                      Text('Password', style: AppTypography.label),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: AppTypography.mono.copyWith(fontSize: 13),
-                        decoration: const InputDecoration(
-                          hintText: '••••••••',
-                          prefixIcon: Icon(Icons.lock_outline, size: 18),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Password', style: AppTypography.label),
+                          GestureDetector(
+                            onTap: _showForgotPasswordDialog,
+                            child: Text(
+                              'Forgot password?',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: AppColors.purityTeal,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _showForgotPasswordDialog,
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: const Size(50, 30),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '••••••••',
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            size: 18,
+                            color: AppColors.textMuted,
                           ),
-                          child: Text(
-                            'Forgot Password?',
-                            style: AppTypography.mono.copyWith(
-                              fontSize: 11,
-                              color: AppColors.industrial600,
-                              fontWeight: FontWeight.w600,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 18,
+                              color: AppColors.textMuted,
                             ),
+                            onPressed: () {
+                              setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              );
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide:
+                                const BorderSide(color: AppColors.borderSubtle),
                           ),
                         ),
                       ),
                       const SizedBox(height: 12),
 
+                      // Remember me
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _rememberMe,
+                              onChanged: (v) =>
+                                  setState(() => _rememberMe = v ?? true),
+                              activeColor: AppColors.purityTeal,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Remember me',
+                            style: AppTypography.body.copyWith(
+                              fontSize: 12,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.purityTeal,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 0,
+                          shadowColor:
+                              AppColors.purityTeal.withValues(alpha: 0.35),
+                        ),
                         child: _isLoading
                             ? const SizedBox(
                                 width: 16,
@@ -304,7 +419,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Sign In to Industrial Console'),
+                            : Text(
+                                'SIGN IN',
+                                style: AppTypography.buttonText.copyWith(
+                                  letterSpacing: 1,
+                                ),
+                              ),
                       ),
                     ],
                   ),

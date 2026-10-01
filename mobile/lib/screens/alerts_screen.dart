@@ -185,11 +185,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
     decoration: BoxDecoration(
       color: AppColors.bgSurface,
       border: Border.all(color: AppColors.borderSubtle),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(15),
       boxShadow: [
         BoxShadow(
-          color: AppColors.textPrimary.withValues(alpha: 0.035),
-          blurRadius: 12,
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 10,
           offset: const Offset(0, 4),
         ),
       ],
@@ -307,11 +307,11 @@ class _AlertsScreenState extends State<AlertsScreen> {
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
         border: Border.all(color: AppColors.borderSubtle),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.035),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
