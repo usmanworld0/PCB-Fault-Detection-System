@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+export const dynamic = "force-dynamic";
+
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-const DEFAULT_ADMIN_EMAIL =
-  process.env.ADMIN_NOTIFICATION_EMAIL || "world.usman.business@gmail.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-const resend = new Resend(RESEND_API_KEY);
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || !apiKey.trim()) {
+    return null;
+  }
+  return new Resend(apiKey.trim());
+}
 
 /**
  * Resolves all active admin email addresses from Supabase users directory.
@@ -18,13 +23,16 @@ async function resolveAdminRecipients(requestedRecipient?: string): Promise<stri
 
   // If a specific recipient was explicitly provided (e.g. from UI settings), include it
   if (requestedRecipient && requestedRecipient.trim()) {
-    recipients.add(requestedRecipient.trim());
+    recipients.add(requestedRecipient.trim().toLowerCase());
   }
 
-  // Query Supabase for users with role == 'admin'
+  // Query Supabase for all users with role == 'admin' and is_active == true
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ejlsltjncguqggajpmlt.supabase.co";
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_4eMC4L7COkOGg0kKjBePmA_j0HZouKv";
+    const supabaseKey =
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      "sb_publishable_4eMC4L7COkOGg0kKjBePmA_j0HZouKv";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: admins, error } = await supabase
@@ -36,22 +44,12 @@ async function resolveAdminRecipients(requestedRecipient?: string): Promise<stri
     if (!error && admins && admins.length > 0) {
       for (const a of admins) {
         if (a.email && !a.email.toLowerCase().includes("@example.com")) {
-          recipients.add(a.email.trim());
+          recipients.add(a.email.trim().toLowerCase());
         }
       }
     }
   } catch (err) {
     console.warn("[Admin Recipient Lookup Warning]", err);
-  }
-
-  // Include configured admin notification email (e.g. world.usman.business@gmail.com)
-  if (DEFAULT_ADMIN_EMAIL && !DEFAULT_ADMIN_EMAIL.includes("@example.com")) {
-    recipients.add(DEFAULT_ADMIN_EMAIL.trim());
-  }
-
-  // Fallback if no non-example admin email is configured
-  if (recipients.size === 0) {
-    recipients.add(DEFAULT_ADMIN_EMAIL);
   }
 
   return Array.from(recipients);
@@ -233,12 +231,14 @@ function renderDefectEmailHtml(inspection: InspectionFailPayload, workstationUrl
 
 export async function GET() {
   const adminRecipients = await resolveAdminRecipients();
+  const isConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim());
   return NextResponse.json({
     status: "ok",
-    resend_configured: Boolean(RESEND_API_KEY),
+    resend_configured: isConfigured,
     from_email: RESEND_FROM,
     admin_recipients: adminRecipients,
-    primary_admin: adminRecipients[0] || DEFAULT_ADMIN_EMAIL,
+    total_admins: adminRecipients.length,
+    primary_admin: adminRecipients[0] || null,
   });
 }
 
@@ -250,14 +250,22 @@ export async function POST(req: Request) {
 
     if (recipients.length === 0) {
       return NextResponse.json(
-        { error: "No admin recipient email address found" },
+        { error: "No active admin accounts found in the database directory." },
         { status: 400 }
+      );
+    }
+
+    const resend = getResendClient();
+    if (!resend) {
+      return NextResponse.json(
+        { error: "Resend API key is not configured. Please set RESEND_API_KEY in your environment." },
+        { status: 503 }
       );
     }
 
     // Action 1: Send Test Email
     if (action === "test") {
-      let { data, error } = await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: RESEND_FROM,
         to: recipients,
         subject: "🔔 [TEST] PCB Vision Resend Email Notifications Connected",
@@ -268,31 +276,19 @@ export async function POST(req: Request) {
               <h2 style="margin: 0; font-size: 18px; color: #2D3748;">PCB Vision Admin Notifications Test</h2>
             </div>
             <p style="font-size: 14px; line-height: 1.6; color: #718096;">
-              Congrats on sending your <strong>first test notification</strong> from the PCB Vision automated inspection platform!
+              Congrats on sending your <strong>test notification</strong> from the PCB Vision automated inspection platform!
             </p>
             <div style="background: #F8F9FA; padding: 12px 16px; border-radius: 10px; border: 1px solid #EDF2F7; margin: 16px 0; font-size: 12px;">
               <strong>Trigger Mode:</strong> Inspection Failures (Defective Boards)<br>
-              <strong>Admin Recipient(s):</strong> ${recipients.join(", ")}<br>
+              <strong>Admin Recipients (${recipients.length}):</strong> ${recipients.join(", ")}<br>
               <strong>Dispatched Via:</strong> Resend API
             </div>
             <p style="font-size: 12px; color: #A0AEC0; margin-top: 16px;">
-              Automated notifications will now be dispatched whenever an optical board scan fails.
+              Automated notifications will now be dispatched to all active admins whenever an optical board scan fails.
             </p>
           </div>
         `,
       });
-
-      // Sandbox fallback if multiple recipients fail
-      if (error && recipients.length > 1) {
-        const fallback = await resend.emails.send({
-          from: RESEND_FROM,
-          to: [DEFAULT_ADMIN_EMAIL],
-          subject: "🔔 [TEST] PCB Vision Resend Email Notifications Connected",
-          html: `<p>Test email delivered to primary admin: ${DEFAULT_ADMIN_EMAIL}</p>`,
-        });
-        data = fallback.data;
-        error = fallback.error;
-      }
 
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -300,8 +296,9 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Test email dispatched to admin (${recipients.join(", ")})`,
+        message: `Test email dispatched to all admins (${recipients.join(", ")})`,
         id: data?.id,
+        recipients,
       });
     }
 
@@ -335,24 +332,12 @@ export async function POST(req: Request) {
     const subject = `🚨 [PCB DEFECT ALERT] Board FAILED: ${pcbSubjectTag} (${defectCount} flaw${defectCount === 1 ? "" : "s"})`;
     const htmlContent = renderDefectEmailHtml(inspection, workstationUrl);
 
-    let { data, error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: RESEND_FROM,
       to: recipients,
       subject,
       html: htmlContent,
     });
-
-    // Sandbox fallback
-    if (error && recipients.length > 1) {
-      const fallback = await resend.emails.send({
-        from: RESEND_FROM,
-        to: [DEFAULT_ADMIN_EMAIL],
-        subject,
-        html: htmlContent,
-      });
-      data = fallback.data;
-      error = fallback.error;
-    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -360,8 +345,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Defect notification dispatched to admin (${recipients.join(", ")})`,
+      message: `Defect notification dispatched to all admins (${recipients.join(", ")})`,
       id: data?.id,
+      recipients,
     });
   } catch (err: any) {
     return NextResponse.json(
