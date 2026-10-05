@@ -20,7 +20,7 @@ if ENV_FILE.exists():
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "changeme")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 if not SUPABASE_URL or not SERVICE_KEY:
     print("Error: SUPABASE_URL and SUPABASE_SERVICE_KEY must be configured in .env")
@@ -53,10 +53,9 @@ def sync_users():
 
     # Default seeds if public.users was empty
     if not public_users:
+        admin_email = os.environ.get("ADMIN_NOTIFICATION_EMAIL", "world.usman.business@gmail.com")
         public_users = [
-            {"email": "admin@example.com", "role": "admin"},
-            {"email": "engineer@example.com", "role": "engineer"},
-            {"email": "viewer@example.com", "role": "viewer"},
+            {"email": admin_email, "role": "admin"},
         ]
 
     # 3. Provision into Supabase Auth
@@ -71,7 +70,7 @@ def sync_users():
             print(f"  [ALREADY PRESENT] {email} (role: {role})")
             continue
 
-        pwd = ADMIN_PASSWORD if "admin" in email else "changeme"
+        pwd = ADMIN_PASSWORD or os.environ.get("DEFAULT_USER_PASSWORD", "TemporaryPcb2026!Secure")
         payload = {
             "email": email,
             "password": pwd,

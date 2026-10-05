@@ -27,6 +27,8 @@ export interface InspectionListParams {
   review_status?: string;
   search?: string;
   pcb_id?: string;
+  operator_email?: string;
+  current_user_role?: string;
   limit?: number;
   offset?: number;
 }
@@ -52,6 +54,8 @@ export interface ReportGeneratePayload {
   model?: string;
   defect_class?: string;
   station_id?: string;
+  operator_email?: string;
+  current_user_role?: string;
 }
 
 export interface UserCreatePayload {

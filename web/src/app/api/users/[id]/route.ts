@@ -27,11 +27,49 @@ export async function PATCH(
       );
     }
 
-    // 2. Prepare database update payload
+    // 2. Prevent an administrator from deactivating their own account
+    if (is_active === false) {
+      let requesterId: string | null = null;
+      let requesterEmail: string | null = null;
+
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.substring(7);
+          const { data: authData } = await supabase.auth.getUser(token);
+          if (authData?.user) {
+            requesterId = authData.user.id;
+            requesterEmail = authData.user.email?.toLowerCase() || null;
+          }
+        } catch {
+          // continue
+        }
+      }
+
+      const headerEmail = request.headers.get("x-user-email")?.toLowerCase() || null;
+      const bodyRequesterEmail = body.current_user_email?.toLowerCase() || null;
+      const bodyRequesterId = body.current_user_id || null;
+
+      const effectiveRequesterId = requesterId || bodyRequesterId;
+      const effectiveRequesterEmail = requesterEmail || headerEmail || bodyRequesterEmail;
+
+      if (
+        (effectiveRequesterId && effectiveRequesterId === existingUser.id) ||
+        (effectiveRequesterEmail && effectiveRequesterEmail === existingUser.email?.toLowerCase())
+      ) {
+        return NextResponse.json(
+          { error: "Administrators cannot deactivate their own account." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 3. Prepare database update payload
     const updatePayload: Record<string, any> = {};
     if (role !== undefined) updatePayload.role = role;
     if (is_active !== undefined) updatePayload.is_active = is_active;
     if (avatar_url !== undefined) updatePayload.avatar_url = avatar_url;
+
 
     const { data: updatedDbUser, error: updateError } = await supabase
       .from("users")

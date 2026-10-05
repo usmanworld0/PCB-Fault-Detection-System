@@ -136,6 +136,7 @@ export interface Report {
   format: "CSV" | "PDF" | string;
   status: string;
   summary_json?: Record<string, any>;
+  file_content?: string | null;
   file_url?: string;
   created_by_email?: string;
   created_at: string;

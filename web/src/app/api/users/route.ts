@@ -87,13 +87,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServer();
 
-    // 1. Create or ensure in Supabase Auth
+    // 1. Create or ensure in Supabase Auth (email_confirm: false enforces verification)
     let authUserId: string | null = null;
     const { data: createData, error: authCreateErr } =
       await supabase.auth.admin.createUser({
         email: normEmail,
         password,
-        email_confirm: true,
+        email_confirm: false, // User must verify via email link
         user_metadata: { role },
         app_metadata: { role },
       });
@@ -123,7 +123,73 @@ export async function POST(request: NextRequest) {
       authUserId = createData.user.id;
     }
 
-    // 2. Insert or update in public.users
+    // 2. Generate secure email verification action link
+    const appBaseUrl = (
+      process.env.NEXT_PUBLIC_APP_URL || "https://pcb-fault-detection-system.vercel.app"
+    ).replace(/\/+$/, "");
+    const redirectUrl = `${appBaseUrl}/reset-password`;
+
+    let verificationLink: string | null = null;
+    try {
+      const { data: linkData } = await supabase.auth.admin.generateLink({
+        type: "signup",
+        email: normEmail,
+        password,
+        options: {
+          redirectTo: redirectUrl,
+          data: { role },
+        },
+      });
+      if (linkData?.properties?.action_link) {
+        verificationLink = linkData.properties.action_link;
+      }
+    } catch (linkErr) {
+      console.warn("Could not generate verification link via signup:", linkErr);
+    }
+
+    if (!verificationLink) {
+      try {
+        const { data: magicLinkData } = await supabase.auth.admin.generateLink({
+          type: "magiclink",
+          email: normEmail,
+          options: {
+            redirectTo: redirectUrl,
+            data: { role },
+          },
+        });
+        if (magicLinkData?.properties?.action_link) {
+          verificationLink = magicLinkData.properties.action_link;
+        }
+      } catch (mErr) {
+        console.warn("Could not generate magiclink:", mErr);
+      }
+    }
+
+    // 3. Dispatch verification email with action link via SMTP
+    if (verificationLink) {
+      const backendApiUrl =
+        process.env.BACKEND_API_URL ||
+        process.env.API_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        "http://localhost:8000";
+
+      try {
+        await fetch(`${backendApiUrl.replace(/\/+$/, "")}/notifications/email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "user_verification",
+            recipient: normEmail,
+            action_link: verificationLink,
+            role,
+          }),
+        });
+      } catch (emailSendErr) {
+        console.warn("Could not dispatch verification email via backend SMTP:", emailSendErr);
+      }
+    }
+
+    // 4. Insert or update in public.users
     const upsertPayload: Record<string, any> = {
       email: normEmail,
       password_hash: "supabase_auth",
@@ -140,6 +206,7 @@ export async function POST(request: NextRequest) {
       .upsert(upsertPayload, { onConflict: "email" })
       .select()
       .single();
+
 
     if (dbErr || !newDbUser) {
       return NextResponse.json(

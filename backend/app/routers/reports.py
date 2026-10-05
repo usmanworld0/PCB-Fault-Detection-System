@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..auth import get_current_user
 from ..db import get_db
-from ..models import AuditLog, Defect, Inspection, Model, Report, User
+from ..models import AuditLog, Defect, Inspection, Model, Report, User, UserRole
 from ..schemas import ReportCreate, ReportResponse
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -18,9 +18,15 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("", response_model=list[ReportResponse])
 def list_reports(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    reports = db.scalars(select(Report).order_by(Report.created_at.desc())).all()
+    query = select(Report)
+    # Role-based scoping: non-admins only see reports they generated
+    is_admin = current_user.role == "admin" or current_user.role == UserRole.admin
+    if not is_admin:
+        query = query.where(func.lower(Report.created_by_email) == current_user.email.lower())
+
+    reports = db.scalars(query.order_by(Report.created_at.desc())).all()
     return reports
 
 
@@ -32,6 +38,12 @@ def generate_report(
 ):
     # Query inspections matching filters
     query = select(Inspection).options(selectinload(Inspection.defects))
+
+    # Role-based scoping: non-admins only aggregate inspections they performed
+    is_admin = current_user.role == "admin" or current_user.role == UserRole.admin
+    if not is_admin:
+        query = query.where(func.lower(Inspection.operator_email) == current_user.email.lower())
+
     if payload.status:
         query = query.where(Inspection.status == payload.status)
     if payload.model:
@@ -124,11 +136,16 @@ def generate_report(
 def download_report(
     report_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     report = db.get(Report, report_id)
     if not report or not report.file_content:
         raise HTTPException(status_code=404, detail="Report file not found")
+
+    is_admin = current_user.role == "admin" or current_user.role == UserRole.admin
+    if not is_admin:
+        if not report.created_by_email or report.created_by_email.lower() != current_user.email.lower():
+            raise HTTPException(status_code=403, detail="You do not have permission to download this report")
 
     filename = f"{report.title.lower().replace(' ', '_')}_{report.created_at.strftime('%Y%m%d')}.csv"
     return Response(

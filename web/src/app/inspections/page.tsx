@@ -46,7 +46,7 @@ interface GroupedPCBItem {
 
 export default function InspectionsPage() {
   const router = useRouter();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "admin";
 
   const [items, setItems] = useState<InspectionListItem[]>([]);
@@ -131,6 +131,8 @@ export default function InspectionsPage() {
         station_id: stationId || undefined,
         pcb_id: pcbIdFilter.trim() || undefined,
         search: search.trim() || undefined,
+        operator_email: user?.email || undefined,
+        current_user_role: role || undefined,
         limit,
         offset,
       });
@@ -145,7 +147,7 @@ export default function InspectionsPage() {
 
   useEffect(() => {
     fetchInspections();
-  }, [status, model, defectClass, stationId, pcbIdFilter, limit, offset]);
+  }, [status, model, defectClass, stationId, pcbIdFilter, limit, offset, role, user?.email]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

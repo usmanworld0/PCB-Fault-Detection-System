@@ -125,9 +125,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PCB-Vision Inspection Station")
         self.resize(1400, 820)
         self.current_user = current_user or get_active_session() or {
-            "email": "admin@example.com",
-            "role": "admin",
-            "id": "admin-001",
+            "email": "operator@station.local",
+            "role": "engineer",
+            "id": "operator-local",
         }
         self.models = list_models(MODELS_DIR)
         self.detector = None

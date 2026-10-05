@@ -87,8 +87,16 @@ def update_user(
         changes.append(f"role from {old_role} to {payload.role.value}")
 
     if payload.is_active is not None and payload.is_active != user.is_active:
+        if payload.is_active is False and (
+            current_user.id == user.id or current_user.email.lower() == user.email.lower()
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Administrators cannot deactivate their own account.",
+            )
         user.is_active = payload.is_active
         changes.append(f"status to {'Active' if payload.is_active else 'Deactivated'}")
+
 
     if payload.avatar_url is not None and payload.avatar_url != user.avatar_url:
         user.avatar_url = payload.avatar_url

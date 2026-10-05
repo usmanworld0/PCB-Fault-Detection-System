@@ -45,7 +45,7 @@ For deployment, provide the same environment variables to a Python-capable host,
 Set a token after login:
 
 ```bash
-curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d "{\"email\":\"admin@example.com\",\"password\":\"changeme\"}"
+curl -X POST http://localhost:8000/auth/login -H "Content-Type: application/json" -d "{\"email\":\"your-registered-email@company.com\",\"password\":\"your-password\"}"
 # {"access_token":"<TOKEN>","token_type":"bearer","role":"admin"}
 ```
 

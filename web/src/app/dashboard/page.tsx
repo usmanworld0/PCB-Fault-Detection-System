@@ -40,7 +40,7 @@ import { Stats, InspectionListItem, Notification, User } from "@/types/models";
 import { formatTimeAgo } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, role } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentInspections, setRecentInspections] = useState<InspectionListItem[]>([]);
   const [alerts, setAlerts] = useState<Notification[]>([]);
@@ -54,7 +54,11 @@ export default function DashboardPage() {
       setError(null);
       const [statsData, inspectionsData, notificationsData, usersData] = await Promise.all([
         getStats().catch(() => null),
-        getInspections({ limit: 6 }).catch(() => ({ items: [], total: 0 })),
+        getInspections({
+          limit: 6,
+          operator_email: currentUser?.email || undefined,
+          current_user_role: role || undefined,
+        }).catch(() => ({ items: [], total: 0 })),
         getNotifications(false).catch(() => ({ items: [], total: 0, unread_count: 0 })),
         getUsers().catch(() => []),
       ]);
@@ -72,7 +76,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [currentUser?.email, role]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -181,7 +185,7 @@ export default function DashboardPage() {
           members: [
             { name: defaultName, avatar: currentUser?.avatar_url || undefined },
           ],
-          budget: "YOLOv8m",
+          budget: "YOLOv8s",
           progression: 100,
           onClickHref: "/inspections",
         },
@@ -270,7 +274,7 @@ export default function DashboardPage() {
         },
         {
           id: "3",
-          title: "YOLOv8m Neural Model Inferred Frame",
+          title: "YOLOv8s Neural Model Inferred Frame",
           date: "1 hour ago",
           color: "#4299E1",
           icon: <Cpu className="w-3.5 h-3.5" />,

@@ -110,7 +110,10 @@ export default function UsersPage() {
       setNewEmail("");
       setNewPassword("");
       setUsers((prev) => [created, ...prev.filter((u) => u.email !== created.email)]);
-      showToast(`Created new account for ${created.email} with role '${created.role.toUpperCase()}'.`, "success");
+      showToast(
+        `Created account for ${created.email} (${created.role.toUpperCase()}). An email verification link was sent to their inbox.`,
+        "success"
+      );
     } catch (err: any) {
       setFormError(err.message || "Failed to create user.");
     } finally {
@@ -119,6 +122,16 @@ export default function UsersPage() {
   };
 
   const handleToggleStatus = async (user: User) => {
+    // Prevent an administrator from deactivating themselves
+    if (
+      user.is_active &&
+      (currentUser?.id === user.id ||
+        currentUser?.email?.toLowerCase() === user.email?.toLowerCase())
+    ) {
+      showToast("Administrators cannot deactivate their own account.", "error");
+      return;
+    }
+
     setUpdatingUserId(user.id);
     const newStatus = !user.is_active;
 
@@ -128,7 +141,11 @@ export default function UsersPage() {
     );
 
     try {
-      await updateUser(user.id, { is_active: newStatus });
+      await updateUser(user.id, {
+        is_active: newStatus,
+        current_user_email: currentUser?.email,
+        current_user_id: currentUser?.id,
+      } as any);
       showToast(
         `User account ${user.email} is now ${newStatus ? "ACTIVE" : "DEACTIVATED"}.`,
         "success"
@@ -143,6 +160,7 @@ export default function UsersPage() {
       setUpdatingUserId(null);
     }
   };
+
 
   const handleRoleChange = async (userId: string, role: UserRole) => {
     const targetUser = users.find((u) => u.id === userId);
@@ -261,7 +279,12 @@ export default function UsersPage() {
                 </div>
               )}
 
+              <div className="mb-4 p-3 rounded-[10px] bg-teal-50 border border-teal-200 text-[#319795] text-xs font-medium leading-relaxed">
+                ✉️ <strong>Email Link Verification:</strong> Added users will receive a verification email link to verify their address and activate their account on the deployed platform.
+              </div>
+
               <form onSubmit={handleCreateUser} className="space-y-4">
+
                 <div>
                   <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Email Address</label>
                   <input
@@ -444,16 +467,33 @@ export default function UsersPage() {
                         <td className="py-3.5 px-4 text-[#A0AEC0] font-semibold">{formatDate(u.created_at)}</td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="inline-flex items-center gap-2 justify-end">
-                            <button
-                              onClick={() => handleToggleStatus(u)}
-                              className={`px-3 py-1.5 rounded-[8px] text-xs font-bold border transition-colors ${
-                                u.is_active
-                                  ? "bg-[#FFF5F5] text-[#E53E3E] border-red-200 hover:bg-red-100"
-                                  : "bg-[#E6FFFA] text-[#319795] border-teal-200 hover:bg-teal-100"
-                              }`}
-                            >
-                              {u.is_active ? "Deactivate" : "Activate"}
-                            </button>
+                            {(() => {
+                              const isSelf =
+                                currentUser?.id === u.id ||
+                                currentUser?.email?.toLowerCase() === u.email?.toLowerCase();
+                              return (
+                                <button
+                                  onClick={() => handleToggleStatus(u)}
+                                  disabled={isSelf && u.is_active}
+                                  title={
+                                    isSelf && u.is_active
+                                      ? "Administrators cannot deactivate their own account"
+                                      : u.is_active
+                                      ? "Deactivate user"
+                                      : "Activate user"
+                                  }
+                                  className={`px-3 py-1.5 rounded-[8px] text-xs font-bold border transition-colors ${
+                                    isSelf && u.is_active
+                                      ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50"
+                                      : u.is_active
+                                      ? "bg-[#FFF5F5] text-[#E53E3E] border-red-200 hover:bg-red-100"
+                                      : "bg-[#E6FFFA] text-[#319795] border-teal-200 hover:bg-teal-100"
+                                  }`}
+                                >
+                                  {u.is_active ? "Deactivate" : "Activate"}
+                                </button>
+                              );
+                            })()}
                             <button
                               onClick={() => setUserToDelete(u)}
                               disabled={currentUser?.id === u.id || currentUser?.email === u.email}
@@ -467,6 +507,7 @@ export default function UsersPage() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+
                         </td>
                       </tr>
                     ))}
@@ -537,31 +578,49 @@ export default function UsersPage() {
                       </div>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleToggleStatus(u)}
-                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition-colors ${
-                          u.is_active
-                            ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                        }`}
-                      >
-                        {u.is_active ? "Deactivate" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => setUserToDelete(u)}
-                        disabled={currentUser?.id === u.id || currentUser?.email === u.email}
-                        title={
-                          currentUser?.id === u.id || currentUser?.email === u.email
-                            ? "Cannot delete your active account"
-                            : "Delete user account"
-                        }
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors disabled:opacity-30 disabled:pointer-events-none inline-flex items-center gap-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
+                    {(() => {
+                      const isSelf =
+                        currentUser?.id === u.id ||
+                        currentUser?.email?.toLowerCase() === u.email?.toLowerCase();
+                      return (
+                        <div className="pt-2 flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleToggleStatus(u)}
+                            disabled={isSelf && u.is_active}
+                            title={
+                              isSelf && u.is_active
+                                ? "Administrators cannot deactivate their own account"
+                                : u.is_active
+                                ? "Deactivate user"
+                                : "Activate user"
+                            }
+                            className={`flex-1 py-1.5 rounded-md text-xs font-semibold border transition-colors ${
+                              isSelf && u.is_active
+                                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-50"
+                                : u.is_active
+                                ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            }`}
+                          >
+                            {u.is_active ? "Deactivate" : "Activate"}
+                          </button>
+                          <button
+                            onClick={() => setUserToDelete(u)}
+                            disabled={isSelf}
+                            title={
+                              isSelf
+                                ? "Cannot delete your active account"
+                                : "Delete user account"
+                            }
+                            className="px-3 py-1.5 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition-colors disabled:opacity-30 disabled:pointer-events-none inline-flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
+
                   </div>
                 ))}
               </div>

@@ -19,12 +19,13 @@ async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
     settings = get_settings()
     with SessionLocal() as db:
-        # Seed initial admin user if no users exist
+        # Seed initial admin user using configured ADMIN_NOTIFICATION_EMAIL if no users exist
         if db.scalar(select(User.id).limit(1)) is None:
+            admin_target = (settings.admin_notification_email or "world.usman.business@gmail.com").lower()
             db.add(
                 User(
-                    email=settings.admin_email.lower(),
-                    password_hash=hash_password(settings.admin_password),
+                    email=admin_target,
+                    password_hash="supabase_auth_managed",
                     role=UserRole.admin,
                     is_active=True,
                 )

@@ -73,7 +73,7 @@ export default function InspectionDetailPage() {
       if (res.skipped) {
         setEmailSentNotice(res.message);
       } else {
-        setEmailSentNotice("Defect alert email successfully dispatched to admin via Resend!");
+        setEmailSentNotice("Defect alert email successfully dispatched to admin via SMTP!");
       }
       setTimeout(() => setEmailSentNotice(null), 5000);
     } catch (err: any) {
@@ -166,7 +166,7 @@ export default function InspectionDetailPage() {
                 onClick={handleSendEmailAlert}
                 disabled={isSendingEmail}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#319795] bg-[#E6FFFA] hover:bg-teal-100 border border-teal-200 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
-                title="Send Resend alert email to admin"
+                title="Send SMTP alert email to admin"
               >
                 <Mail className="w-3.5 h-3.5" />
                 <span>{isSendingEmail ? "Sending..." : "Email Alert to Admin"}</span>

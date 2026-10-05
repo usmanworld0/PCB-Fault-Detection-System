@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
@@ -38,6 +38,7 @@ def ingest(
     local_id: int | None = Form(None),
     operator_email: str | None = Form(None),
     operator_role: str | None = Form(None),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -143,11 +144,12 @@ def ingest(
 
         db.commit()
 
-        # Automated Resend email notification when inspection fails or has critical defects
+        # Automated SMTP email notification when inspection fails or has critical defects
         if payload["status"] == "FAIL" or has_critical:
             try:
-                from ..email_service import send_defect_email_alert
-                send_defect_email_alert(
+                from ..services.email import send_defect_email_alert
+                background_tasks.add_task(
+                    send_defect_email_alert,
                     inspection_id=str(inspection_id),
                     pcb_id=payload.get("pcb_id"),
                     station_id=station_id,
@@ -182,12 +184,16 @@ def list_inspections(
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     if not 1 <= limit <= 200 or offset < 0:
         raise HTTPException(status_code=422, detail="limit must be 1–200 and offset must not be negative")
 
     query = select(Inspection)
+    # Role-based visibility: non-admins only see inspections matching their operator email
+    if current_user.role != "admin" and current_user.role != UserRole.admin:
+        query = query.where(func.lower(Inspection.operator_email) == current_user.email.lower())
+
     if status:
         query = query.where(Inspection.status == status)
     if model:
@@ -233,6 +239,8 @@ def list_inspections(
                 station_id=i.station_id,
                 review_status=i.review_status,
                 final_status=i.final_status,
+                operator_email=i.operator_email,
+                operator_role=i.operator_role,
             )
             for i in inspections
         ],
@@ -243,7 +251,7 @@ def list_inspections(
 def inspection_detail(
     inspection_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     inspection = db.scalar(
         select(Inspection)
@@ -252,4 +260,11 @@ def inspection_detail(
     )
     if inspection is None:
         raise HTTPException(status_code=404, detail="Inspection not found")
+
+    # Role-based check: non-admins only see inspections matching their operator email
+    is_admin = current_user.role == "admin" or current_user.role == UserRole.admin
+    if not is_admin:
+        if not inspection.operator_email or inspection.operator_email.lower() != current_user.email.lower():
+            raise HTTPException(status_code=403, detail="You do not have permission to view this inspection")
+
     return inspection

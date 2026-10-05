@@ -19,8 +19,12 @@ import { getReports, generateReport, downloadReport } from "@/lib/api/reports";
 import { Report } from "@/types/models";
 import { formatDate } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
+import { useAuth } from "@/lib/auth/AuthContext";
 
 export default function ReportsPage() {
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin";
+
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +43,7 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getReports();
+      const data = await getReports({ email: user?.email, role });
       setReports(data);
     } catch (err: any) {
       setError(err.message || "Failed to load reports archive.");
@@ -50,7 +54,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchReportsList();
-  }, []);
+  }, [user?.email, role]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +68,8 @@ export default function ReportsPage() {
         format,
         status: statusFilter || undefined,
         model: modelFilter || undefined,
+        operator_email: user?.email,
+        current_user_role: role,
       });
       setIsModalOpen(false);
       fetchReportsList();
@@ -80,13 +86,24 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <h1 className="text-xl font-bold tracking-tight text-[#2D3748]">
                 Quality Reports
               </h1>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                  isAdmin
+                    ? "bg-purple-100 text-purple-700 border border-purple-200"
+                    : "bg-teal-50 text-teal-700 border border-teal-200"
+                }`}
+              >
+                {isAdmin ? "Admin (All Reports)" : "My Reports"}
+              </span>
             </div>
             <p className="text-xs font-semibold text-[#A0AEC0] mt-0.5">
-              Generate and download inspection summary reports.
+              {isAdmin
+                ? "Full administrator access: view, compile, and export quality reports across all team members."
+                : "Generate and export quality reports for your assigned PCB inspections and workstations."}
             </p>
           </div>
           <div className="flex items-center gap-2">

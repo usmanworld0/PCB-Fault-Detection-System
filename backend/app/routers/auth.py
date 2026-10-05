@@ -56,6 +56,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                     db.add(user)
                     db.commit()
 
+                if not user.is_active:
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated. Contact an administrator.")
+
                 db.add(AuditLog(
                     user_id=user.id,
                     user_email=user.email,
@@ -72,13 +75,19 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                     user_id=user.id,
                     email=user.email,
                 )
+            elif res.status_code in (400, 401):
+                err_json = res.json()
+                err_msg = err_json.get("error_description") or err_json.get("msg") or "Incorrect email or password. Only registered Supabase users may sign in."
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=err_msg)
+        except HTTPException:
+            raise
         except Exception:
             pass
 
-    # 2. Fallback: Local database check
+    # If Supabase is unreachable or not configured, check local database
     user = db.scalar(select(User).where(User.email == norm_email))
     if user is None or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password. Only registered Supabase users may sign in.")
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated. Contact an administrator.")
 

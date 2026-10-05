@@ -1,7 +1,10 @@
 node_modules/
 .next/
 .env
-.env.local
+.env.*
+!.env.example
+backend/.env
+web/.env.local
 __pycache__/
 *.pyc
 venv/

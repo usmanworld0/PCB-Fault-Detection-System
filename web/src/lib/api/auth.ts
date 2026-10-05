@@ -12,10 +12,10 @@ export async function login(email: string, password: string): Promise<LoginRespo
     "world.usman.business@gmail.com"
   ).toLowerCase();
 
-  // Support typing "admin" as username by mapping to known admin email candidates
+  // Support typing "admin" as shortcut by mapping only to verified admin accounts
   const candidateEmails =
     inputEmail === "admin"
-      ? [adminNotificationEmail, "231560@students.au.edu.pk", "admin@example.com"]
+      ? [adminNotificationEmail, "231560@students.au.edu.pk"]
       : [inputEmail];
 
   let lastAuthError: any = null;
@@ -47,7 +47,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
         }
 
         // 2. Default fallback to admin for primary operator if not set in database
-        if (!role && (normEmail === adminNotificationEmail || normEmail === "admin@example.com")) {
+        if (!role && normEmail === adminNotificationEmail) {
           role = "admin";
         }
 
@@ -87,7 +87,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
     setStoredToken(data.access_token);
     return data;
   } catch (apiErr: any) {
-    throw new Error(lastAuthError?.message || "Invalid email or password.");
+    throw new Error(lastAuthError?.message || "Invalid email or password. Only registered Supabase users may sign in.");
   }
 }
 
@@ -140,7 +140,7 @@ export async function getMe(): Promise<User> {
       }
 
       // Check configured admin email as default fallback if not set in database
-      if (!role && (normEmail === adminNotificationEmail || normEmail === "admin@example.com")) {
+      if (!role && normEmail === adminNotificationEmail) {
         role = "admin";
       }
 
@@ -218,9 +218,31 @@ export async function logout(): Promise<void> {
   }
 }
 
+const PRODUCTION_SITE_URL = "https://pcb-fault-detection-system.vercel.app";
+
+export function getAppUrl(): string {
+  // 1. Explicit env var if set and not pointing to localhost
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl.replace(/\/+$/, "");
+  }
+
+  // 2. Client window origin if on deployed non-localhost domain
+  if (typeof window !== "undefined" && window.location.origin) {
+    const origin = window.location.origin;
+    if (!origin.includes("localhost") && !origin.includes("127.0.0.1")) {
+      return origin.replace(/\/+$/, "");
+    }
+  }
+
+  // 3. Fallback to production deployed URL
+  return PRODUCTION_SITE_URL;
+}
+
 /**
  * Initiates the Forgot Password recovery flow via Supabase Auth.
- * Supabase sends an email containing a secure password reset link pointing to /reset-password.
+ * Supabase sends an email containing a secure password reset link pointing to /reset-password
+ * on the deployed site (https://pcb-fault-detection-system.vercel.app).
  */
 export async function requestPasswordReset(email: string): Promise<void> {
   const normEmail = email.trim().toLowerCase();
@@ -229,10 +251,8 @@ export async function requestPasswordReset(email: string): Promise<void> {
   }
 
   const supabase = getSupabase();
-  const redirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/reset-password`
-      : undefined;
+  const appUrl = getAppUrl();
+  const redirectTo = `${appUrl}/reset-password`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(normEmail, {
     redirectTo,
@@ -242,6 +262,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     throw new Error(error.message || "Failed to send password reset email.");
   }
 }
+
 
 /**
  * Updates the user's password using Supabase Auth.

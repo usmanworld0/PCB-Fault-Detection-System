@@ -24,13 +24,13 @@ export function EmailAlertSettingsCard() {
   const isAdmin = role === "admin";
   const [settings, setSettings] = useState<EmailAlertSettings>(DEFAULT_EMAIL_SETTINGS);
   const [emailInput, setEmailInput] = useState(DEFAULT_EMAIL_SETTINGS.recipientEmail);
+  const [adminRecipients, setAdminRecipients] = useState<string[]>([]);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
     const loaded = getEmailAlertSettings();
-    // If logged in as an admin and no manual override, bind to admin email
     if (isAdmin && user?.email && !localStorage.getItem("pcb_vision_email_alert_settings")) {
       loaded.recipientEmail = user.email;
     }
@@ -40,12 +40,16 @@ export function EmailAlertSettingsCard() {
     fetch("/api/notifications/email")
       .then((r) => r.json())
       .then((data) => {
+        if (Array.isArray(data.admin_recipients)) {
+          setAdminRecipients(data.admin_recipients);
+        }
         if (data.primary_admin && !localStorage.getItem("pcb_vision_email_alert_settings")) {
           setEmailInput(data.primary_admin);
         }
       })
       .catch(() => {});
   }, [user, isAdmin]);
+
 
   const handleToggle = (newVal: boolean) => {
     const updated = { ...settings, enabled: newVal };
@@ -71,7 +75,7 @@ export function EmailAlertSettingsCard() {
       const res = await sendTestEmail(emailInput.trim());
       setTestResult({
         success: true,
-        message: `Test email successfully delivered to ${emailInput.trim()} via Resend!`,
+        message: `Test email successfully delivered to ${emailInput.trim()} via SMTP!`,
       });
     } catch (err: any) {
       setTestResult({
@@ -94,12 +98,12 @@ export function EmailAlertSettingsCard() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-bold text-[#2D3748]">
-                Admin Email Notifications (Resend)
+                Admin Email Notifications (SMTP)
               </h3>
               {settings.enabled ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Active &bull; Resend Connected
+                  Active &bull; SMTP Connected
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[8px] bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider border border-gray-200">
@@ -138,35 +142,63 @@ export function EmailAlertSettingsCard() {
       </div>
 
       {/* Recipient Configuration & Test Action */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-        <form onSubmit={handleSaveEmail} className="md:col-span-8 space-y-1.5">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
-            Admin Recipient Email Address
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="email"
-              required
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="admin@manufacturing.org"
-              className="flex-1 px-3.5 py-2.5 bg-[#F8F9FA] border border-gray-200/80 rounded-[10px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] focus:bg-white transition-all shadow-xs"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2.5 rounded-[10px] bg-white hover:bg-gray-50 border border-gray-200/80 text-xs font-bold uppercase tracking-wider text-[#2D3748] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors shrink-0"
-            >
-              {savedSuccess ? (
-                <span className="flex items-center gap-1 text-emerald-600">
-                  <Check className="w-3.5 h-3.5" />
-                  Saved
+      <div className="space-y-3">
+        {adminRecipients.length > 0 && (
+          <div className="p-3 bg-[#F8F9FA] border border-gray-200/70 rounded-[10px] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#718096]">
+                Registered Admin Recipients ({adminRecipients.length})
+              </span>
+              <span className="text-[10px] text-teal-600 font-semibold">
+                Auto-Broadcast Enabled
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {adminRecipients.map((email) => (
+                <span
+                  key={email}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] bg-white border border-gray-200 text-[#2D3748] text-[11px] font-semibold font-mono"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4FD1C5]"></span>
+                  {email}
                 </span>
-              ) : (
-                "Save"
-              )}
-            </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-[#A0AEC0]">
+              All active registered administrators receive real-time defect email alerts.
+            </p>
           </div>
-        </form>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <form onSubmit={handleSaveEmail} className="md:col-span-8 space-y-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[#A0AEC0]">
+              Additional Recipient / Test Address
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="admin@manufacturing.org"
+                className="flex-1 px-3.5 py-2.5 bg-[#F8F9FA] border border-gray-200/80 rounded-[10px] text-xs font-semibold text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] focus:bg-white transition-all shadow-xs"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2.5 rounded-[10px] bg-white hover:bg-gray-50 border border-gray-200/80 text-xs font-bold uppercase tracking-wider text-[#2D3748] shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] transition-colors shrink-0"
+              >
+                {savedSuccess ? (
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <Check className="w-3.5 h-3.5" />
+                    Saved
+                  </span>
+                ) : (
+                  "Save"
+                )}
+              </button>
+            </div>
+          </form>
 
         <div className="md:col-span-4 flex items-center justify-end">
           <button
@@ -189,6 +221,8 @@ export function EmailAlertSettingsCard() {
           </button>
         </div>
       </div>
+    </div>
+
 
       {/* Trigger Criteria Pills */}
       <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-[#718096]">
@@ -203,7 +237,7 @@ export function EmailAlertSettingsCard() {
           • Critical Defect Flaws
         </span>
         <span className="text-[11px] text-[#A0AEC0] font-semibold">
-          (via Resend sandbox domain onboarding@resend.dev)
+          (via SMTP server: Gmail / Custom SMTP)
         </span>
       </div>
 

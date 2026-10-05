@@ -1,12 +1,71 @@
 import { getSupabase } from "@/lib/supabase";
 import { apiFetch } from "./client";
+import { getMe } from "./auth";
 import { InspectionListApiResponse, InspectionListParams } from "@/types/api";
-import { InspectionDetail, InspectionListItem } from "@/types/models";
+import { InspectionDetail, InspectionListItem, User } from "@/types/models";
+
+/**
+ * Helper to resolve current user's email and admin status
+ */
+async function resolveCurrentUserInfo(params?: InspectionListParams): Promise<{ email?: string; isAdmin: boolean }> {
+  const adminNotificationEmail = (
+    process.env.ADMIN_NOTIFICATION_EMAIL ||
+    process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+    "world.usman.business@gmail.com"
+  ).toLowerCase();
+
+  // If explicit in params:
+  if (params?.current_user_role !== undefined) {
+    const isAdmin = params.current_user_role === "admin";
+    return { email: params.operator_email?.toLowerCase(), isAdmin };
+  }
+
+  try {
+    const me: User = await getMe();
+    const email = me.email?.toLowerCase();
+    const isAdmin = me.role === "admin" || email === adminNotificationEmail;
+    return { email, isAdmin };
+  } catch {
+    // If not authenticated or cannot fetch user, check supabase session
+    try {
+      const supabase = getSupabase();
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (user?.email) {
+        const email = user.email.toLowerCase();
+        const isAdmin =
+          user.app_metadata?.role === "admin" ||
+          user.user_metadata?.role === "admin" ||
+          email === adminNotificationEmail;
+        return { email, isAdmin };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { email: undefined, isAdmin: false };
+}
 
 export async function getInspections(params: InspectionListParams = {}): Promise<InspectionListApiResponse> {
+  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo(params);
+
   try {
     const supabase = getSupabase();
     let query = supabase.from("inspections").select("*, defects(*)", { count: "exact" });
+
+    // Role-based scoping: non-admins only see inspections matching their operator email
+    if (!isAdmin) {
+      if (userEmail) {
+        query = query.ilike("operator_email", userEmail);
+      } else {
+        // Not authenticated or no email, return empty
+        return { items: [], total: 0 };
+      }
+    } else if (params.operator_email) {
+      // Admin filter by specific operator if requested
+      query = query.ilike("operator_email", params.operator_email);
+    }
 
     if (params.status) {
       query = query.eq("status", params.status);
@@ -87,6 +146,8 @@ export async function getInspections(params: InspectionListParams = {}): Promise
 }
 
 export async function getInspectionDetail(id: string): Promise<InspectionDetail> {
+  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo();
+
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase
@@ -96,6 +157,14 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
       .single();
 
     if (error || !data) throw error || new Error("Inspection not found");
+
+    // Non-admin ownership check
+    if (!isAdmin) {
+      const opEmail = data.operator_email?.toLowerCase();
+      if (!opEmail || !userEmail || opEmail !== userEmail) {
+        throw new Error("You do not have permission to view this inspection.");
+      }
+    }
 
     const defects = (data.defects || []).map((d: any) => {
       const box = Array.isArray(d.box_2d) ? d.box_2d : [0, 0, 0, 0];
@@ -130,20 +199,30 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
       pcb_id: data.pcb_id || undefined,
       image_index: data.image_index ?? 1,
     };
-  } catch {
+  } catch (err: any) {
+    if (err?.message?.includes("permission")) {
+      throw err;
+    }
     return apiFetch<InspectionDetail>(`/inspections/${id}`);
   }
 }
 
 export async function getSubInspections(pcbId: string): Promise<InspectionListItem[]> {
   if (!pcbId) return [];
+  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo();
+
   try {
     const supabase = getSupabase();
-    const { data, error } = await supabase
+    let query = supabase
       .from("inspections")
       .select("*, defects(*)")
-      .eq("pcb_id", pcbId)
-      .order("image_index", { ascending: true });
+      .eq("pcb_id", pcbId);
+
+    if (!isAdmin && userEmail) {
+      query = query.ilike("operator_email", userEmail);
+    }
+
+    const { data, error } = await query.order("image_index", { ascending: true });
 
     if (error || !data) return [];
 

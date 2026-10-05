@@ -112,7 +112,7 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        {/* Resend Email Notification Settings Card */}
+        {/* SMTP Email Notification Settings Card */}
         <EmailAlertSettingsCard />
 
         {/* Filter Bar */}
