@@ -45,8 +45,32 @@ async function resolveReportUserInfo(context?: { email?: string; role?: string }
   return { email: undefined, isAdmin: false };
 }
 
+const LOCAL_REPORTS_KEY = "pcb_local_reports";
+
+function _getLocalReports(): Report[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_REPORTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function _saveToLocalReports(report: Report) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = _getLocalReports();
+    const updated = [report, ...current.filter((r) => r.id !== report.id)].slice(0, 100);
+    localStorage.setItem(LOCAL_REPORTS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn("Failed saving report to localStorage:", e);
+  }
+}
+
 export async function getReports(userContext?: { email?: string; role?: string }): Promise<Report[]> {
   const { email: userEmail, isAdmin } = await resolveReportUserInfo(userContext);
+  let serverReports: Report[] = [];
 
   try {
     const supabase = getSupabase();
@@ -57,21 +81,46 @@ export async function getReports(userContext?: { email?: string; role?: string }
       if (userEmail) {
         query = query.ilike("created_by_email", userEmail);
       } else {
-        return [];
+        query = query.eq("id", "__never__");
       }
     }
 
     const { data, error } = await query.order("created_at", { ascending: false });
-    if (error) throw error;
-    return (data || []) as Report[];
+    if (!error && data) {
+      serverReports = data as Report[];
+    }
   } catch (err: any) {
     // Fallback to backend reports endpoint
     try {
-      return await apiFetch<Report[]>("/reports");
+      serverReports = await apiFetch<Report[]>("/reports");
     } catch {
-      return [];
+      serverReports = [];
     }
   }
+
+  // Merge with localStorage reports so generated reports always show
+  const localReports = _getLocalReports();
+  const filteredLocal = localReports.filter((r) => {
+    if (isAdmin) return true;
+    if (!userEmail) return false;
+    return (r.created_by_email || "").toLowerCase() === userEmail.toLowerCase();
+  });
+
+  const map = new Map<string, Report>();
+  for (const r of serverReports) {
+    map.set(r.id, r);
+  }
+  for (const r of filteredLocal) {
+    if (!map.has(r.id)) {
+      map.set(r.id, r);
+    }
+  }
+
+  const merged = Array.from(map.values()).sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  return merged;
 }
 
 export async function generateReport(payload: ReportGeneratePayload): Promise<Report> {
@@ -175,7 +224,12 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
     };
 
     // 3. Insert report record into Supabase reports table
-    const reportPayload = {
+    const reportId = typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `rep-${Date.now()}`;
+
+    const reportPayload: Report = {
+      id: reportId,
       title: payload.title,
       report_type: payload.report_type,
       format: (payload.format ?? "CSV").toUpperCase(),
@@ -185,6 +239,9 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
       created_by_email: creatorEmail,
       created_at: new Date().toISOString(),
     };
+
+    // Cache locally immediately so it shows up in Generated Reports Archive
+    _saveToLocalReports(reportPayload);
 
     const { data: inserted, error: insertErr } = await supabase
       .from("reports")
@@ -196,22 +253,16 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
     _triggerDownload(payload.format ?? "CSV", payload.title, summaryJson, csvContent);
 
     if (insertErr) {
-      // Table may have RLS or be local ephemeral
       console.warn("Could not persist report to supabase:", insertErr.message);
-      return {
-        id: `local-${Date.now()}`,
-        title: payload.title,
-        report_type: payload.report_type,
-        format: (payload.format ?? "CSV").toUpperCase(),
-        status: "COMPLETED",
-        summary_json: summaryJson,
-        file_content: csvContent,
-        created_by_email: creatorEmail,
-        created_at: new Date().toISOString(),
-      } as Report;
+      return reportPayload;
     }
 
-    return inserted as Report;
+    if (inserted) {
+      _saveToLocalReports(inserted as Report);
+      return inserted as Report;
+    }
+
+    return reportPayload;
   } catch (err: any) {
     // If Supabase fails, try FastAPI backend report generation
     try {
@@ -228,6 +279,10 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
         }),
       });
 
+      if (res) {
+        _saveToLocalReports(res);
+      }
+
       if (res.file_url) {
         window.open(res.file_url, "_blank");
       }
@@ -236,6 +291,61 @@ export async function generateReport(payload: ReportGeneratePayload): Promise<Re
       throw err;
     }
   }
+}
+
+/** Helper to explicitly save any generated/exported report to archive */
+export async function saveReportToArchive(params: {
+  title: string;
+  report_type: string;
+  format?: string;
+  csv_content?: string;
+  total_inspections?: number;
+  operator_email?: string;
+  current_user_role?: string;
+  summary_json?: Record<string, any>;
+}): Promise<Report> {
+  const { email: userEmail } = await resolveReportUserInfo({
+    email: params.operator_email,
+    role: params.current_user_role,
+  });
+
+  const creatorEmail = userEmail || "system";
+  const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `rep-${Date.now()}`;
+  const now = new Date().toISOString();
+  const format = (params.format || "CSV").toUpperCase();
+
+  const summary = params.summary_json || {
+    title: params.title,
+    report_type: params.report_type,
+    total_inspections: params.total_inspections ?? 0,
+    generated_at: now,
+    csv_content: params.csv_content,
+  };
+
+  const reportRecord: Report = {
+    id,
+    title: params.title,
+    report_type: params.report_type,
+    format,
+    status: "COMPLETED",
+    summary_json: summary,
+    file_content: params.csv_content || null,
+    created_by_email: creatorEmail,
+    created_at: now,
+  };
+
+  // Always cache locally so it immediately shows up in Generated Reports Archive
+  _saveToLocalReports(reportRecord);
+
+  // Try saving to database as well
+  try {
+    const supabase = getSupabase();
+    await supabase.from("reports").insert(reportRecord);
+  } catch (err) {
+    console.warn("Could not persist report to supabase:", err);
+  }
+
+  return reportRecord;
 }
 
 function _triggerDownload(

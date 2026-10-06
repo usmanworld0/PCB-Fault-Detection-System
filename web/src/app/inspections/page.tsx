@@ -27,6 +27,7 @@ import { InspectionListItem } from "@/types/models";
 import { formatDate, formatTimeAgo } from "@/lib/utils";
 import { DEFECT_LABELS } from "@/lib/constants/defects";
 import { useAuth } from "@/lib/auth/AuthContext";
+import { saveReportToArchive } from "@/lib/api/reports";
 
 interface GroupedPCBItem {
   key: string;
@@ -182,7 +183,7 @@ export default function InspectionsPage() {
     }
   };
 
-  const exportCurrentCsv = () => {
+  const exportCurrentCsv = async () => {
     if (items.length === 0) return;
     const headers = ["Inspection ID", "PCB ID", "Sub-Image #", "Captured At", "Station", "Operator", "Role", "Model", "Status", "Defects", "Review Status"];
     const rows = items.map((i) => [
@@ -199,15 +200,29 @@ export default function InspectionsPage() {
       i.review_status,
     ]);
     const csvContent =
-      "data:text/csv;charset=utf-8," +
       [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const encodedUri = "data:text/csv;charset=utf-8," + encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", `inspections_export_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Also persist under Generated Reports Archive
+    try {
+      await saveReportToArchive({
+        title: `Inspections Export (${new Date().toLocaleDateString()})`,
+        report_type: "Inspection Summary",
+        format: "CSV",
+        csv_content: csvContent,
+        total_inspections: items.length,
+        operator_email: user?.email,
+        current_user_role: role,
+      });
+    } catch (e) {
+      console.warn("Failed saving export to archive:", e);
+    }
   };
 
   const totalPages = Math.ceil(total / limit) || 1;

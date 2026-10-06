@@ -32,6 +32,7 @@ def run_migration():
         "CREATE INDEX IF NOT EXISTS idx_inspections_pcb_id ON inspections (pcb_id);",
         "CREATE INDEX IF NOT EXISTS idx_inspections_pcb_image ON inspections (pcb_id, image_index);",
         "ALTER TABLE reports ADD COLUMN IF NOT EXISTS summary_json JSONB;",
+        "ALTER TABLE reports ALTER COLUMN id SET DEFAULT gen_random_uuid();",
         "NOTIFY pgrst, 'reload schema';"
     ]
 

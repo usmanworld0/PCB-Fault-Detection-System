@@ -62,7 +62,7 @@ export default function ReportsPage() {
     setGenerating(true);
 
     try {
-      await generateReport({
+      const newReport = await generateReport({
         title,
         report_type: reportType,
         format,
@@ -72,6 +72,9 @@ export default function ReportsPage() {
         current_user_role: role,
       });
       setIsModalOpen(false);
+      if (newReport) {
+        setReports((prev) => [newReport, ...prev.filter((r) => r.id !== newReport.id)]);
+      }
       fetchReportsList();
     } catch (err: any) {
       setFormError(err.message || "Failed to generate report.");
@@ -205,7 +208,6 @@ export default function ReportsPage() {
                       className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs font-medium text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
                     >
                       <option value="CSV">CSV Data File</option>
-                      <option value="PDF">Printable Report</option>
                     </select>
                   </div>
                 </div>
