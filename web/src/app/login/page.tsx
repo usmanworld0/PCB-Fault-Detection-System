@@ -27,7 +27,6 @@ function LoginForm() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(
     expired ? "Session expired. Please sign in again." : null
@@ -271,21 +270,6 @@ function LoginForm() {
         </div>
       </div>
 
-      {/* Remember Me Switch */}
-      <div className="flex items-center gap-2.5 pt-1 ml-1">
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="sr-only peer"
-          />
-          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#4FD1C5]"></div>
-          <span className="ml-2.5 text-xs font-normal text-[#2D3748]">
-            Remember me
-          </span>
-        </label>
-      </div>
 
       {/* Submit Button */}
       <button

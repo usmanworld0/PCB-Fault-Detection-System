@@ -131,7 +131,6 @@ export default function InspectionsPage() {
         station_id: stationId || undefined,
         pcb_id: pcbIdFilter.trim() || undefined,
         search: search.trim() || undefined,
-        operator_email: user?.email || undefined,
         current_user_role: role || undefined,
         limit,
         offset,
@@ -147,7 +146,7 @@ export default function InspectionsPage() {
 
   useEffect(() => {
     fetchInspections();
-  }, [status, model, defectClass, stationId, pcbIdFilter, limit, offset, role, user?.email]);
+  }, [status, model, defectClass, stationId, pcbIdFilter, limit, offset, role]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

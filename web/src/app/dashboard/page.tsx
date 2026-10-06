@@ -56,7 +56,6 @@ export default function DashboardPage() {
         getStats().catch(() => null),
         getInspections({
           limit: 6,
-          operator_email: currentUser?.email || undefined,
           current_user_role: role || undefined,
         }).catch(() => ({ items: [], total: 0 })),
         getNotifications(false).catch(() => ({ items: [], total: 0, unread_count: 0 })),

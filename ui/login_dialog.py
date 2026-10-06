@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.auth import authenticate_station_user, get_active_session, request_password_reset
+from core.auth import authenticate_station_user, request_password_reset
 
 # Locate official logo asset
 _ASSETS_DIR = Path(__file__).resolve().parent / "assets"
@@ -212,10 +212,6 @@ class LoginDialog(QDialog):
         self.txt_email.returnPressed.connect(self._focus_password)
         if prefill_email:
             self.txt_email.setText(prefill_email)
-        else:
-            cached = get_active_session()
-            if cached and cached.get("email"):
-                self.txt_email.setText(cached["email"])
 
         form_layout.addWidget(lbl_email)
         form_layout.addWidget(self.txt_email)

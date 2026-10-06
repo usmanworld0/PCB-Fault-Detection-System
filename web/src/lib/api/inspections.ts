@@ -7,24 +7,20 @@ import { InspectionDetail, InspectionListItem, User } from "@/types/models";
 /**
  * Helper to resolve current user's email and admin status
  */
-async function resolveCurrentUserInfo(params?: InspectionListParams): Promise<{ email?: string; isAdmin: boolean }> {
+async function resolveCurrentUserInfo(params?: InspectionListParams): Promise<{ email?: string; isAdmin: boolean; isInspector: boolean }> {
   const adminNotificationEmail = (
     process.env.ADMIN_NOTIFICATION_EMAIL ||
     process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
     "world.usman.business@gmail.com"
   ).toLowerCase();
 
-  // If explicit in params:
-  if (params?.current_user_role !== undefined) {
-    const isAdmin = params.current_user_role === "admin";
-    return { email: params.operator_email?.toLowerCase(), isAdmin };
-  }
+  let role = params?.current_user_role;
+  let email: string | undefined = undefined;
 
   try {
     const me: User = await getMe();
-    const email = me.email?.toLowerCase();
-    const isAdmin = me.role === "admin" || email === adminNotificationEmail;
-    return { email, isAdmin };
+    email = me.email?.toLowerCase();
+    role = role || me.role;
   } catch {
     // If not authenticated or cannot fetch user, check supabase session
     try {
@@ -32,38 +28,33 @@ async function resolveCurrentUserInfo(params?: InspectionListParams): Promise<{ 
       const { data } = await supabase.auth.getSession();
       const user = data?.session?.user;
       if (user?.email) {
-        const email = user.email.toLowerCase();
-        const isAdmin =
-          user.app_metadata?.role === "admin" ||
-          user.user_metadata?.role === "admin" ||
-          email === adminNotificationEmail;
-        return { email, isAdmin };
+        email = user.email.toLowerCase();
+        role = role || user.app_metadata?.role || user.user_metadata?.role;
       }
     } catch {
       // ignore
     }
   }
 
-  return { email: undefined, isAdmin: false };
+  const isAdmin = role === "admin" || (email ? email === adminNotificationEmail : false);
+  const isInspector = role === "inspector";
+
+  return { email, isAdmin, isInspector };
 }
 
 export async function getInspections(params: InspectionListParams = {}): Promise<InspectionListApiResponse> {
-  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo(params);
+  const { email: userEmail, isAdmin, isInspector } = await resolveCurrentUserInfo(params);
 
   try {
     const supabase = getSupabase();
     let query = supabase.from("inspections").select("*, defects(*)", { count: "exact" });
 
-    // Role-based scoping: non-admins only see inspections matching their operator email
-    if (!isAdmin) {
-      if (userEmail) {
-        query = query.ilike("operator_email", userEmail);
-      } else {
-        // Not authenticated or no email, return empty
-        return { items: [], total: 0 };
-      }
+    // Role-based scoping: only isolated 'inspector' role is restricted to own records.
+    // Admins, engineers, and viewers have plant-wide visibility to review and monitor inspections.
+    if (isInspector && !isAdmin && userEmail) {
+      query = query.ilike("operator_email", userEmail);
     } else if (params.operator_email) {
-      // Admin filter by specific operator if requested
+      // Explicit operator filter chosen by the user
       query = query.ilike("operator_email", params.operator_email);
     }
 
@@ -146,7 +137,7 @@ export async function getInspections(params: InspectionListParams = {}): Promise
 }
 
 export async function getInspectionDetail(id: string): Promise<InspectionDetail> {
-  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo();
+  const { email: userEmail, isAdmin, isInspector } = await resolveCurrentUserInfo();
 
   try {
     const supabase = getSupabase();
@@ -158,10 +149,10 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
 
     if (error || !data) throw error || new Error("Inspection not found");
 
-    // Non-admin ownership check
-    if (!isAdmin) {
+    // Inspector ownership check (admin, engineer, viewer can view all plant inspections)
+    if (isInspector && !isAdmin && userEmail) {
       const opEmail = data.operator_email?.toLowerCase();
-      if (!opEmail || !userEmail || opEmail !== userEmail) {
+      if (opEmail && opEmail !== userEmail) {
         throw new Error("You do not have permission to view this inspection.");
       }
     }
@@ -209,7 +200,7 @@ export async function getInspectionDetail(id: string): Promise<InspectionDetail>
 
 export async function getSubInspections(pcbId: string): Promise<InspectionListItem[]> {
   if (!pcbId) return [];
-  const { email: userEmail, isAdmin } = await resolveCurrentUserInfo();
+  const { email: userEmail, isAdmin, isInspector } = await resolveCurrentUserInfo();
 
   try {
     const supabase = getSupabase();
@@ -218,7 +209,7 @@ export async function getSubInspections(pcbId: string): Promise<InspectionListIt
       .select("*, defects(*)")
       .eq("pcb_id", pcbId);
 
-    if (!isAdmin && userEmail) {
+    if (isInspector && !isAdmin && userEmail) {
       query = query.ilike("operator_email", userEmail);
     }
 

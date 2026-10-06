@@ -139,6 +139,7 @@ class MainWindow(QMainWindow):
         self.current_pcb_id = ""
         self.current_pcb_image_count = 0
         self.model_lock = threading.Lock()
+        self.logged_out = False
 
         # ---- Operator Identity Header Card (Left Panel) ----
         self.operator_card = QFrame()
@@ -169,7 +170,10 @@ class MainWindow(QMainWindow):
             padding: 1px 4px;
             max-width: 140px;
         """)
-        self.btn_switch_user = QPushButton("Switch / Sign Out")
+        btn_user_row = QHBoxLayout()
+        btn_user_row.setSpacing(4)
+
+        self.btn_switch_user = QPushButton("Switch User")
         self.btn_switch_user.setCursor(Qt.PointingHandCursor)
         self.btn_switch_user.setStyleSheet("""
             QPushButton {
@@ -187,10 +191,31 @@ class MainWindow(QMainWindow):
         """)
         self.btn_switch_user.clicked.connect(self.switch_operator)
 
+        self.btn_sign_out = QPushButton("Sign Out")
+        self.btn_sign_out.setCursor(Qt.PointingHandCursor)
+        self.btn_sign_out.setStyleSheet("""
+            QPushButton {
+                background-color: #1e1e2e;
+                color: #f87171;
+                font-size: 10px;
+                border: 1px solid #7f1d1d;
+                border-radius: 3px;
+                padding: 3px 6px;
+            }
+            QPushButton:hover {
+                background-color: #991b1b;
+                color: #ffffff;
+            }
+        """)
+        self.btn_sign_out.clicked.connect(self.sign_out)
+
+        btn_user_row.addWidget(self.btn_switch_user)
+        btn_user_row.addWidget(self.btn_sign_out)
+
         op_layout.addWidget(lbl_op_title)
         op_layout.addWidget(self.lbl_op_email)
         op_layout.addWidget(self.lbl_op_role)
-        op_layout.addWidget(self.btn_switch_user)
+        op_layout.addLayout(btn_user_row)
 
         # --- PCB Identity Section ---
         pcb_frame = QFrame()
@@ -365,11 +390,27 @@ class MainWindow(QMainWindow):
 
         self.chk_auto.setEnabled(can_save)
 
+    def sign_out(self):
+        """Signs out active station operator without requiring credentials."""
+        reply = QMessageBox.question(
+            self,
+            "Sign Out",
+            "Are you sure you want to sign out?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            clear_active_session()
+            self.logged_out = True
+            self.stop_live()
+            self.statusBar().showMessage("Operator signed out.")
+            self.close()
+
     def switch_operator(self):
         """Prompts login dialog to switch active station operator."""
-        clear_active_session()
         dlg = LoginDialog(self)
         if dlg.exec() == QDialog.Accepted and dlg.authenticated_user:
+            clear_active_session()
             self.current_user = dlg.authenticated_user
             self.apply_role_permissions()
             self.statusBar().showMessage(f"Active operator switched: {self.current_user['email']} ({self.current_user['role'].upper()})")
