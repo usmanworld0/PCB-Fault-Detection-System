@@ -197,7 +197,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+    <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in" autoComplete="off">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#4FD1C5] tracking-tight">
           New Password
@@ -222,6 +222,9 @@ function ResetPasswordForm() {
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
+            name="new_password"
+            id="new_password"
+            autoComplete="new-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -252,6 +255,9 @@ function ResetPasswordForm() {
         <div className="relative">
           <input
             type={showConfirmPassword ? "text" : "password"}
+            name="confirm_password"
+            id="confirm_password"
+            autoComplete="new-password"
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

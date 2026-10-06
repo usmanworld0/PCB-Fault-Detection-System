@@ -243,7 +243,13 @@ export default function UsersPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setNewEmail("");
+                setNewPassword("");
+                setNewRole("engineer");
+                setFormError(null);
+                setIsModalOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider bg-[#4FD1C5] hover:bg-[#319795] text-white shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors"
             >
               <UserPlus className="w-4 h-4" />
@@ -266,7 +272,12 @@ export default function UsersPage() {
               <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-gray-100">
                 <h3 className="text-base font-bold text-[#2D3748]">Create New User Account</h3>
                 <button
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewEmail("");
+                    setNewPassword("");
+                    setFormError(null);
+                  }}
                   className="p-1.5 rounded-lg text-[#A0AEC0] hover:text-[#2D3748] hover:bg-gray-100 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -283,13 +294,19 @@ export default function UsersPage() {
                 ✉️ <strong>Email Link Verification:</strong> Added users will receive a verification email link to verify their address and activate their account on the deployed platform.
               </div>
 
-              <form onSubmit={handleCreateUser} className="space-y-4">
+              <form onSubmit={handleCreateUser} className="space-y-4" autoComplete="off">
 
                 <div>
                   <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Email Address</label>
                   <input
                     type="email"
+                    name="new_user_email"
+                    id="new_user_email"
                     required
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="engineer@manufacturing.org"
@@ -301,7 +318,10 @@ export default function UsersPage() {
                   <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1.5">Temporary Password</label>
                   <input
                     type="password"
+                    name="new_user_password"
+                    id="new_user_password"
                     required
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
@@ -326,7 +346,12 @@ export default function UsersPage() {
                 <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-gray-100">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setNewEmail("");
+                      setNewPassword("");
+                      setFormError(null);
+                    }}
                     className="px-4 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider text-[#718096] bg-gray-50 hover:bg-gray-100 border border-gray-200/80 transition-colors"
                   >
                     Cancel

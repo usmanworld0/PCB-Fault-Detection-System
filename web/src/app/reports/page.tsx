@@ -31,7 +31,7 @@ export default function ReportsPage() {
 
   // Report Generator Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [title, setTitle] = useState("Weekly PCB Quality Summary");
+  const [title, setTitle] = useState("");
   const [reportType, setReportType] = useState("Inspection Summary");
   const [format, setFormat] = useState("CSV");
   const [statusFilter, setStatusFilter] = useState("");
@@ -108,7 +108,11 @@ export default function ReportsPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setTitle("");
+                setFormError(null);
+                setIsModalOpen(true);
+              }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-xs font-bold uppercase tracking-wider bg-[#4FD1C5] hover:bg-[#319795] text-white shadow-[0_2px_6px_rgba(79,209,197,0.3)] transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -144,7 +148,7 @@ export default function ReportsPage() {
                 </div>
               )}
 
-              <form onSubmit={handleGenerate} className="space-y-4">
+              <form onSubmit={handleGenerate} className="space-y-4" autoComplete="off">
                 <div>
                   <label className="block text-[10px] font-bold text-[#A0AEC0] uppercase tracking-wider mb-1">
                     Report Title
@@ -152,8 +156,10 @@ export default function ReportsPage() {
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Weekly PCB Quality Summary"
                     className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs text-[#2D3748] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
                   />
                 </div>

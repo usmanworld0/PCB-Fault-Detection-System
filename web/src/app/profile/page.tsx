@@ -282,7 +282,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-xl">
+          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-xl" autoComplete="off">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#A0AEC0] mb-1.5">
                 New Strong Password
@@ -293,6 +293,9 @@ export default function ProfilePage() {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="profile_new_password"
+                  id="profile_new_password"
+                  autoComplete="new-password"
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -323,6 +326,9 @@ export default function ProfilePage() {
                 </div>
                 <input
                   type={showConfirmPassword ? "text" : "password"}
+                  name="profile_confirm_password"
+                  id="profile_confirm_password"
+                  autoComplete="new-password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

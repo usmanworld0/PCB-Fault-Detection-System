@@ -248,7 +248,7 @@ export default function InspectionsPage() {
 
         {/* Filter Toolbar */}
         <div className="bg-white border border-gray-200/70 rounded-[15px] p-5 shadow-[0px_3.5px_5.5px_rgba(0,0,0,0.02)] space-y-4">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3" autoComplete="off">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-3 w-4 h-4 text-[#A0AEC0]" />
               <input
@@ -256,6 +256,7 @@ export default function InspectionsPage() {
                 placeholder="Search by PCB ID, Inspection ID, station, or model..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                autoComplete="off"
                 className="w-full pl-10 pr-4 py-2.5 bg-[#F8F9FA] border border-gray-200/80 rounded-[12px] text-xs text-[#2D3748] placeholder:text-[#A0AEC0] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5] focus:bg-white transition-all"
               />
             </div>
@@ -281,6 +282,7 @@ export default function InspectionsPage() {
                   setPcbIdFilter(e.target.value);
                   setOffset(0);
                 }}
+                autoComplete="off"
                 className="w-full px-3 py-2 bg-white border border-gray-200/80 rounded-[10px] text-xs text-[#2D3748] placeholder:text-[#A0AEC0] focus:outline-none focus:ring-1 focus:ring-[#4FD1C5] focus:border-[#4FD1C5]"
               />
             </div>

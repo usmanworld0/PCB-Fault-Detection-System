@@ -95,6 +95,7 @@ export function Header({ onToggleSidebar }: HeaderProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
+              autoComplete="off"
               className="w-full pl-8 pr-2.5 sm:pr-3 py-1.5 text-xs text-[#2D3748] bg-white border border-gray-200 rounded-[15px] focus:outline-none focus:border-[#4FD1C5] focus:ring-1 focus:ring-[#4FD1C5] transition-all placeholder:text-[#A0AEC0]"
             />
           </div>

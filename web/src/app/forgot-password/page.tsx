@@ -77,7 +77,7 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in">
+    <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in" autoComplete="off">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#4FD1C5] tracking-tight">
           Reset Password
@@ -101,6 +101,7 @@ function ForgotPasswordForm() {
         <input
           type="email"
           required
+          autoComplete="off"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="operator@manufacturing.org"

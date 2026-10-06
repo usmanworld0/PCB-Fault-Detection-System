@@ -529,7 +529,8 @@ The system operates across three decoupled physical tiers: **Edge Workstation Ti
 [ Edge Station / Web Upload detects 'Critical' Defect (`open` or `short`) ]
           │
           ▼
-[ Trigger Notification Logic ]
+[ Check Alert Settings Switch ]
+  └── Master toggle in `EmailAlertSettingsCard` verifies alerts are actively enabled
           │
           ▼
 [ Query Active Administrators ]
@@ -544,7 +545,7 @@ The system operates across three decoupled physical tiers: **Edge Workstation Ti
   │     - Direct Link to Web Inspection Portal
   ├── Initialize Secure SMTP Connection (TLS / Port 587)
   ├── Authenticate via SMTP Credentials (Gmail App Password)
-  └── Broadcast email to all active administrative recipients
+  └── Broadcast email to all active administrative recipients (zero manual recipient maintenance)
           │
           ▼
 [ Insert into `notifications` Table ]
@@ -807,11 +808,18 @@ The system implements a dual-layer authentication model designed to support both
 - Managed via the official Supabase JavaScript SDK (`@supabase/supabase-js`) in `web/src/lib/api/auth.ts`.
 - **Login**: `supabase.auth.signInWithPassword({ email, password })`. Upon successful authentication, Supabase issues an access token and refresh token.
 - **Client-Side Token Persistence**: The access token is persisted in the browser's `localStorage` under the key `pcb_access_token` (configured in `web/src/lib/api/client.ts`).
+- **Elimination of "Remember Me" / Clean-Desk Policy**: The login flow intentionally omits "Remember Me" functionality to adhere to industrial shared-terminal policies, preventing prolonged cached sessions from surviving unattended workstations.
+- **Form Autofill & Credential Injection Prevention**: All critical forms—including User Creation modals (`/users`), Login (`/login`), Forgot Password (`/forgot-password`), Password Reset (`/reset-password`), Profile Settings (`/profile`), and Report Generation (`/reports`)—enforce `autoComplete="off"` at the form level and `autoComplete="new-password"` on sensitive credential inputs. Unique element identifiers and dynamic state resets ensure browser password managers cannot inadvertently auto-populate stale credentials or cached templates into administrative modals.
 - **Registration Flow**: `supabase.auth.signUp({ email, password, options: { data: { full_name, role: 'inspector' } } })`. New users are registered with email verification enabled, requiring the user to confirm their email address before activation.
 - **Forgot Password Flow**: `supabase.auth.resetPasswordForEmail(email, { redirectTo: 'https://pcb-fault-detection-system.vercel.app/reset-password' })`. When the user clicks the reset link in their email, they are directed to the deployed production reset-password page rather than `localhost`.
 - **De-authentication (Logout)**: `supabase.auth.signOut()`. Clears active sessions and purges the token from browser storage.
 
-### 2. Backend REST API Authentication Layer
+### 2. Edge Workstation De-Authentication & Shift Handover Layer
+- Implemented in `ui/main_window.py` and `ui/login_dialog.py` for PySide6 desktop clients on shop-floor terminals.
+- **Credential-Free Sign Out**: When an operator ends their shift, clicking "Sign Out" prompts a simple confirmation dialogue and immediately invokes `clear_active_session()`, halts the live video capture pipeline, and closes the main window without forcing the departing operator to re-authenticate with their password just to log out.
+- **Clean Lock Screen Initialization**: The workstation lock screen (`LoginDialog`) initializes with empty, clean input fields without pre-populating previous operator emails, preventing accidental credential crossover across rotating shifts.
+
+### 3. Backend REST API Authentication Layer
 - Implemented in `backend/app/auth.py` using **PyJWT** and **FastAPI Security** (`HTTPBearer`).
 - Provides fallback direct authentication endpoints (`/api/auth/login`, `/api/auth/register`, `/api/auth/me`).
 - Password hashing is enforced via **Passlib** using the **Bcrypt** algorithm:
@@ -911,17 +919,17 @@ if target_user_id == current_user.id and updated_data.is_active is False:
     )
 ```
 
-#### 2. Isolation of Inspections by User Role
+#### 2. Scoping and Isolation of Inspections by User Role
 In `web/src/lib/api/inspections.ts` and `backend/app/routers/inspections.py`:
 - When an `inspector` requests the inspection list:
   ```sql
-  SELECT * FROM inspections WHERE user_id = :current_user_id ORDER BY created_at DESC;
+  SELECT * FROM inspections WHERE operator_email ILIKE :current_user_email ORDER BY created_at DESC;
   ```
-- When an `admin` requests the inspection list:
+- When an `admin`, `engineer`, or `viewer` requests the inspection list:
   ```sql
   SELECT * FROM inspections ORDER BY created_at DESC;
   ```
-This ensures operators can never view or tamper with inspections performed by other operators or lines.
+This ensures operators remain focused on their assigned shift boards and cannot alter or view unauthorized station records, while quality engineers and administrators maintain complete plant-wide visibility to audit all production lines.
 
 #### 3. Isolation of Report Generation by User Role
 In `web/src/lib/api/reports.ts`:
@@ -1025,6 +1033,8 @@ This table maps every primary button and user action across the web and desktop 
 | **"Mark as Read"** | `/notifications` | `web/src/app/notifications/page.tsx` | `handleMarkRead()` | `markNotificationRead(id)` | `PATCH` | `backend/routers/notifications.py` | `notifications` | None | None | Notification badge counter decrements by 1 |
 | **"Inspect Board"** | Desktop App | `ui/main_window.py` | `on_inspect_clicked()` | Local worker execution | Internal | None (Local execution) | `station.db` (local SQLite) | Queued for cloud upload | `core/detector.py`: ONNX inference + NMS + Tiling | Colored bounding boxes rendered on live canvas overlay |
 | **"Sync Now"** | Desktop App | `ui/main_window.py` | `on_sync_clicked()` | `core/sync.py`: `run_sync()` | `POST` (HTTPS) | PostgREST / Storage S3 | `inspections`, `defects` | Upload images to `pcb-vision` bucket | None | Sync status badge updates from "Pending (N)" to "Synced" |
+| **"Sign Out (Desktop)"** | Desktop App | `ui/main_window.py` | `sign_out()` | Local confirmation + `clear_active_session()` | Internal | Session cleanup | None (Local session purge) | None | Halt camera worker thread | Halts live feed, clears operator session, returns to clean lock screen without requiring password |
+| **"Toggle Defect Alerts"** | `/notifications` | `web/src/components/purity/EmailAlertSettingsCard.tsx` | `handleToggle()` | `saveEmailAlertSettings(settings)` | Client `localStorage` / API | `POST` | `web/src/app/api/notifications/email/route.ts` | None | None | Enables/disables automated SMTP email alert broadcast dispatch to all active administrators |
 
 ---
 
@@ -2319,9 +2329,18 @@ The modulating factor $(1 - p_t)^\gamma$ dynamically down-weights easy backgroun
 **Answer**: Exposed copper traces and solder pads act like mirrors, creating bright glare spots that wash out camera sensors and cause false defect detections. This is mitigated in hardware using diffuse dome illumination or polarizing cross-filters, and in software via data augmentation (color jitter, brightness variation, and glare simulation).
 
 ### Q140: Explain the mathematical relationship between IoU and Non-Maximum Suppression.
-**Answer**: Given candidate bounding boxes sorted by confidence, NMS takes the highest-confidence box $B_{	ext{max}}$ and computes its IoU with every other overlapping candidate $B_i$:
-$$	ext{IoU}(B_{	ext{max}}, B_i) = rac{	ext{Area}(B_{	ext{max}} \cap B_i)}{	ext{Area}(B_{	ext{max}} \cup B_i)}$$
-If $	ext{IoU} > 	ext{threshold}$ (e.g., 0.45), $B_i$ is suppressed as a redundant detection.
+**Answer**: Given candidate bounding boxes sorted by confidence, NMS takes the highest-confidence box $B_{\text{max}}$ and computes its IoU with every other overlapping candidate $B_i$:
+$$\text{IoU}(B_{\text{max}}, B_i) = \frac{\text{Area}(B_{\text{max}} \cap B_i)}{\text{Area}(B_{\text{max}} \cup B_i)}$$
+If $\text{IoU} > \text{threshold}$ (e.g., 0.45), $B_i$ is suppressed as a redundant detection.
+
+### Q141: Why did you eliminate the "Remember Me" option and disable browser autofill across web portal forms?
+**Answer**: In industrial manufacturing facilities and quality assurance labs, workstations are frequently shared across rotating shifts. Persistent "Remember Me" cookies pose a severe security vulnerability by leaving administrative accounts active on shared hardware. Disabling browser autofill (`autoComplete="off"`, `autoComplete="new-password"`) and enforcing clean modal state lifecycle resets prevents browser password managers from auto-injecting cached operator credentials or stale templates into sensitive actions such as user provisioning, password resets, or report generation.
+
+### Q142: How does the desktop workstation handle operator sign-out and shift transitions securely?
+**Answer**: In `ui/main_window.py`, clicking "Sign Out" prompts a confirmation dialogue and immediately invokes `clear_active_session()`. It stops the real-time camera inference worker, closes the operator dashboard, and returns to the workstation lock screen without requiring the operator to re-enter credentials to leave their shift. The lock screen (`LoginDialog`) opens with a clean, unpopulated email field to ensure zero credential crossover across rotating shift operators.
+
+### Q143: How does the web portal manage critical defect email alerts without manual recipient list maintenance?
+**Answer**: In `EmailAlertSettingsCard.tsx` and `web/src/app/api/notifications/email/route.ts`, alert configuration is streamlined into a master enabled/disabled toggle switch. When enabled, any critical defect (`open` or `short`) dynamically queries `public.users` for all active administrators (`role = 'admin' AND is_active = true`) and broadcasts an HTML alert via encrypted SMTP. This automates recipient management and guarantees that newly provisioned or deactivated admins automatically receive or cease receiving alerts with zero manual list updates.
 
 ---
 

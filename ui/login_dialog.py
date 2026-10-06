@@ -210,8 +210,6 @@ class LoginDialog(QDialog):
         self.txt_email = QLineEdit()
         self.txt_email.setPlaceholderText("operator@company.com")
         self.txt_email.returnPressed.connect(self._focus_password)
-        if prefill_email:
-            self.txt_email.setText(prefill_email)
 
         form_layout.addWidget(lbl_email)
         form_layout.addWidget(self.txt_email)

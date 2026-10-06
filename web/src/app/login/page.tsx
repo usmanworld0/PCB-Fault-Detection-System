@@ -115,7 +115,7 @@ function LoginForm() {
   // --- View: Forgot Password Form ---
   if (isForgotMode) {
     return (
-      <form onSubmit={handleForgotPassword} className="space-y-5 animate-fade-in">
+      <form onSubmit={handleForgotPassword} className="space-y-5 animate-fade-in" autoComplete="off">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#4FD1C5] tracking-tight">
             Reset Password
@@ -140,6 +140,7 @@ function LoginForm() {
             <input
               type="email"
               required
+              autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
@@ -185,7 +186,7 @@ function LoginForm() {
 
   // --- View: Standard Login Form ---
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
       {/* Dual Partnership Logo (Transparent, No background boxes or borders) */}
       <div className="flex items-center justify-center gap-3 mb-2">
         <img
@@ -225,7 +226,7 @@ function LoginForm() {
         <input
           type="text"
           required
-          autoComplete="username"
+          autoComplete="off"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="admin or your email"
@@ -254,6 +255,7 @@ function LoginForm() {
           <input
             type={showPassword ? "text" : "password"}
             required
+            autoComplete="off"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"
